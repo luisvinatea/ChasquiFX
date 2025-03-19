@@ -1,4 +1,4 @@
-**Executive Summary**
+# Welcome to FXGetaway!
 
 **FXGetaway** is revolutionizing global tourism with a fully digital, location-independent platform that harnesses the power of exchange rate fluctuations to unlock unprecedented travel affordability and stimulate economic recovery in affected regions.  More than just a SaaS platform, we are building a dynamic **B2B2C marketplace** that directly connects consumers with exceptional vacation opportunities driven by purchasing power parity, while simultaneously providing vital support to businesses in economies experiencing currency devaluation.
 
