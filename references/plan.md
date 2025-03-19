@@ -4,67 +4,55 @@
 
 **Company Name:** FXGetaway (Placeholder, subject to branding refinement)  
 **Legal Structure:** Estonian e-Residency Company (OÜ - Limited Liability Company, to be finalized under Estonian law)  
-**Company History:** FXGetaway was conceived in March 2025 to address the untapped potential of affordable luxury travel driven by exchange rate fluctuations. Founded by Luis Vinatea, leveraging his dual Brazilian-Peruvian background and expertise in global markets, the venture began with early customer research via surveys identifying traveler interest in currency-driven travel savings. Initial prototyping of the B2C app interface started in mid-2025, focusing on purchasing power parity (PPP) as a core differentiator.  
+**Company History:** FXGetaway was conceived in March 2025 to harness exchange rate fluctuations for affordable luxury travel. Founded by Luis Vinatea, leveraging his Brazilian-Peruvian background and global market expertise, the venture kicked off with customer surveys confirming traveler interest in currency-driven savings (target: 500 responses by Q2 2025, currently TBD%). Initial B2C app prototyping began mid-2025, focusing on purchasing power parity (PPP) differentiation, with a goal to complete an MVP by Q3 2025 (progress: TBD%).
 
-**Mission:** To democratize luxury travel by making it more accessible and affordable through strategic use of exchange rate advantages, while driving economic growth in regions with devalued currencies.  
+**Mission:** To democratize luxury travel by making it affordable through exchange rate advantages, while boosting economic growth in devalued-currency regions.  
 
-**Vision:** To become the leading global platform for PPP-driven travel, fostering a balanced and economically beneficial tourism ecosystem.  
+**Vision:** To lead the global PPP-driven travel market, creating a balanced, economically impactful tourism ecosystem. *Goal:* Achieve 1% market share ($6 billion SOM) within 18 months, tracking progress quarterly.
 
 **Problem We Solve (Deeper Dive):**  
-The travel industry fails to fully capitalize on currency fluctuations, leaving both travelers and devalued economies underserved:  
-- **For Consumers:** Travelers miss out on significant savings and luxury experiences due to a lack of awareness about PPP. Research shows 59% of travelers use online platforms for inspiration but lack tools to assess currency-driven value ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)). Pain points include high costs in familiar destinations, limited knowledge of affordable alternatives, and inefficient currency conversion processes.  
-- **For Devalued Economies:** Tourism businesses in regions like Latin America or Africa struggle to attract international visitors despite offering exceptional value, exacerbated by weak marketing reach and currency devaluation ([Destinations International](https://destinationsinternational.org/blog/currencies-and-tourism)). This leads to underutilized potential and economic stagnation.  
+The travel industry overlooks currency fluctuations, underserving travelers and devalued economies:  
+- **For Consumers:** Travelers miss savings and luxury due to limited PPP awareness. Research shows 59% use online platforms for inspiration but lack currency-value tools ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)). *Goal:* Educate 10,000 users on PPP benefits via app within 6 months.  
+- **For Devalued Economies:** Tourism businesses in regions like Latin America struggle to attract global visitors despite high value, due to weak reach and currency challenges ([Destinations International](https://destinationsinternational.org/blog/currencies-and-tourism)). *Goal:* Onboard 50 businesses in 3 months, driving $50,000 in platform revenue.  
 
-FXGetaway bridges this gap by curating travel opportunities based on PPP, acting as an **economic bridge** that connects value-seeking travelers with undervalued destinations, benefiting both parties.
+FXGetaway acts as an **economic bridge**, connecting value-seeking travelers with undervalued destinations. *Progress Tracking:* Measure user growth and business revenue against targets monthly.
 
 ---
 
 ## Products and Services
 
 **FXGetaway Platform - A B2B2C Ecosystem:**  
-FXGetaway integrates a **consumer-facing marketplace app (B2C)** and a **business-facing SaaS platform (B2B)** to create a self-sustaining ecosystem leveraging real-time exchange rate data and travel trends.
+FXGetaway combines a **B2C marketplace app** and a **B2B SaaS platform**, leveraging real-time exchange rate data and travel trends with Kickstarter-style goals.
 
 ### 1. B2C Marketplace App - "Your Passport to Purchasing Power"
-- **User Interface:** An intuitive, visually appealing app akin to "Google Flights," but uniquely focused on PPP-driven destination discovery. Wireframes will showcase a clean layout with exchange rate visuals and curated packages.  
+- **User Interface:** A sleek app like Google Flights, emphasizing PPP-driven discovery. *Goal:* Launch MVP with 5,000 downloads by Q3 2025 (progress: TBD%).  
 - **Key Features:**  
-  - **Destination Discovery Based on Purchasing Power:** Users input their currency and travel dates; the app ranks destinations by PPP value, e.g., showing a Peruvian traveler that a luxury vacation in Brazil is 50% cheaper than in 2010.  
-  - **Curated Vacation Packages:** Comprehensive deals including:  
-    - **Flights:** Competitive fares via airline partnerships.  
-    - **Hotels:** Options from budget to luxury, with PPP comparisons.  
-    - **Restaurants:** Affordable dining recommendations.  
-    - **City Tours & Experiences:** Cost-effective cultural activities.  
-    - **Transportation:** Local booking options.  
-  - **Real-time Exchange Rate Data Display:** Updated rates highlight savings (e.g., USD to ARS trends from [Statista, 2023](https://www.statista.com/chart/31507/percentage-change-against-the-us-dollar-of-the-most-devalued-currencies/)).  
-  - **Personalized Recommendations:** AI-driven suggestions based on travel style and budget.  
-  - **Booking Functionality:** Initial affiliate links (e.g., with Kayak partners), evolving to direct bookings.  
-  - **In-App Support & Community Features:** Chat, FAQs, and forums for user engagement.  
-  - **Push Notifications & Alerts:** Alerts for rate shifts or flash deals.  
+  - **Destination Discovery Based on Purchasing Power:** Ranks destinations by PPP value. *Goal:* Achieve 10% booking conversion rate in 6 months.  
+  - **Curated Vacation Packages:** Flights, hotels, dining, tours, and transport. *Goal:* Secure 1,000 affiliate bookings in 6 months.  
+  - **Real-time Exchange Rate Data Display:** Highlights savings (e.g., USD to ARS trends, [Statista, 2023](https://www.statista.com/chart/31507/percentage-change-against-the-us-dollar-of-the-most-devalued-currencies/)). *Goal:* <1-second latency.  
+  - **Personalized Recommendations:** AI-driven suggestions. *Goal:* 0.3 DAU/MAU engagement ratio in 6 months.  
+  - **Booking Functionality:** Starts with affiliate links, aiming for direct bookings. *Goal:* $10,000 affiliate revenue/month by Q4 2025.  
+  - **In-App Support & Community Features:** Chat, FAQs, forums. *Goal:* 200 forum posts, <24-hour resolution time in 6 months.  
+  - **Push Notifications & Alerts:** Rate shift alerts. *Goal:* 80% CSAT on feature usage.  
 
 ### 2. B2B SaaS Platform - "Empowering Tourism Businesses in Dynamic Markets"
-- **Target Users:** Hotels, airlines, travel agencies, tour operators, restaurants, and tourism boards in devalued regions (e.g., Argentina, Egypt).  
+- **Target Users:** Tourism businesses in devalued regions (e.g., Argentina, Egypt). *Goal:* Onboard 50 businesses in 3 months.  
 - **Key Features:**  
-  - **Real-time Data & Analytics Dashboard:**  
-    - Exchange rate feeds and historical trends.  
-    - PPP comparisons and market intelligence (e.g., trending destinations from [Hotel News Resource, 2023](https://www.hotelnewsresource.com/article123769.html)).  
-  - **Connection & Matching Engine:**  
-    - Profiles for businesses to list services and pricing.  
-    - Algorithms matching local operators with global providers.  
-    - Tools for collaborative package creation.  
-  - **Communication & Collaboration Tools:** Messaging, project management, and networking forums.  
-  - **Customizable Reporting & Alert System:** Alerts for currency shifts and competitor moves.  
-  - **Future Features (Roadmap):** Payment gateways, predictive analytics, and educational content.  
+  - **Real-time Data & Analytics Dashboard:** Exchange rates, PPP trends. *Goal:* 100 dashboard sessions/month in 6 months.  
+  - **Connection & Matching Engine:** Matches local operators with global providers. *Goal:* 20 partnership deals in 3 months, 90% match accuracy.  
+  - **Communication & Collaboration Tools:** Messaging, project management. *Goal:* 85% partner satisfaction score.  
+  - **Customizable Reporting & Alert System:** Currency shift alerts. *Goal:* $50,000 revenue via platform in 6 months.  
+  - **Future Features (Roadmap):** Payment gateways, predictive analytics. *Goal:* Add 1 feature/quarter post-MVP.  
 
 **Competitive Differentiation:**  
-- **PPP Focus:** Unlike Travelzoo’s deal curation or Kayak’s price comparisons, FXGetaway prioritizes exchange rate advantages ([Travelzoo](https://www.travelzoo.com/), [Kayak](https://www.kayak.com/)).  
-- **B2B2C Synergy:** Combines consumer and business tools for network effects.  
-- **Economic Impact:** Supports recovery in devalued regions, appealing to socially conscious users.  
-- **Data-Driven:** Real-time analytics set it apart from static platforms.  
-- **First-Mover Advantage:** No direct competitor targets PPP travel comprehensively.  
+- **PPP Focus:** Unique vs. Travelzoo or Kayak ([Travelzoo](https://www.travelzoo.com/), [Kayak](https://www.kayak.com/)).  
+- **B2B2C Synergy:** Drives network effects. *Goal:* 2,000 customers via partners in 12 months.  
+- **Economic Impact:** Supports devalued regions. *Goal:* Measure tourism revenue uplift in partnered regions.  
 
 **Product Development Roadmap (Next 12-18 Months):**  
-- **Phase 1 (3-6 months):** MVP for B2B SaaS (dashboard, matching) and B2C app (basic discovery); onboard pilot B2B partners.  
-- **Phase 2 (6-12 months):** Expand B2C packages, enhance B2B analytics, scale marketing.  
-- **Phase 3 (12-18 months):** Add direct bookings, predictive tools, and explore premium tiers.
+- **Phase 1 (3-6 months):** MVP for B2B SaaS and B2C app. *Goal:* 5,000 downloads, 50 B2B partners by Q3 2025 (progress: TBD%).  
+- **Phase 2 (6-12 months):** Expand packages, enhance analytics. *Goal:* $20,000 B2B SaaS MRR by Q1 2026.  
+- **Phase 3 (12-18 months):** Direct bookings, predictive tools. *Goal:* $10 ARPU across segments by Q3 2026.
 
 ---
 
@@ -72,63 +60,58 @@ FXGetaway integrates a **consumer-facing marketplace app (B2C)** and a **busines
 
 ### Target Market Definition
 - **B2C (Travelers):**  
-  - **Demographics:** Middle to upper-middle-class, aged 18-65, from strong-currency regions (e.g., US, Europe, Japan), with disposable income but seeking value.  
-  - **Psychographics:** Adventurous, value luxury, open to new destinations, motivated by cost-saving opportunities ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)).  
-  - **Needs:** Affordable luxury travel, real-time PPP insights.  
-  - **Pain Points:** Unawareness of currency benefits, high costs in familiar destinations.  
+  - **Demographics:** Middle to upper-middle-class, 18-65, from strong-currency regions.  
+  - **Psychographics:** Value luxury, seek deals ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)). *Goal:* 10,000 active users in 6 months.  
+  - **Needs & Pain Points:** Affordable luxury, PPP awareness. *Goal:* 80% CSAT on app value.  
 - **B2B (Businesses):**  
-  - **Demographics:** Small to medium tourism firms in devalued regions (e.g., Latin America, Africa).  
-  - **Psychographics:** Seeking global reach, resilient despite economic challenges.  
-  - **Needs:** Market access, partnership tools, data insights.  
-  - **Pain Points:** Limited international visibility, cash flow issues.  
+  - **Demographics:** Small to medium firms in devalued regions.  
+  - **Psychographics:** Seek global reach. *Goal:* 50 onboarded businesses in 3 months.  
+  - **Needs & Pain Points:** Market access, cash flow. *Goal:* 20% revenue uplift via platform in 6 months.  
 
 ### Market Size and Growth
-- **TAM:** Global international tourism spending was $1.5 trillion in 2023 ([Statista, 2023](https://www.statista.com/statistics/298060/contribution-of-travel-and-tourism-to-the-global-economy-by-type-of-spending/)).  
-- **SAM:** Budget travel segment (40% of TAM, based on low-cost travel trends) is $600 billion, validated by TravelPerk’s finding that 40% of travelers prioritize cost savings ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)).  
-- **SOM:** Targeting 1% initially ($6 billion), growing to 2-3% with penetration.  
-- **Growth:** Budget travel projected to grow 7% annually, reaching $2 trillion by 2027, aligning with Allied Market Research forecasts ([Allied Market Research](https://www.alliedmarketresearch.com/budget-travel-market-A12326)).  
+- **TAM:** $1.5 trillion (global tourism spending, [Statista, 2023](https://www.statista.com/statistics/298060/contribution-of-travel-and-tourism-to-the-global-economy-by-type-of-spending/)).  
+- **SAM:** $600 billion (budget travel, 40% of TAM, [TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)).  
+- **SOM:** 1% initially ($6 billion). *Goal:* Reach $6 billion SOM, growing to 2% ($12 billion) in 18 months (progress: TBD%).  
+- **Growth:** Budget travel at 7% CAGR, hitting $2 trillion by 2027 ([Allied Market Research](https://www.alliedmarketresearch.com/budget-travel-market-A12326)). *Goal:* Align growth to 7% annually.
 
 ### Market Trends
-- **Currency-Driven Travel:** "Exchange Rate Travel" is a top trend, with travelers choosing destinations for PPP benefits ([Hotel News Resource, 2023](https://www.hotelnewsresource.com/article123769.html)).  
-- **Budget Travel Surge:** 40% of travelers seek deals, supported by digital tools ([Access Development](https://blog.accessdevelopment.com/tourism-and-travel-statistics-the-ultimate-collection)).  
-- **Digital Planning:** 59% use online platforms, favoring real-time data solutions ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)).  
+- **Currency-Driven Travel:** Rising trend ([Hotel News Resource, 2023](https://www.hotelnewsresource.com/article123769.html)). *Goal:* Position as PPP leader by Q4 2025.  
+- **Budget Travel Surge:** 40% prioritize cost savings ([Access Development](https://blog.accessdevelopment.com/tourism-and-travel-statistics-the-ultimate-collection)). *Goal:* Capture 1,000 bookings in 6 months.  
+- **Digital Planning:** 59% use online tools ([TravelPerk, 2025](https://www.travelperk.com/blog/online-travel-booking-statistics/)). *Goal:* Top 50 app store ranking in 6 months.
 
 ### Competitive Analysis
-- **Direct Competitors:** None fully focus on PPP travel.  
-- **Indirect Competitors:**  
-  - **Travelzoo:** Curated deals, lacks currency focus ([Travelzoo](https://www.travelzoo.com/)).  
-  - **Kayak:** Price comparisons, no PPP integration ([Kayak](https://www.kayak.com/)).  
-  - **Wise:** Currency exchange, not travel booking ([Wise](https://wise.com/gb/compare/travel-money)).  
-- **Matrix Positioning:** FXGetaway excels in PPP focus, B2B2C integration, and economic impact, unlike broader platforms.
+- **Direct Competitors:** None in PPP travel. *Goal:* Establish first-mover advantage by Q3 2025.  
+- **Indirect Competitors:** Travelzoo (deals), Kayak (prices), Wise (exchange). *Goal:* Outpace in PPP focus, targeting 10% conversion vs. industry 2-3%.  
+- **Matrix Positioning:** Leads in PPP, B2B2C synergy. *Goal:* 90% retention rate vs. SaaS avg. (85-90%).
 
 ---
 
 ## Operations Plan
 
 ### Production/Service Delivery
-FXGetaway’s platform delivery involves developing and maintaining the B2C app and B2B SaaS platform:  
+FXGetaway’s platform delivery uses agile development and data-driven operations:  
 - **Processes:**  
-  - **Software Development:** Agile methodology for continuous updates, focusing on features like real-time data and booking integration, akin to Travelzoo’s iterative approach.  
-  - **Data Management:** Sourcing exchange rates from Open Exchange Rates and travel data from Skyscanner APIs, processed for accuracy and timeliness.  
-  - **Content Curation:** Curating PPP-based packages via partnerships with airlines and hotels, managed by a small team or algorithms.  
-  - **Customer Support:** Multi-channel support (email, chat, phone) with community forums, ensuring user satisfaction.  
-- **Technology:** React for front-end, Node.js for back-end, PostgreSQL and MongoDB for databases, and API integrations for data and bookings.  
-- **Resources:** A 10-15 member team (developers, designers, data scientists), cloud hosting, and travel/data partnerships.
+  - **Software Development:** Agile updates. *Goal:* 1 release/month, 5 features/sprint.  
+  - **Data Management:** Real-time feeds from Open Exchange Rates, Skyscanner. *Goal:* 1,000 records/sec throughput, <1-sec latency.  
+  - **Content Curation:** PPP packages via partnerships. *Goal:* 1,000 curated bookings in 6 months.  
+  - **Customer Support:** Multi-channel, forums. *Goal:* <24-hour resolution, 85% CSAT.  
+- **Technology:** React, Node.js, PostgreSQL, MongoDB, APIs. *Goal:* 99.9% uptime by Q3 2025.  
+- **Resources:** 10-15 team members, cloud hosting, partnerships. *Goal:* Zero security incidents.
 
 ### Supply Chain & Logistics
 - **Sourcing:**  
-  - **Data Providers:** Exchange rates from Open Exchange Rates ($10,000-$50,000/year) and travel data from Skyscanner or Amadeus.  
-  - **Travel Partners:** Airlines, hotels, and tour operators via affiliate programs (5-10% commission) or APIs, similar to Kayak’s model.  
-  - **Tech Partners:** AWS for hosting ($5,000-$20,000/month) and Stripe for future payments.  
-- **Distribution:** B2C app via app stores (Apple, Google Play), B2B SaaS via web browsers, managed through partner relationships and digital marketing.
+  - **Data Providers:** Open Exchange Rates ($10,000-$50,000/year), travel APIs. *Goal:* 5 active providers by Q3 2025.  
+  - **Travel Partners:** Affiliate programs (5-10% commission). *Goal:* 50 active partners, $15,000 revenue by Q4 2025.  
+  - **Tech Partners:** AWS, Stripe. *Goal:* $5,000/month hosting, scalable to $20,000.  
+- **Distribution:** App stores for B2C, web for B2B. *Goal:* 5,000 downloads, 20 B2B leads/month in 6 months.
 
 ### Technology Infrastructure
-- **Cloud Hosting:** AWS for scalability, targeting 99.9% uptime, with costs of $5,000-$20,000/month based on traffic, mirroring early OTAs.  
-- **Databases:** PostgreSQL for user data, MongoDB for flexible travel data, ensuring performance and scalability.  
-- **Real-time Data Feeds:** Xignite or Currencylayer APIs ($1,000-$5,000/month) for exchange rates, plus travel APIs.  
-- **Development Tools:** GitHub for version control, Jenkins for CI/CD, and Visual Studio Code for coding.  
-- **Security:** TLS/SSL encryption, OAuth authentication, and regular audits for GDPR compliance.
+- **Cloud Hosting:** AWS, 99.9% uptime. *Goal:* $5,000/month, scaling with traffic.  
+- **Databases:** PostgreSQL, MongoDB. *Goal:* Handle 10,000 users by Q3 2025.  
+- **Real-time Data Feeds:** Xignite, Currencylayer ($1,000-$5,000/month). *Goal:* <1-sec latency.  
+- **Development Tools:** GitHub, Jenkins, VS Code. *Goal:* 1 update/month.  
+- **Security:** TLS/SSL, OAuth, GDPR audits. *Goal:* Zero incidents in 12 months.
 
 ### Facilities and Equipment
-- **Facilities:** Remote-first with no major physical office; optional co-working space in Tallinn ($1,000-$3,000/month) if needed.  
-- **Equipment:** Standard IT gear (computers, monitors) per team member, costing $2,000-$5,000/year each, aligning with remote tech startups.
+- **Facilities:** Remote-first, optional Tallinn co-working ($1,000-$3,000/month). *Goal:* Fully remote by Q2 2025, Tallinn setup if needed by Q4.  
+- **Equipment:** IT gear ($2,000-$5,000/year per team member). *Goal:* Equip 15-member team by Q3 2025.
