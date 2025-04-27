@@ -1,8 +1,13 @@
 {
-    "python.defaultInterpreterPath": "/home/luisvinatea/Dev/Envs/python-scraping/bin/python",
-    "python.venvPath": "/home/luisvinatea/Dev/Envs",
-    "python.terminal.activateEnvironment": true,
-    "jupyter.jupyterServerType": "local",
-    "jupyter.kernelspecPath": "/home/luisvinatea/.local/share/jupyter/kernels/python-scraping"
+  "python.defaultInterpreterPath": "/home/luisvinatea/DEVinatea/Envs/chasquiforex/bin/python",
+  "python.venvPath": "/home/luisvinatea/DEVinatea/Envs",
+  "python.terminal.activateEnvironment": true,
+  "jupyter.jupyterServerType": "local",
+  "jupyter.kernelspecPath": "/home/luisvinatea/.local/share/jupyter/kernels/chasquiforex",
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python-envs.pythonProjects": [],
+  "python.testing.unittestArgs": ["-v", "-s", ".", "-p", "*test.py"],
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": true
 }
-

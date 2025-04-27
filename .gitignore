@@ -78,3 +78,8 @@ htmlcov/
 *.wav
 *.zip
 *.tar.gz
+
+# Ignore compiled files
+references/
+notebooks/
+data/
