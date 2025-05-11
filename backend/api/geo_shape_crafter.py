@@ -1,170 +1,194 @@
-"""GeoShapeCrafter class to create GeoDataFrames from CSV files."""
+"""GeoShapeCrafter module for ETL pipeline to create GeoJSON files from Parquet and JSON."""
+
 import os
 import glob
 import logging
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
 import geopandas as gpd
-from .data_ingestor import DataIngestor
 
 
-class GeoShapeCrafter(DataIngestor):
-    """GeoShapeCrafter class to create GeoDataFrames from CSV files."""
-    def __init__(self, directory="../data/csv",
-                 output_points="../data/shapefiles/geo_points.shp",
-                 output_polygons="../data/shapefiles/geo_polygons.shp"):
-        # Prepend data_dir to output paths to make them absolute
-        super().__init__()
-        # Ensure data_dir is set, fallback to current directory if not present
-        if not hasattr(self, 'data_dir'):
-            self.data_dir = os.getcwd()
-        self.directory = directory
-        self.output_points = os.path.join(self.data_dir, output_points)
-        self.output_polygons = os.path.join(self.data_dir, output_polygons)
-        self.dataframes = {}
-        self.df = None
-        self.points_gdf = None
-        self.polygons_gdf = None
+def find_data_files(
+    data_dir: str, directory: str, patterns: List[str]
+) -> List[str]:
+    """Find data files matching given patterns in directory."""
+    files = []
+    for pattern in patterns:
+        full_path = os.path.join(data_dir, directory, pattern)
+        matched = glob.glob(full_path)
+        files.extend(matched)
+        logging.info("Searching for %s: found %s", pattern, matched)
 
-    def load_data(self):
-        """Loads airports, cities, and countries CSVs."""
-        patterns = [
-            "airports.csv",
-            "countries.csv"
-        ]
-        files = []
-        for pattern in patterns:
-            full_path = os.path.join(self.data_dir, self.directory, pattern)
-            matched = glob.glob(full_path)
-            files.extend(matched)
-            logging.info("Searching for %s: found %s", pattern, matched)
+    if not files:
+        logging.warning("No target files found in %s/%s", data_dir, directory)
 
-        if not files:
+    return files
+
+
+def load_file(file_path: str) -> Optional[pd.DataFrame]:
+    """Load a file into a DataFrame based on its extension."""
+    file_ext = os.path.splitext(file_path)[1].lower()
+    filename = os.path.basename(file_path)
+
+    try:
+        if file_ext == ".parquet":
+            df = pd.read_parquet(file_path)
+        elif file_ext == ".json":
+            df = pd.read_json(file_path)
+        else:
             logging.warning(
-                "No target files found in %s/%s", self.data_dir, self.directory
-                )
-            self.df = None
-            return
-
-        for file in files:
-            filename = os.path.splitext(os.path.basename(file))[0]
-            df_name = f"df_{filename}"
-            try:
-                df = pd.read_csv(file)
-                setattr(self, df_name, df)
-                self.dataframes[df_name] = df
-                logging.info("Loaded %s into %s", file, df_name)
-            except (pd.errors.ParserError, OSError) as e:
-                logging.error("Failed to load %s: %s", file, e)
-
-    def process_data(self, *_args, **_kwargs):
-        """Convert data to GeoDataFrames and separate by geometry type."""
-        required = ['df_clean_airports',
-                    'df_clean_cities',
-                    'df_clean_countries']
-        missing = [name for name in required if name not in self.dataframes]
-        if missing:
-            logging.error("Missing required DataFrames: %s", missing)
-            return
-
-        airports = self.dataframes['df_clean_airports']
-        cities = self.dataframes['df_clean_cities']
-        countries = self.dataframes['df_clean_countries']
-
-        airports_gdf = gpd.GeoDataFrame(
-            airports[['Airport-ID',
-                      'Airport-Name',
-                      'Airport-City',
-                      'Airport-Country']],
-            geometry=gpd.points_from_xy(
-                airports['Airport-Longitude'],
-                airports['Airport-Latitude']
-            ),
-            crs="EPSG:4326"
-        )
-
-        cities_gdf = gpd.GeoDataFrame(
-            cities[['Airport-City', 'City-ISO-3', 'City-ISO-2']],
-            geometry=gpd.GeoSeries.from_wkt(cities['City-Shape']),
-            crs="EPSG:4326"
-        )
-
-        countries_gdf = gpd.GeoDataFrame(
-            countries[['Airport-Country', 'Country-ISO-2', 'Country-ISO-3']],
-            geometry=gpd.GeoSeries.from_wkt(countries['Country-Shape']),
-            crs="EPSG:4326"
-        )
-
-        airports_gdf['Type'] = 'Airport'
-        cities_gdf['Type'] = 'City'
-        countries_gdf['Type'] = 'Country'
-
-        self.points_gdf = gpd.GeoDataFrame(
-            pd.concat([airports_gdf, cities_gdf], ignore_index=True),
-            crs="EPSG:4326"
-        )
-        self.polygons_gdf = countries_gdf
-        logging.info(
-            "Points GeoDataFrame created with %d features",
-            len(self.points_gdf)
+                f"Unsupported file format: {file_ext} for file {filename}"
             )
-        logging.info(
-            "Polygons GeoDataFrame created with %d features",
-            len(self.polygons_gdf)
-            )
-        self.df = None
+            return None
 
-    def save_data(self, *_args, **_kwargs):
-        """Save as separate shapefiles for points and polygons."""
-        # Use absolute paths directly, no need to recompute dirname
-        os.makedirs(os.path.dirname(self.output_points), exist_ok=True)
-        if self.points_gdf is not None and not self.points_gdf.empty:
-            self.points_gdf.to_file(self.output_points)
-            logging.info("Points shapefile saved to %s", self.output_points)
-        else:
-            logging.warning("No points GeoDataFrame to save!")
+        logging.info(f"Loaded {filename}")
+        return df
+    except Exception as e:
+        logging.error(f"Failed to load {filename}: {e}")
+        return None
 
-        os.makedirs(os.path.dirname(self.output_polygons), exist_ok=True)
-        if self.polygons_gdf is not None and not self.polygons_gdf.empty:
-            self.polygons_gdf.to_file(self.output_polygons)
-            logging.info(
-                "Polygons shapefile saved to %s", self.output_polygons
-            )
-        else:
-            logging.warning("No polygons GeoDataFrame to save!")
 
-    def get_dataframe(self, name):
-        """Helper method to access a specific DataFrame by name."""
-        return getattr(self, f"df_{name}", None)
+def extract(data_dir: str, directory: str) -> Dict[str, pd.DataFrame]:
+    """Extract data from parquet and json files."""
+    patterns = ["airports.parquet", "countries.json", "cities.parquet"]
+    files = find_data_files(data_dir, directory, patterns)
 
-    def fetch_data(self):
-        """Implementation of abstract method from DataIngestor."""
-        self.load_data()
+    dataframes = {}
+    for file in files:
+        df = load_file(file)
+        if df is not None:
+            key = os.path.splitext(os.path.basename(file))[0]
+            dataframes[key] = df
 
-    def execute(self):
-        """Runs the full data crafting pipeline: load, process, save."""
-        self.load_data()
-        self.process_data()
-        self.save_data()
+    return dataframes
+
+
+def transform_airports(df: pd.DataFrame) -> gpd.GeoDataFrame:
+    """Transform airports data into GeoDataFrame with point geometry."""
+    gdf = gpd.GeoDataFrame(
+        df[["Airport-ID", "Airport-Name", "Airport-City", "Airport-Country"]],
+        geometry=gpd.points_from_xy(
+            df["Airport-Longitude"], df["Airport-Latitude"]
+        ),
+        crs="EPSG:4326",
+    )
+    gdf["Type"] = "Airport"
+    return gdf
+
+
+def transform_cities(df: pd.DataFrame) -> gpd.GeoDataFrame:
+    """Transform cities data into GeoDataFrame."""
+    gdf = gpd.GeoDataFrame(
+        df[["Airport-City", "City-ISO-3", "City-ISO-2"]],
+        geometry=gpd.GeoSeries.from_wkt(df["City-Shape"]),
+        crs="EPSG:4326",
+    )
+    gdf["Type"] = "City"
+    return gdf
+
+
+def transform_countries(df: pd.DataFrame) -> gpd.GeoDataFrame:
+    """Transform countries data into GeoDataFrame."""
+    gdf = gpd.GeoDataFrame(
+        df[["Airport-Country", "Country-ISO-2", "Country-ISO-3"]],
+        geometry=gpd.GeoSeries.from_wkt(df["Country-Shape"]),
+        crs="EPSG:4326",
+    )
+    gdf["Type"] = "Country"
+    return gdf
+
+
+def transform(
+    dataframes: Dict[str, pd.DataFrame],
+) -> Tuple[Optional[gpd.GeoDataFrame], Optional[gpd.GeoDataFrame]]:
+    """Transform data into GeoDataFrames and separate by geometry type."""
+    required = ["airports", "cities", "countries"]
+    missing = [name for name in required if name not in dataframes]
+
+    if missing:
+        logging.error("Missing required DataFrames: %s", missing)
+        return None, None
+
+    airports_gdf = transform_airports(dataframes["airports"])
+    cities_gdf = transform_cities(dataframes["cities"])
+    countries_gdf = transform_countries(dataframes["countries"])
+
+    # Combine point features (airports and cities)
+    points_gdf = gpd.GeoDataFrame(
+        pd.concat([airports_gdf, cities_gdf], ignore_index=True),
+        crs="EPSG:4326",
+    )
+
+    logging.info(
+        "Points GeoDataFrame created with %d features", len(points_gdf)
+    )
+    logging.info(
+        "Polygons GeoDataFrame created with %d features", len(countries_gdf)
+    )
+
+    return points_gdf, countries_gdf
+
+
+def ensure_dir(file_path: str) -> None:
+    """Ensure directory exists for file."""
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+
+def load(
+    points_gdf: Optional[gpd.GeoDataFrame],
+    polygons_gdf: Optional[gpd.GeoDataFrame],
+    output_points: str,
+    output_polygons: str,
+) -> None:
+    """Save GeoDataFrames as GeoJSON files."""
+    # Create output directories
+    ensure_dir(output_points)
+    ensure_dir(output_polygons)
+
+    # Save points GeoJSON
+    if points_gdf is not None and not points_gdf.empty:
+        points_gdf.to_file(output_points, driver="GeoJSON")
+        logging.info("Points GeoJSON saved to %s", output_points)
+    else:
+        logging.warning("No points GeoDataFrame to save!")
+
+    # Save polygons GeoJSON
+    if polygons_gdf is not None and not polygons_gdf.empty:
+        polygons_gdf.to_file(output_polygons, driver="GeoJSON")
+        logging.info("Polygons GeoJSON saved to %s", output_polygons)
+    else:
+        logging.warning("No polygons GeoDataFrame to save!")
+
+
+def geo_shape_etl(
+    data_dir: str = os.getcwd(),
+    directory: str = "../assets/data/geo",
+    output_points: str = "../assets/data/geo/shapefiles/geo_points.geojson",
+    output_polygons: str = "../assets/data/geo/shapefiles/geo_polygons.geojson",
+) -> Tuple[Optional[gpd.GeoDataFrame], Optional[gpd.GeoDataFrame]]:
+    """Run the full ETL pipeline to create GeoJSON files."""
+    # Make paths absolute
+    output_points_path = os.path.join(data_dir, output_points)
+    output_polygons_path = os.path.join(data_dir, output_polygons)
+
+    # Extract
+    dataframes = extract(data_dir, directory)
+
+    # Transform
+    points_gdf, polygons_gdf = transform(dataframes)
+
+    # Load
+    load(points_gdf, polygons_gdf, output_points_path, output_polygons_path)
+
+    return points_gdf, polygons_gdf
 
 
 if __name__ == "__main__":
-    crafter = GeoShapeCrafter()
-    crafter.execute()
-    if (
-        hasattr(crafter, 'points_gdf')
-        and crafter.points_gdf is not None
-        and not crafter.points_gdf.empty
-    ):
-        print(
-            "Points GeoDataFrame columns:",
-            crafter.points_gdf.columns.tolist()
-        )
-    if (
-        hasattr(crafter, 'polygons_gdf')
-        and crafter.polygons_gdf is not None
-        and not crafter.polygons_gdf.empty
-    ):
-        print(
-            "Polygons GeoDataFrame columns:",
-            crafter.polygons_gdf.columns.tolist()
-        )
+    points, polygons = geo_shape_etl()
+
+    if points is not None and not points.empty:
+        print("Points GeoDataFrame columns:", points.columns.tolist())
+
+    if polygons is not None and not polygons.empty:
+        print("Polygons GeoDataFrame columns:", polygons.columns.tolist())

@@ -1,208 +1,336 @@
-"""data_ingestor.py
-Fetches foreign exchange rates in real time from yahoo finance
-and stores them in a CSV file.
 """
-from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
-import logging
+data_ingestor.py
+Fetches foreign exchange rates in real time from yahoo finance
+and stores them in both CSV and Parquet formats with currency mappings.
+Uses functional programming paradigm and multiprocessing for performance.
+"""
+
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Set,
+    Any,
+)
 import os
 import json
-import yfinance as yf
+import multiprocessing as mp
+from functools import partial
+import yfinance as yf  # type: ignore
 import pandas as pd
+from pandas import DataFrame
+import time
+import requests
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("../data/log/data_ingestor.log", encoding="utf-8"),
-        logging.StreamHandler()
-    ]
-)
 
 # Define constants
-DATA_DIR = "../data"
+DATA_DIR = "../assets/data/forex"
 os.makedirs(DATA_DIR, exist_ok=True)
-# Ensure csv subdirectory exists
-os.makedirs(os.path.join(DATA_DIR, "csv"), exist_ok=True)
-# Ensure log subdirectory exists
-os.makedirs(os.path.join(DATA_DIR, "log"), exist_ok=True)
+os.makedirs(os.path.join(DATA_DIR, "json"), exist_ok=True)
+os.makedirs(os.path.join(DATA_DIR, "parquet"), exist_ok=True)
 
 # Import dictionary for currency codes
 with open(
-    os.path.join(DATA_DIR, "json/currency_codes.json"),
-    "r",
-    encoding="utf-8"
+    os.path.join(DATA_DIR, "json/currency_codes.json"), "r", encoding="utf-8"
 ) as f:
     currency_codes = json.load(f)
 
 
-class ForexPairs:
-    """Class to create forex pairs from currency codes."""
-
-    def __init__(self, codes: Dict[str, str]) -> None:
-        # Use provided currency code dictionary
-        self.currency_codes = codes
-
-    def create_pairs(self) -> List[str]:
-        """Create forex pairs from currency codes values."""
-        pairs: List[str] = []
-        # Iterate over currency tickers (values), not country names
-        for base in self.currency_codes.values():
-            for quote in self.currency_codes.values():
-                if base != quote:
-                    pairs.append(f"{base}{quote}=X")
-        return pairs
-
-    # From the pairs, create forward and backward pairs
-    def create_forward_backward_pairs(self) -> List[str]:
-        """Create forward and backward forex pairs."""
-        pairs: List[str] = []
-        for base in self.currency_codes.values():
-            for quote in self.currency_codes.values():
-                if base != quote:
-                    pairs.append(f"{base}{quote}=X")
-                    pairs.append(f"{quote}{base}=X")
-        return pairs
+# Functional approach to create forex pairs
+def create_pairs(codes: Dict[str, str]) -> List[str]:
+    """Create forex pairs from currency codes values."""
+    return [
+        f"{base}{quote}=X"
+        for base in codes.values()
+        for quote in codes.values()
+        if base != quote
+    ]
 
 
-# Create an instance of ForexPairs
-forex_pairs = ForexPairs(currency_codes)
+def create_forward_backward_pairs(codes: Dict[str, str]) -> List[str]:
+    """Create forward and backward forex pairs."""
+    return [
+        f"{base}{quote}=X"
+        for base in codes.values()
+        for quote in codes.values()
+        if base != quote
+    ] + [
+        f"{quote}{base}=X"
+        for base in codes.values()
+        for quote in codes.values()
+        if base != quote
+    ]
+
+
 # Create forex pairs
-forex_pairs_list = forex_pairs.create_forward_backward_pairs()
-
-# Define the abstract base class for data ingestion
+forex_pairs_list = create_forward_backward_pairs(currency_codes)
 
 
-class DataIngestor(ABC):
-    """Abstract base class for data ingestion."""
+# Function to fetch data for a single symbol with retry logic
+def fetch_symbol_data(
+    symbol: str,
+    start_date: str,
+    end_date: str,
+    retries: int = 3,
+    delay: float = 1.0,
+) -> Tuple[str, pd.DataFrame]:
+    """
+    Fetch data for a single symbol
+    from Yahoo Finance with retry on transient errors.
 
-    @abstractmethod
-    def fetch_data(self) -> pd.DataFrame:
-        """Fetch data from the source."""
+    Args:
+        symbol: Forex symbol to fetch.
+        start_date: Start date for data fetching.
+        end_date: End date for data fetching.
+        retries: Number of retry attempts.
+        delay: Delay between retries in seconds.
 
-    @abstractmethod
-    def save_data(self, df: pd.DataFrame) -> None:
-        """Save data to the destination."""
-
-    @abstractmethod
-    def load_data(self) -> pd.DataFrame:
-        """Load data from the destination."""
-
-    @abstractmethod
-    def process_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Process the data."""
-
-    def get_data(self) -> pd.DataFrame:
-        """
-        Get data from the source, process it, and save it to the destination.
-        """
-        raw_df = self.fetch_data()
-        processed_data = self.process_data(raw_df)
-        self.save_data(processed_data)
-        return processed_data
-
-
-# Define the YahooFinanceDataIngestor class
-class YahooFinanceDataIngestor(DataIngestor):
-    """Ingestor for Yahoo Finance data."""
-
-    def __init__(
-        self,
-        symbols: Optional[List[str]] = None,
-        start_date: str = "2020-01-01",
-        end_date: str = "2023-10-01",
-    ) -> None:
-        # Avoid mutable default; use provided symbols or default list
-        self.symbols = symbols if symbols is not None else forex_pairs_list
-        self.start_date = start_date
-        self.end_date = end_date
-        self.data_file = os.path.join(
-            DATA_DIR, "csv/yahoo_finance_forex_data.csv"
-        )
-
-    def fetch_data(self) -> pd.DataFrame:
-        """Fetch data from Yahoo Finance."""
-        logging.info(
-            "Fetching data for %d symbols from Yahoo Finance...",
-            len(self.symbols)
-        )
-        data_frames = []
-        for symbol in self.symbols:
-            try:
-                temp_df = yf.download(
-                    symbol,
-                    start=self.start_date,
-                    end=self.end_date,
-                    threads=False,
-                    progress=False,
-                    auto_adjust=False
-                )
-                if temp_df is None or temp_df.empty or temp_df.columns.empty:
-                    logging.warning("No data for symbol %s, skipping.", symbol)
-                else:
-                    # Label columns by symbol for concatenation.
-                    # Only do this if columns exist.
-                    # Original line causing error:
-                    # temp_df.columns = pd.MultiIndex.from_product(
-                    #     [[symbol], temp_df.columns])
-
-                    # Create a MultiIndex for the columns
-                    existing_cols = temp_df.columns
-                    new_cols = [(symbol, col) for col in existing_cols]
-                    # Add names for clarity and potential future use
-                    temp_df.columns = pd.MultiIndex.from_tuples(
-                        new_cols, names=['Symbol', 'Price'])
-                    data_frames.append(temp_df)
-            except (ConnectionError, ValueError) as e:
-                logging.error("Error fetching data for %s: %s", symbol, e)
-        if not data_frames:
-            raise ValueError("No data fetched for any symbol.")
-        df = pd.concat(data_frames, axis=1)
-        return df
-
-    # Save data to CSV file in the data directory
-    # If the file already exists, append the new data
-    # If the file does not exist, create a new file
-    def save_data(self, df: pd.DataFrame) -> None:
-        """Save data to CSV file."""
-        logging.info("Saving data to %s...", self.data_file)
-        if os.path.exists(self.data_file):
-            df.to_csv(self.data_file, mode='a', header=False)
-            logging.info("Data appended to existing file.")
-        else:
-            df.to_csv(self.data_file)
-            logging.info("Data saved to new file.")
-
-    def load_data(self) -> pd.DataFrame:
-        """Load data from the CSV file."""
-        logging.info("Loading data from %s...", self.data_file)
-        if os.path.exists(self.data_file):
-            return pd.read_csv(self.data_file, index_col=0)
-        else:
-            logging.warning(
-                "Data file does not exist. Returning empty DataFrame."
+    Returns:
+        Tuple of symbol and DataFrame with fetched data.
+    """
+    for attempt in range(retries):
+        try:
+            df = yf.download(  # type: ignore
+                symbol,
+                start=start_date,
+                end=end_date,
+                threads=False,
+                progress=False,
+                auto_adjust=False,
             )
-            return pd.DataFrame()
+            if df is None or df.empty or df.columns.empty:
+                return symbol, pd.DataFrame()
+            return symbol, df
+        except (ConnectionError, requests.exceptions.RequestException):
+            if attempt < retries - 1:
+                time.sleep(delay * (2**attempt))  # Exponential backoff
+                continue
+            return symbol, pd.DataFrame()
+    # Add fallback return to ensure we always return a value
+    return symbol, pd.DataFrame()
 
-    def process_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Process the data by filling missing values with forward fill then zero.
-        """
-        logging.info("Processing data...")
-        # Forward fill, then fill remaining NaNs with 0
-        return df.ffill().fillna(0)
 
-    def get_data(self) -> pd.DataFrame:
-        """Get, process, save, and return data."""
-        raw_df = self.fetch_data()
-        processed = self.process_data(raw_df)
-        self.save_data(processed)
-        return processed
+# Function to fetch data for multiple symbols using multiprocessing
+def fetch_data_parallel(
+    symbols: List[str],
+    start_date: str,
+    end_date: str,
+    max_workers: Optional[int] = None,
+) -> pd.DataFrame:
+    """
+    Fetch data for multiple symbols in parallel.
+
+    Args:
+        symbols: List of forex symbols to fetch.
+        start_date: Start date for data fetching.
+        end_date: End date for data fetching.
+        max_workers: Number of worker processes (default is CPU count).
+
+    Raises:
+        ValueError: If no data is fetched for any symbol.
+
+    Returns:
+        DataFrame containing the fetched data for all symbols.
+    """
+
+    fetch_func = partial(
+        fetch_symbol_data, start_date=start_date, end_date=end_date
+    )
+
+    num_workers = (
+        max_workers if max_workers else min(mp.cpu_count(), len(symbols))
+    )
+
+    with mp.Pool(processes=num_workers) as pool:
+        results = pool.map(fetch_func, symbols)
+
+    data_dict = {symbol: df for symbol, df in results if not df.empty}
+
+    if not data_dict:
+        raise ValueError("No data fetched for any symbol.")
+
+    data_frames: List[DataFrame] = []
+    for symbol, df in data_dict.items():
+        existing_cols = df.columns
+        new_cols = [(symbol, col) for col in existing_cols]
+        df.columns = pd.MultiIndex.from_tuples(  # type: ignore
+            new_cols, names=["Symbol", "Price"]
+        )
+        data_frames.append(df)  # type: ignore
+
+    return pd.concat(data_frames, axis=1)  # type: ignore
+
+
+# Functions for data processing and storage
+def process_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the data by filling missing values with forward fill then zero."""
+    df.ffill(inplace=True)  # In-place to reduce memory usage
+    # Explicitly cast to DataFrame to resolve type issue
+    result_df: pd.DataFrame = df.fillna(0, inplace=True) or df  # type: ignore
+    return result_df
+
+
+def save_data_parquet(
+    df: pd.DataFrame, file_path: str, mapping_path: str
+) -> None:
+    """Save data to parquet file with currency mappings."""
+    # Flatten MultiIndex columns before saving to parquet
+    if isinstance(df.columns, pd.MultiIndex):
+        # Create a copy to avoid modifying the original dataframe
+        df_to_save = df.copy()
+        # Convert MultiIndex columns to string representation
+        df_to_save.columns = [f"{a}_{b}" if b else a for a, b in df.columns]
+    else:
+        df_to_save = df
+
+    # Save with flattened column names
+    df_to_save.to_parquet(file_path, compression="snappy")
+
+    symbol_mappings: Dict[str, Dict[str, str]] = {}
+    if isinstance(df.columns, pd.MultiIndex):
+        try:
+            all_symbols: List[str] = []
+            for col in df.columns:
+                if isinstance(col, tuple):
+                    try:
+                        if col and isinstance(col[0], (str, int, float)):
+                            symbol_str = str(col[0])
+                            all_symbols.append(symbol_str)
+                    except (IndexError, TypeError):
+                        continue
+
+            unique_symbols: List[str] = []
+            seen: Set[str] = set()
+            for s in all_symbols:
+                if s not in seen:
+                    seen.add(s)
+                    unique_symbols.append(s)
+
+            for symbol_str in unique_symbols:
+                if symbol_str.endswith("=X"):
+                    base_currency_str: str = symbol_str[0:3]
+                    quote_currency_str: str = symbol_str[3:6]
+                    symbol_mappings[symbol_str] = {
+                        "base_currency": base_currency_str,
+                        "quote_currency": quote_currency_str,
+                    }
+        except Exception:
+            pass
+
+    with open(mapping_path, "w", encoding="utf-8") as f:
+        json.dump(symbol_mappings, f, indent=2)
+
+
+def load_data_parquet(
+    file_path: str, mapping_path: str
+) -> Tuple[pd.DataFrame, Dict[str, Dict[str, str]]]:
+    """Load data from parquet file with currency mappings."""
+    if os.path.exists(file_path):
+        df = pd.read_parquet(file_path)
+
+        # Try to reconstruct MultiIndex from flattened column names
+        if all("_" in str(col) for col in df.columns if str(col) != "Date"):
+            new_columns: List[Tuple[Any, Any]] = []
+            for col in df.columns:
+                if "_" in str(col):
+                    parts = str(col).split("_", 1)
+                    new_columns.append((parts[0], parts[1]))
+                else:
+                    new_columns.append((str(col), ""))
+
+            # Silence the type checker completely for this line
+            df.columns = pd.MultiIndex.from_tuples(  # type: ignore
+                new_columns, names=["Symbol", "Price"]
+            )
+    else:
+        df = pd.DataFrame()
+
+    mappings: Dict[str, Dict[str, str]] = {}
+    if os.path.exists(mapping_path):
+        with open(mapping_path, "r", encoding="utf-8") as f:
+            mappings = json.load(f)
+
+    return df, mappings
+
+
+# Main pipeline function
+def get_forex_data(
+    symbols: Optional[List[str]] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    parquet_file: str = os.path.join(
+        DATA_DIR, "parquet/yahoo_finance_forex_data.parquet"
+    ),
+    mapping_file: str = os.path.join(DATA_DIR, "json/forex_mappings.json"),
+    max_workers: Optional[int] = None,
+) -> pd.DataFrame:
+    """
+    ETL pipeline to fetch, process, and save forex data once per task.
+
+    Args:
+        symbols: List of forex symbols (defaults to all pairs).
+        start_date: Start date (defaults to one month ago).
+        end_date: End date (defaults to today).
+        parquet_file: Path for Parquet output.
+        mapping_file: Path for JSON mappings.
+        max_workers: Number of worker processes.
+
+    Returns:
+        Processed DataFrame.
+    """
+    # Calculate one month ago from today
+    if end_date is None:
+        end_date = pd.Timestamp.today().strftime("%Y-%m-%d")
+    if start_date is None:
+        start_date = (pd.Timestamp.today() - pd.DateOffset(months=1)).strftime(
+            "%Y-%m-%d"
+        )
+
+    symbols_to_fetch = symbols if symbols is not None else forex_pairs_list
+    raw_df = fetch_data_parallel(
+        symbols_to_fetch, start_date, end_date, max_workers
+    )
+
+    processed_df = process_data(raw_df)
+    save_data_parquet(processed_df, parquet_file, mapping_file)
+
+    return processed_df
+
+
+def get_currency_pair(
+    base_currency: str, quote_currency: str, file_path: str, mapping_path: str
+) -> pd.DataFrame:
+    """
+    Get specific currency pair data from the stored parquet file.
+
+    Args:
+        base_currency: Base currency code (e.g., 'USD')
+        quote_currency: Quote currency code (e.g., 'EUR')
+        file_path: Path to the parquet file
+        mapping_path: Path to the mapping file
+
+    Returns:
+        DataFrame containing the requested currency pair data
+    """
+    symbol = f"{base_currency}{quote_currency}=X"
+    df, mappings = load_data_parquet(file_path, mapping_path)
+
+    if symbol not in mappings:
+        return pd.DataFrame()
+
+    if isinstance(df.columns, pd.MultiIndex):
+        # Get all columns for the symbol using cross-section instead of to_frame
+        if symbol in df.columns.get_level_values(0):  # type: ignore
+            return df.xs(symbol, axis=1, level=0)  # type: ignore
+
+    return pd.DataFrame()  # type: ignore
 
 
 if __name__ == "__main__":
-    # Example usage
-    ingestor = YahooFinanceDataIngestor()
-    data = ingestor.get_data()
+    test_pairs = forex_pairs_list[:10]
+    data = get_forex_data(
+        symbols=test_pairs,
+        max_workers=4,
+    )
     print(data.head())
