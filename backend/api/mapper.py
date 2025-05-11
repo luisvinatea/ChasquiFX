@@ -33,6 +33,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 AirportDict = Dict[str, Dict[str, Any]]
 CountryDict = Dict[str, Dict[str, Any]]
 CityDict = Dict[str, Dict[str, Any]]
+AirlineDict = Dict[str, Dict[str, Any]]
 
 
 def load_json_file(file_path: str) -> Optional[pd.DataFrame]:
@@ -56,12 +57,13 @@ def extract_data() -> Dict[str, Optional[pd.DataFrame]]:
         "routes": os.path.join(JSON_DIR, "routes.json"),
         "airports": os.path.join(JSON_DIR, "airport_info.json"),
         "countries": os.path.join(JSON_DIR, "countries.json"),
+        "airlines": os.path.join(JSON_DIR, "airlines.json"),
     }
 
     data_frames = {}
 
     # Use ThreadPoolExecutor for parallel I/O operations
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         future_to_key = {
             executor.submit(load_json_file, path): key
             for key, path in file_paths.items()
@@ -122,12 +124,40 @@ def build_country_index(countries_df: pd.DataFrame) -> CountryDict:
     return country_dict
 
 
+def build_airline_index(airlines_df: pd.DataFrame) -> AirlineDict:
+    """Build an efficient airline lookup dictionary."""
+    if airlines_df is None or airlines_df.empty:
+        return {}
+
+    airline_dict: AirlineDict = {}
+
+    for idx, row in airlines_df.iterrows():
+        # Assuming AirlineID is the key we can use to merge
+        airline_id = str(idx)
+        if "AirlineID" in row:
+            airline_id = str(row["AirlineID"])
+
+        airline_dict[airline_id] = {
+            "name": row.get("Name", ""),
+            "alias": row.get("Alias", ""),
+            "iata": row.get("IATA", ""),
+            "icao": row.get("ICAO", ""),
+            "callsign": row.get("Callsign", ""),
+            "country": row.get("Country", ""),
+            "active": row.get(" Active", "N")
+            == "Y",  # Note the space in " Active"
+        }
+
+    return airline_dict
+
+
 def enrich_route_data(
     routes_df: pd.DataFrame,
     airport_dict: AirportDict,
     country_dict: CountryDict,
+    airline_dict: AirlineDict,
 ) -> pd.DataFrame:
-    """Enrich route data with airport and country information."""
+    """Enrich route data with airport, country, and airline information."""
     if routes_df is None or routes_df.empty:
         return pd.DataFrame()
 
@@ -174,6 +204,19 @@ def enrich_route_data(
                 row["Arrival-Continent"] = country_info.get("continent", "")
         return row
 
+    # Add airline details
+    def add_airline_details(row):
+        airline_id = row.get("AirlineID")
+        if airline_id and str(airline_id) in airline_dict:
+            airline = airline_dict[str(airline_id)]
+            row["Airline-Name"] = airline.get("name", "")
+            row["Airline-IATA"] = airline.get("iata", "")
+            row["Airline-ICAO"] = airline.get("icao", "")
+            row["Airline-Callsign"] = airline.get("callsign", "")
+            row["Airline-Country"] = airline.get("country", "")
+            row["Airline-Active"] = airline.get("active", False)
+        return row
+
     # Process in chunks for memory efficiency
     chunk_size = 5000
     result_chunks = []
@@ -183,6 +226,7 @@ def enrich_route_data(
         # Apply transformations
         chunk = chunk.apply(add_departure_details, axis=1)
         chunk = chunk.apply(add_arrival_details, axis=1)
+        chunk = chunk.apply(add_airline_details, axis=1)
         result_chunks.append(chunk)
 
     # Combine chunks
@@ -254,7 +298,7 @@ def create_route_lookups(enriched_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     )
 
     cities.rename(
-        columns={"IATA": "Airport-IATAs", "Airport-Name": "Airport-Names"},
+        columns={"IATA": "Airport-IATAs", "Airport-Names": "Airport-Names"},
         inplace=True,
     )
 
@@ -283,23 +327,38 @@ def transform_data(
     routes_df = data_frames.get("routes")
     airports_df = data_frames.get("airports")
     countries_df = data_frames.get("countries")
+    airlines_df = data_frames.get("airlines")
 
-    if routes_df is None or airports_df is None or countries_df is None:
+    if (
+        routes_df is None
+        or airports_df is None
+        or countries_df is None
+        or airlines_df is None
+    ):
         logger.error("Missing required data frames for transformation")
         return {}
 
     # Build lookup dictionaries
     airport_dict = build_airport_index(airports_df)
     country_dict = build_country_index(countries_df)
+    airline_dict = build_airline_index(airlines_df)
 
     # Enrich route data
-    enriched_routes = enrich_route_data(routes_df, airport_dict, country_dict)
+    enriched_routes = enrich_route_data(
+        routes_df, airport_dict, country_dict, airline_dict
+    )
 
     # Create specialized lookup tables
     lookup_tables = create_route_lookups(enriched_routes)
 
     # Add the enriched routes to the result
     lookup_tables["enriched_routes"] = enriched_routes
+
+    # Add airlines lookup table
+    airlines_lookup = airlines_df.copy()
+    if not airlines_lookup.empty:
+        airlines_lookup["Active"] = airlines_lookup.get(" Active", "N") == "Y"
+        lookup_tables["airlines"] = airlines_lookup
 
     return lookup_tables
 

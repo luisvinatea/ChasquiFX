@@ -15,6 +15,7 @@ from api.mapper import (
     extract_data,
     build_airport_index,
     build_country_index,
+    build_airline_index,
     enrich_route_data,
     create_route_lookups,
     transform_data,
@@ -40,6 +41,7 @@ class TestMapper(unittest.TestCase):
             {
                 "Airline-IATA": "LA",
                 "Airline-Name": "LATAM",
+                "AirlineID": "123",
                 "Departure-IATA": "FLN",
                 "Arrival-IATA": "LIM",
                 "Route": "FLN-LIM",
@@ -47,6 +49,7 @@ class TestMapper(unittest.TestCase):
             {
                 "Airline-IATA": "AV",
                 "Airline-Name": "Avianca",
+                "AirlineID": "456",
                 "Departure-IATA": "FLN",
                 "Arrival-IATA": "BOG",
                 "Route": "FLN-BOG",
@@ -54,6 +57,7 @@ class TestMapper(unittest.TestCase):
             {
                 "Airline-IATA": "AV",
                 "Airline-Name": "Avianca",
+                "AirlineID": "456",
                 "Departure-IATA": "BOG",
                 "Arrival-IATA": "LIM",
                 "Route": "BOG-LIM",
@@ -108,10 +112,41 @@ class TestMapper(unittest.TestCase):
             },
         ]
 
+        self.airlines_data = [
+            {
+                "AirlineID": "123",
+                "Name": "LATAM Airlines",
+                "IATA": "LA",
+                "ICAO": "LAN",
+                "Callsign": "LAN CHILE",
+                "Country": "Chile",
+                " Active": "Y",
+            },
+            {
+                "AirlineID": "456",
+                "Name": "Avianca",
+                "IATA": "AV",
+                "ICAO": "AVA",
+                "Callsign": "AVIANCA",
+                "Country": "Colombia",
+                " Active": "Y",
+            },
+            {
+                "AirlineID": "789",
+                "Name": "Copa Airlines",
+                "IATA": "CM",
+                "ICAO": "CMP",
+                "Callsign": "COPA",
+                "Country": "Panama",
+                " Active": "Y",
+            },
+        ]
+
         # Save test data to files
         self.routes_file = os.path.join(self.json_dir, "routes.json")
         self.airports_file = os.path.join(self.json_dir, "airport_info.json")
         self.countries_file = os.path.join(self.json_dir, "countries.json")
+        self.airlines_file = os.path.join(self.json_dir, "airlines.json")
 
         with open(self.routes_file, "w") as f:
             json.dump(self.routes_data, f)
@@ -122,10 +157,14 @@ class TestMapper(unittest.TestCase):
         with open(self.countries_file, "w") as f:
             json.dump(self.countries_data, f)
 
+        with open(self.airlines_file, "w") as f:
+            json.dump(self.airlines_data, f)
+
         # Create dataframes
         self.routes_df = pd.DataFrame(self.routes_data)
         self.airports_df = pd.DataFrame(self.airports_data)
         self.countries_df = pd.DataFrame(self.countries_data)
+        self.airlines_df = pd.DataFrame(self.airlines_data)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -148,12 +187,14 @@ class TestMapper(unittest.TestCase):
             self.routes_df,
             self.airports_df,
             self.countries_df,
+            self.airlines_df,
         ]
         result = extract_data()
-        self.assertEqual(mock_load.call_count, 3)
+        self.assertEqual(mock_load.call_count, 4)
         self.assertIn("routes", result)
         self.assertIn("airports", result)
         self.assertIn("countries", result)
+        self.assertIn("airlines", result)
 
     def test_build_airport_index(self):
         result = build_airport_index(self.airports_df)
@@ -171,27 +212,49 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(result["Peru"]["region"], "South America")
         self.assertEqual(result["Colombia"]["continent"], "South America")
 
+    def test_build_airline_index(self):
+        result = build_airline_index(self.airlines_df)
+        self.assertEqual(len(result), 3)
+        self.assertIn("123", result)
+        self.assertEqual(result["123"]["name"], "LATAM Airlines")
+        self.assertEqual(result["456"]["iata"], "AV")
+        self.assertEqual(result["789"]["country"], "Panama")
+        self.assertTrue(result["123"]["active"])
+
     def test_enrich_route_data(self):
         airport_dict = build_airport_index(self.airports_df)
         country_dict = build_country_index(self.countries_df)
+        airline_dict = build_airline_index(self.airlines_df)
 
-        result = enrich_route_data(self.routes_df, airport_dict, country_dict)
+        result = enrich_route_data(
+            self.routes_df, airport_dict, country_dict, airline_dict
+        )
         self.assertEqual(len(result), 3)
 
         # Check enriched fields
         self.assertIn("Departure-Airport-Name", result.columns)
         self.assertIn("Arrival-City", result.columns)
+        self.assertIn("Airline-Name", result.columns)
+        self.assertIn("Airline-ICAO", result.columns)
+        self.assertIn("Airline-Callsign", result.columns)
+        self.assertIn("Airline-Country", result.columns)
+        self.assertIn("Airline-Active", result.columns)
 
         # Check specific values
         fln_lim_row = result[result["Route"] == "FLN-LIM"].iloc[0]
         self.assertEqual(fln_lim_row["Departure-City"], "Florianopolis")
         self.assertEqual(fln_lim_row["Arrival-Country"], "Peru")
+        self.assertEqual(fln_lim_row["Airline-Name"], "LATAM Airlines")
+        self.assertEqual(fln_lim_row["Airline-ICAO"], "LAN")
+        self.assertEqual(fln_lim_row["Airline-Country"], "Chile")
+        self.assertTrue(fln_lim_row["Airline-Active"])
 
     def test_create_route_lookups(self):
         airport_dict = build_airport_index(self.airports_df)
         country_dict = build_country_index(self.countries_df)
+        airline_dict = build_airline_index(self.airlines_df)
         enriched_df = enrich_route_data(
-            self.routes_df, airport_dict, country_dict
+            self.routes_df, airport_dict, country_dict, airline_dict
         )
 
         result = create_route_lookups(enriched_df)
@@ -282,13 +345,16 @@ class TestMapper(unittest.TestCase):
                 "routes": self.routes_df,
                 "airports": self.airports_df,
                 "countries": self.countries_df,
+                "airlines": self.airlines_df,
             },
         )
 
         result = transform_data(data_frames)
         self.assertIn("enriched_routes", result)
         self.assertIn("airports", result)
+        self.assertIn("airlines", result)
         self.assertEqual(len(result["enriched_routes"]), 3)
+        self.assertEqual(len(result["airlines"]), 3)
 
 
 if __name__ == "__main__":
