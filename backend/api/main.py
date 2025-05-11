@@ -11,8 +11,8 @@ from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 
 # Import from other modules
-from data_ingestor import get_forex_data, get_currency_pair
-from mapper import route_mapper, get_complete_route_info
+from api.data_ingestor import get_forex_data, get_currency_pair
+from api.mapper import route_mapper, get_complete_route_info
 
 # Initialize FastAPI
 app = FastAPI(

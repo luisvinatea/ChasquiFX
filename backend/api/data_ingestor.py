@@ -1,40 +1,53 @@
 """
 data_ingestor.py
-Fetches foreign exchange rates in real time from yahoo finance
-and stores them in both CSV and Parquet formats with currency mappings.
-Uses functional programming paradigm and multiprocessing for performance.
+Module for fetching and processing forex data from Yahoo Finance.
+Uses functional programming approach for maintainability.
 """
 
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Set,
-    Any,
-)
 import os
 import json
-import multiprocessing as mp
+import time
+import logging
+from typing import Dict, List, Tuple, Any, Optional, Set
 from functools import partial
-import yfinance as yf  # type: ignore
+import multiprocessing as mp
 import pandas as pd
 from pandas import DataFrame
-import time
 import requests
+import yfinance as yf
 
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 # Define constants
-DATA_DIR = "../assets/data/forex"
-os.makedirs(DATA_DIR, exist_ok=True)
-os.makedirs(os.path.join(DATA_DIR, "json"), exist_ok=True)
-os.makedirs(os.path.join(DATA_DIR, "parquet"), exist_ok=True)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "assets/data")
+FOREX_DIR = os.path.join(DATA_DIR, "forex")
+JSON_DIR = os.path.join(FOREX_DIR, "json")
+PARQUET_DIR = os.path.join(FOREX_DIR, "parquet")
 
-# Import dictionary for currency codes
-with open(
-    os.path.join(DATA_DIR, "json/currency_codes.json"), "r", encoding="utf-8"
-) as f:
-    currency_codes = json.load(f)
+# Ensure directories exist
+os.makedirs(JSON_DIR, exist_ok=True)
+os.makedirs(PARQUET_DIR, exist_ok=True)
+
+# Default file paths
+CURRENCY_CODES_FILE = os.path.join(JSON_DIR, "currency_codes.json")
+FOREX_MAPPINGS_FILE = os.path.join(JSON_DIR, "forex_mappings.json")
+FOREX_DATA_FILE = os.path.join(PARQUET_DIR, "yahoo_finance_forex_data.parquet")
+
+# Load currency codes if file exists
+CURRENCY_CODES = {}
+if os.path.exists(CURRENCY_CODES_FILE):
+    with open(CURRENCY_CODES_FILE, "r") as f:
+        currency_data = json.load(f)
+        CURRENCY_CODES = {item["code"]: item["code"] for item in currency_data}
+else:
+    # Fallback minimal currency list
+    CURRENCY_CODES = {"USD": "USD", "EUR": "EUR", "GBP": "GBP", "JPY": "JPY"}
 
 
 # Functional approach to create forex pairs
@@ -64,7 +77,7 @@ def create_forward_backward_pairs(codes: Dict[str, str]) -> List[str]:
 
 
 # Create forex pairs
-forex_pairs_list = create_forward_backward_pairs(currency_codes)
+forex_pairs_list = create_forward_backward_pairs(CURRENCY_CODES)
 
 
 # Function to fetch data for a single symbol with retry logic
@@ -259,10 +272,8 @@ def get_forex_data(
     symbols: Optional[List[str]] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    parquet_file: str = os.path.join(
-        DATA_DIR, "parquet/yahoo_finance_forex_data.parquet"
-    ),
-    mapping_file: str = os.path.join(DATA_DIR, "json/forex_mappings.json"),
+    parquet_file: str = FOREX_DATA_FILE,
+    mapping_file: str = FOREX_MAPPINGS_FILE,
     max_workers: Optional[int] = None,
 ) -> pd.DataFrame:
     """
@@ -325,6 +336,69 @@ def get_currency_pair(
             return df.xs(symbol, axis=1, level=0)  # type: ignore
 
     return pd.DataFrame()  # type: ignore
+
+
+def get_currency_pair_by_name(
+    currency_name: str, file_path: str, mapping_path: str
+) -> pd.DataFrame:
+    """
+    Get specific currency pair data based on currency name.
+
+    Args:
+        currency_name: Name of the currency (e.g., 'US Dollar')
+        file_path: Path to the parquet file
+        mapping_path: Path to the mapping file
+
+    Returns:
+        DataFrame containing the requested currency pair data
+    """
+    # Load currency code mapping
+    if os.path.exists(CURRENCY_CODES_FILE):
+        with open(CURRENCY_CODES_FILE, "r") as f:
+            currency_data = json.load(f)
+            name_to_code = {
+                item["name"]: item["code"] for item in currency_data
+            }
+    else:
+        return pd.DataFrame()
+
+    if currency_name not in name_to_code:
+        return pd.DataFrame()
+
+    # Use code to get data
+    return get_currency_pair(
+        "USD", name_to_code[currency_name], file_path, mapping_path
+    )
+
+
+def update_forex_data(
+    days: int = 30,
+    parquet_file: str = FOREX_DATA_FILE,
+    mapping_file: str = FOREX_MAPPINGS_FILE,
+) -> pd.DataFrame:
+    """
+    Update forex data with the latest days.
+
+    Args:
+        days: Number of days to fetch
+        parquet_file: Path for Parquet output
+        mapping_file: Path for JSON mappings
+
+    Returns:
+        Updated DataFrame
+    """
+    end_date = pd.Timestamp.today().strftime("%Y-%m-%d")
+    start_date = (pd.Timestamp.today() - pd.DateOffset(days=days)).strftime(
+        "%Y-%m-%d"
+    )
+
+    return get_forex_data(
+        symbols=forex_pairs_list,
+        start_date=start_date,
+        end_date=end_date,
+        parquet_file=parquet_file,
+        mapping_file=mapping_file,
+    )
 
 
 if __name__ == "__main__":
