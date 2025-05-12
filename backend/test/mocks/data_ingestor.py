@@ -14,7 +14,9 @@ def get_currency_pair(
 ):
     """Mock function for getting currency pair data"""
     # Return a DataFrame with mock forex data
-    return pd.DataFrame({
-        "Date": pd.date_range(start="2025-01-01", periods=10),
-        "Close": [4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4],
-    })
+    return pd.DataFrame(
+        {
+            "Date": pd.date_range(start="2025-01-01", periods=10),
+            "Close": [4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4],
+        }
+    )

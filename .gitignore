@@ -84,3 +84,4 @@ htmlcov/
 references/
 notebooks/
 data/
+.pytest_cache/
