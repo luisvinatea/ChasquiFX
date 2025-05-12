@@ -23,7 +23,7 @@ practice/
 Thumbs.db
 
 # Ignore IDE/editor-specific files
-.vscode/
+.vscode/settings.json
 .idea/
 *.sublime-workspace
 *.sublime-project
