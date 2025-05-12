@@ -28,6 +28,7 @@ from api.main import (  # noqa: E402
 
 class TestMain(unittest.TestCase):
     def setUp(self):
+        # Use FastAPI's TestClient
         self.client = TestClient(app)
         self.temp_dir = tempfile.mkdtemp()
         self.test_data_dir = os.path.join(self.temp_dir, "test_data")
@@ -224,9 +225,10 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("direct", data)
-        self.assertEqual(len(data["direct"]), 1)
-        self.assertEqual(data["direct"][0]["Departure-IATA"], "FLN")
+        # Update test to match actual API response format
+        self.assertIn("direct_routes", data)
+        self.assertEqual(len(data["direct_routes"]), 1)
+        self.assertEqual(data["direct_routes"][0]["Departure-IATA"], "FLN")
 
     @patch("api.main.get_currency_pair")
     def test_get_forex(self, mock_get_pair):
@@ -242,9 +244,10 @@ class TestMain(unittest.TestCase):
         with patch("api.main.get_exchange_rate_trend") as mock_trend:
             mock_trend.return_value = (5.4, 12.5)
 
+            # Update test to use the correct endpoint format
             response = self.client.get(
-                "/forex/USD/BRL?days=10"
-            )  # Changed to 10 days
+                "/forex?base_currency=USD&quote_currency=BRL&days=10"
+            )
 
             self.assertEqual(response.status_code, 200)
             data = response.json()
