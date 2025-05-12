@@ -92,14 +92,23 @@ def build_airport_index(airports_df: pd.DataFrame) -> AirportDict:
     for i in range(0, len(airports_df), chunk_size):
         chunk = airports_df.iloc[i : i + chunk_size]
         for _, row in chunk.iterrows():
-            iata_code = row.get("IATA")
-            if iata_code and isinstance(iata_code, str):
+            # Use iata_code from the JSON file (based on the schema we inspected)
+            iata_code = row.get("iata_code")
+            if iata_code and isinstance(iata_code, str) and iata_code.strip():
                 airport_dict[iata_code] = {
-                    "name": row.get("Name", ""),
-                    "city": row.get("City", ""),
-                    "country": row.get("Country", ""),
-                    "latitude": row.get("Latitude", 0.0),
-                    "longitude": row.get("Longitude", 0.0),
+                    "name": row.get("name", ""),
+                    "city": row.get(
+                        "municipality", ""
+                    ),  # Use municipality as city
+                    "country": row.get(
+                        "iso_country", ""
+                    ),  # Use iso_country as country
+                    "latitude": row.get(
+                        "latitude_deg", 0.0
+                    ),  # Use latitude_deg
+                    "longitude": row.get(
+                        "longitude_deg", 0.0
+                    ),  # Use longitude_deg
                 }
 
     return airport_dict
@@ -164,9 +173,17 @@ def enrich_route_data(
     # Work with a copy to avoid modifying the original
     enriched_df = routes_df.copy()
 
+    # Map columns to standard names based on the JSON schema we observed
+    enriched_df["Departure-IATA"] = enriched_df[
+        "AirportIATA"
+    ]  # Source airport IATA
+    enriched_df["Arrival-IATA"] = enriched_df[
+        "DestAirportIATA"
+    ]  # Destination airport IATA
+
     # Add departure airport details
     def add_departure_details(row):
-        dep_iata = row.get("Departure-IATA")
+        dep_iata = row["Departure-IATA"]
         if dep_iata in airport_dict:
             airport = airport_dict[dep_iata]
             row["Departure-Airport-Name"] = airport.get("name", "")
@@ -215,6 +232,13 @@ def enrich_route_data(
             row["Airline-Callsign"] = airline.get("callsign", "")
             row["Airline-Country"] = airline.get("country", "")
             row["Airline-Active"] = airline.get("active", False)
+
+        # Ensure Route field exists for routes_index
+        if "Route" not in row:
+            row["Route"] = (
+                f"{row.get('Departure-IATA', '')}-{row.get('Arrival-IATA', '')}"
+            )
+
         return row
 
     # Process in chunks for memory efficiency
@@ -239,6 +263,39 @@ def create_route_lookups(enriched_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """Create specialized lookup dataframes for route queries."""
     if enriched_df.empty:
         return {}
+
+    # Ensure all required columns exist
+    required_cols = [
+        "Departure-IATA",
+        "Departure-Airport-Name",
+        "Departure-City",
+        "Departure-Country",
+        "Departure-Latitude",
+        "Departure-Longitude",
+        "Arrival-IATA",
+        "Arrival-Airport-Name",
+        "Arrival-City",
+        "Arrival-Country",
+        "Arrival-Latitude",
+        "Arrival-Longitude",
+        "Airline-IATA",
+        "Airline-Name",
+        "Route",
+    ]
+
+    for col in required_cols:
+        if col not in enriched_df.columns:
+            logger.warning(f"Missing column: {col} - Adding empty column")
+            enriched_df[col] = ""
+
+    # Convert latitude and longitude columns to numeric, errors='coerce' will set invalid values to NaN
+    for col in [
+        "Departure-Latitude",
+        "Departure-Longitude",
+        "Arrival-Latitude",
+        "Arrival-Longitude",
+    ]:
+        enriched_df[col] = pd.to_numeric(enriched_df[col], errors="coerce")
 
     # Create airport lookup (unique airports with their details)
     airports = pd.concat(
@@ -286,21 +343,35 @@ def create_route_lookups(enriched_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     ).drop_duplicates(subset=["IATA"])
 
     # Create city lookup (unique cities with their airports)
-    cities = (
-        airports.groupby(["City", "Country"])
-        .agg({
-            "IATA": lambda x: list(x),
-            "Airport-Name": lambda x: list(x),
-            "Latitude": "mean",
-            "Longitude": "mean",
-        })
-        .reset_index()
-    )
+    # Extract city info from airports DataFrame
+    valid_airports = airports[airports["IATA"] != ""].copy()
 
-    cities.rename(
-        columns={"IATA": "Airport-IATAs", "Airport-Names": "Airport-Names"},
-        inplace=True,
-    )
+    # Create cities dataframe directly if there are valid airports
+    if not valid_airports.empty:
+        # Group airports by city and country
+        city_groups = valid_airports.groupby(["City", "Country"])
+
+        # Create lists of airports for each city
+        cities_data = []
+        for (city, country), group in city_groups:
+            if city and country:  # Ensure city and country are not empty
+                cities_data.append({
+                    "City": city,
+                    "Country": country,
+                    "Airport-IATAs": group["IATA"].tolist(),
+                    "Airport-Names": group["Airport-Name"].tolist(),
+                    "Latitude": group["Latitude"].mean()
+                    if not group["Latitude"].isna().all()
+                    else 0.0,
+                    "Longitude": group["Longitude"].mean()
+                    if not group["Longitude"].isna().all()
+                    else 0.0,
+                })
+
+        # Create cities DataFrame
+        cities = pd.DataFrame(cities_data) if cities_data else pd.DataFrame()
+    else:
+        cities = pd.DataFrame()
 
     # Create route index (direct connections between airports)
     routes_index = enriched_df[
@@ -368,6 +439,12 @@ def save_dataframe(df: pd.DataFrame, base_name: str) -> None:
     if df.empty:
         logger.warning(f"Skipping empty dataframe: {base_name}")
         return
+
+    # Convert problematic columns to string to avoid type errors
+    # This fixes issues with mixed types in object columns
+    object_cols = df.select_dtypes(include=["object"]).columns
+    for col in object_cols:
+        df[col] = df[col].astype(str)
 
     # Save as Parquet for efficient storage and querying
     parquet_path = os.path.join(OUTPUT_DIR, f"{base_name}.parquet")

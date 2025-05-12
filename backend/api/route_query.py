@@ -9,8 +9,12 @@ from typing import Dict, List, Set, Tuple, Optional
 import pandas as pd
 import pyarrow.parquet as pq
 
-# Define data directory
-DATA_DIR = "../assets/data/geo"
+# Define data directory using absolute path based on script location
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+DATA_DIR = os.path.join(PROJECT_ROOT, "backend", "assets", "data", "geo")
+# Default to the enriched_routes.json file that we know works
+DEFAULT_INPUT_PATH = "enriched/enriched_routes.json"
 
 # Type aliases for better readability
 RouteDict = Dict[Tuple[str, str], List[Dict[str, any]]]
@@ -21,7 +25,7 @@ def find_routes(
     start_airport: str,
     end_airport: str,
     data_dir: str = DATA_DIR,
-    input_path: str = "json/routes.json",
+    input_path: str = DEFAULT_INPUT_PATH,
     output_dir: str = "ready",
 ) -> Dict[str, pd.DataFrame]:
     """Main function to find routes between airports following ETL pipeline."""
@@ -68,6 +72,14 @@ def build_route_index(
     route_dict: RouteDict = {}
     airports_from: AirportConnections = {}
     airports_to: AirportConnections = {}
+
+    # Check if required columns exist in the dataframe
+    required_columns = ["Departure-IATA", "Arrival-IATA"]
+    if not all(col in df.columns for col in required_columns):
+        print(
+            f"Error: Missing required columns. Available columns: {df.columns.tolist()}"
+        )
+        return route_dict, airports_from, airports_to
 
     # Filter out rows with missing data first
     valid_routes = df.dropna(subset=["Departure-IATA", "Arrival-IATA"])
@@ -367,5 +379,38 @@ def load_data(routes: Dict[str, pd.DataFrame], output_dir: str) -> None:
 
 
 if __name__ == "__main__":
+    # Run the initial route query
     results = find_routes(start_airport="FLN", end_airport="LIM")
-    print("Route finding process complete.")
+    print("Route finding complete for FLN to LIM.")
+
+    # Demonstration use case: Find routes between different city pairs
+    city_pairs = [
+        ("JFK", "LAX"),  # New York to Los Angeles
+        ("LHR", "CDG"),  # London to Paris
+        ("NRT", "SYD"),  # Tokyo to Sydney
+        ("GRU", "MEX"),  # São Paulo to Mexico City
+    ]
+
+    print("\n=== Route Finding Demonstrations ===")
+    for start, end in city_pairs:
+        print(f"\nSearching routes from {start} to {end}...")
+        demo_results = find_routes(start_airport=start, end_airport=end)
+
+        # Print summary statistics
+        print(f"  Direct flights: {len(demo_results['direct'])}")
+        print(f"  One-stop connections: {len(demo_results['one_stop'])}")
+        print(f"  Two-stop connections: {len(demo_results['two_stop'])}")
+
+        # Show a sample route if available
+        if not demo_results["direct"].empty:
+            sample = demo_results["direct"].iloc[0]
+            airline = sample.get("Airline-Name", "Unknown Airline")
+            print(f"  Sample direct flight: {airline}")
+        elif not demo_results["one_stop"].empty:
+            sample = demo_results["one_stop"].iloc[0]
+            airline1 = sample.get("Airline-Name_leg1", "Unknown Airline")
+            airline2 = sample.get("Airline-Name_leg2", "Unknown Airline")
+            stop = sample.get("Arrival-IATA_leg1", "Unknown")
+            print(
+                f"  Sample one-stop route: {airline1} + {airline2} via {stop}"
+            )

@@ -5,14 +5,27 @@ based on favorable exchange rates and available flight routes.
 """
 
 import os
+import sys
 from typing import Dict, List, Any, Tuple
 import pandas as pd
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 
+# Add parent directory to path to enable imports
+sys.path.insert(
+    0,
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ),
+)
+
 # Import from other modules
-from api.data_ingestor import get_forex_data, get_currency_pair
-from api.mapper import route_mapper, get_complete_route_info
+from backend.api.data_ingestor import (
+    get_forex_data,
+    get_currency_pair,
+    update_forex_data,
+)
+from backend.api.mapper import route_mapper, get_complete_route_info
 
 # Initialize FastAPI
 app = FastAPI(
@@ -22,7 +35,8 @@ app = FastAPI(
 )
 
 # Define data directories
-DATA_DIR = "../assets/data"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "assets/data")
 FOREX_DIR = os.path.join(DATA_DIR, "forex")
 GEO_DIR = os.path.join(DATA_DIR, "geo")
 ENRICHED_DIR = os.path.join(GEO_DIR, "enriched")
@@ -63,9 +77,12 @@ def get_country_currency_map() -> Dict[str, str]:
     """Get mapping of countries to currencies."""
     try:
         currency_path = os.path.join(FOREX_DIR, "json/currency_codes.json")
-        currency_df = pd.read_json(currency_path)
-        return dict(zip(currency_df["country"], currency_df["code"]))
-    except Exception:
+        with open(currency_path, "r") as f:
+            currency_data = pd.read_json(f, orient="index")
+            # Create a dictionary mapping countries to currency codes
+            return dict(zip(currency_data.index, currency_data.iloc[:, 0]))
+    except Exception as e:
+        print(f"Error loading currency map: {e}")
         # Return empty dict if file doesn't exist or has issues
         return {}
 
@@ -171,7 +188,8 @@ def find_flight_destinations(
     try:
         routes_df = pd.read_parquet(routes_path)
         airports_df = pd.read_parquet(airports_path)
-    except Exception:
+    except Exception as e:
+        print(f"Error loading routes or airports data: {e}")
         return []
 
     # Get direct flights from departure airport
@@ -393,7 +411,7 @@ def get_forex(
         if pair_data.empty:
             raise HTTPException(
                 status_code=404,
-                detail=f"No data found for {base_currency}/{quote_currency}",
+                detail=f"No forex data found for {base_currency}/{quote_currency}",
             )
 
     # Limit to requested days
@@ -410,11 +428,165 @@ def get_forex(
         "quote_currency": quote_currency,
         "current_rate": exchange_rate,
         "trend_percentage": trend,
-        "history": pair_data.reset_index().to_dict("records"),
+        "history": pair_data.reset_index().to_dict("records")
+        if not pair_data.empty
+        else [],
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
+def test_destination_recommendations(
+    departure_airport: str = "JFK", max_results: int = 10
+):
+    """
+    Test function to demonstrate the integration of forex data and flight routes.
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    Args:
+        departure_airport: IATA code of departure airport
+        max_results: Maximum number of recommendations to return
+
+    Returns:
+        List of destination recommendations sorted by favorable exchange rates
+    """
+    print(
+        f"Finding top {max_results} destinations from {departure_airport} based on forex rates..."
+    )
+
+    # Step 1: Update forex data to get the latest exchange rates
+    print("Updating forex data...")
+    try:
+        # Get the latest forex data (limited to top currencies to speed up the process)
+        update_forex_data(days=30)
+        print("Forex data updated successfully")
+    except Exception as e:
+        print(f"Error updating forex data: {e}")
+        return None
+
+    # Step 2: Get airport to country and country to currency mappings
+    airport_country_map = get_airport_country_map()
+    country_currency_map = get_country_currency_map()
+
+    if departure_airport not in airport_country_map:
+        print(f"Error: Airport {departure_airport} not found")
+        return None
+
+    # Step 3: Get departure country and base currency
+    departure_country = airport_country_map.get(departure_airport, "")
+    base_currency = (
+        country_currency_map.get(departure_country, "USD")
+        if departure_country
+        else "USD"
+    )
+
+    print(
+        f"Departure country: {departure_country}, Base currency: {base_currency}"
+    )
+
+    # Step 4: Find possible flight destinations
+    print("Finding flight destinations...")
+    destinations = find_flight_destinations(
+        departure_airport, max_results * 2, direct_only=False
+    )
+
+    if not destinations:
+        print(f"No routes found from {departure_airport}")
+        return None
+
+    print(f"Found {len(destinations)} potential destinations with flights")
+
+    # Step 5: Evaluate exchange rates and create recommendations
+    recommendations = []
+
+    for dest in destinations:
+        arrival_airport = dest["arrival_airport"]
+        country = dest["country"]
+
+        # Get currency for destination country
+        quote_currency = (
+            country_currency_map.get(country, "USD") if country else "USD"
+        )
+
+        # Skip if same currency as base
+        if quote_currency == base_currency:
+            continue
+
+        # Get exchange rate and trend
+        exchange_rate, trend = get_exchange_rate_trend(
+            base_currency, quote_currency
+        )
+
+        # Skip if no exchange rate data
+        if exchange_rate == 0:
+            continue
+
+        # Calculate destination score
+        score = calculate_destination_score(
+            exchange_rate, trend, dest["route_quality"]
+        )
+
+        recommendation = DestinationRecommendation(
+            departure_airport=departure_airport,
+            arrival_airport=arrival_airport,
+            city=dest["city"],
+            country=country,
+            exchange_rate=exchange_rate,
+            exchange_rate_trend=trend,
+            flight_route=dest["route_info"] if dest["route_info"] else {},
+            score=score,
+        )
+
+        recommendations.append(recommendation)
+
+    # Sort by score (descending)
+    recommendations.sort(key=lambda x: x.score, reverse=True)
+    recommendations = recommendations[:max_results]
+
+    # Step 6: Print results
+    print(
+        f"\nTop {len(recommendations)} destinations from {departure_airport} based on forex rates:"
+    )
+    print(
+        f"{'Rank':<5} {'Airport':<8} {'City, Country':<25} {'Exchange Rate':<15} {'Trend %':<10} {'Score':<10}"
+    )
+    print("-" * 80)
+
+    for i, rec in enumerate(recommendations, 1):
+        print(
+            f"{i:<5} {rec.arrival_airport:<8} {rec.city}, {rec.country:<15} {rec.exchange_rate:<15.4f} {rec.exchange_rate_trend:<10.2f} {rec.score:<10.2f}"
+        )
+
+    # Step 7: Get detailed route info for the top recommendation
+    if recommendations:
+        top_dest = recommendations[0]
+        print(
+            f"\nDetailed route info for top recommendation: {top_dest.city}, {top_dest.country} ({top_dest.arrival_airport})"
+        )
+
+        route_info = get_complete_route_info(
+            departure_airport, top_dest.arrival_airport
+        )
+
+        if not route_info["direct"].empty:
+            print("\nDirect flights available:")
+            print(route_info["direct"].to_string())
+        elif not route_info["one_stop"].empty:
+            print("\nOne-stop connections available:")
+            print(route_info["one_stop"].to_string())
+        elif not route_info["two_stop"].empty:
+            print("\nTwo-stop connections available:")
+            print(route_info["two_stop"].to_string())
+
+    return recommendations
+
+
+if __name__ == "__main__":
+    # Run the test for JFK airport (New York) to demonstrate functionality
+    print("Running ChasquiForex test case...")
+    # Can also try with other airports:
+    # LIM - Lima, Peru
+    # MEX - Mexico City, Mexico
+    # GRU - Sao Paulo, Brazil
+    # MAD - Madrid, Spain
+    test_destination_recommendations(departure_airport="JFK", max_results=10)
+
+    # To run the FastAPI server, use the command:
+    # uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000

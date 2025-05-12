@@ -44,7 +44,10 @@ CURRENCY_CODES = {}
 if os.path.exists(CURRENCY_CODES_FILE):
     with open(CURRENCY_CODES_FILE, "r") as f:
         currency_data = json.load(f)
-        CURRENCY_CODES = {item["code"]: item["code"] for item in currency_data}
+        # Convert country-to-code mapping to code-to-code mapping
+        CURRENCY_CODES = {
+            code: code for country, code in currency_data.items()
+        }
 else:
     # Fallback minimal currency list
     CURRENCY_CODES = {"USD": "USD", "EUR": "EUR", "GBP": "GBP", "JPY": "JPY"}
