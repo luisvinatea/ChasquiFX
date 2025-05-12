@@ -6,7 +6,7 @@ based on favorable exchange rates and available flight routes.
 
 import os
 import sys
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 import pandas as pd
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
@@ -28,10 +28,15 @@ from backend.api.data_ingestor import (
 )
 from backend.api.forex_calculator import (
     get_exchange_rate_with_trend,
-    debug_forex_data,
-    list_available_currencies,
+    calculate_cross_rate,  # noqa: F401
+    calculate_trend,  # noqa: F401
 )
 from backend.api.mapper import route_mapper, get_complete_route_info
+from backend.api.ticket_fare_fetcher import (
+    fetch_flight_fare,
+    fetch_multiple_fares,
+    get_best_fare,
+)
 
 # Initialize FastAPI
 app = FastAPI(
@@ -58,6 +63,15 @@ os.makedirs(ENRICHED_DIR, exist_ok=True)
 
 
 # Define data models
+class FlightFare(BaseModel):
+    price: float
+    currency: str
+    airlines: List[str] = []
+    duration: str = ""
+    outbound_date: str
+    return_date: str
+
+
 class DestinationRecommendation(BaseModel):
     departure_airport: str
     arrival_airport: str
@@ -67,6 +81,7 @@ class DestinationRecommendation(BaseModel):
     exchange_rate_trend: float
     flight_route: Dict[str, Any]
     score: float
+    fare: Optional[FlightFare] = None  # New field for fare data
 
 
 class RecommendationsResponse(BaseModel):
@@ -161,13 +176,27 @@ def get_exchange_rate_trend(
     Returns:
         Tuple of (current_rate, trend_percentage)
     """
+    # Special case: same currency, return 1.0 and 0.0 trend
+    if base_currency == quote_currency:
+        print(
+            f"Same currency pair {base_currency}/{quote_currency}, using 1.0 exchange rate"
+        )
+        return 1.0, 0.0
+
+    print(f"Calculating exchange rate for {base_currency}/{quote_currency}")
+
     # First, try to get direct rate and trend using the new forex_calculator
     current_rate, trend_pct = get_exchange_rate_with_trend(
         base_currency, quote_currency, days
     )
 
     if current_rate > 0:
+        print(
+            f"Found rate using forex_calculator: {current_rate:.4f}, trend: {trend_pct:.2f}%"
+        )
         return current_rate, trend_pct
+
+    print("No rate found using forex_calculator, trying fallback method")
 
     # Fall back to original method if new method fails
     forex_file = os.path.join(
@@ -178,7 +207,9 @@ def get_exchange_rate_trend(
     # Try to fetch fresh data (only for the specific pair to avoid too many requests)
     symbols = [f"{base_currency}{quote_currency}=X"]
     try:
+        print(f"Fetching fresh data for {base_currency}{quote_currency}=X")
         get_forex_data(symbols=symbols)
+        print(f"Successfully fetched data for {symbols[0]}")
     except Exception as e:
         print(
             f"Warning: Could not fetch fresh data for {base_currency}{quote_currency}: {e}"
@@ -189,6 +220,7 @@ def get_exchange_rate_trend(
     )
 
     if pair_data.empty:
+        print(f"No data found for {base_currency}/{quote_currency} pair")
         return 0.0, 0.0
 
     # Get the closing prices
@@ -205,37 +237,61 @@ def get_exchange_rate_trend(
         else:
             trend_pct = 0.0
 
+        print(
+            f"Found rate using fallback method: {current_rate:.4f}, trend: {trend_pct:.2f}%"
+        )
         return current_rate, trend_pct
 
+    print(
+        f"No 'Close' column found in pair data for {base_currency}/{quote_currency}"
+    )
     return 0.0, 0.0
 
 
 def calculate_destination_score(
-    exchange_rate: float, trend_pct: float, route_quality: float
+    exchange_rate: float,
+    trend_pct: float,
+    route_quality: float,
+    fare_price: float = 0.0,
+    base_price: float = 500.0,
 ) -> float:
     """
-    Calculate destination score based on exchange rate, trend, and route quality.
+    Calculate destination score based on exchange rate, trend, route quality, and fare price.
     Higher score means better destination.
 
     Args:
         exchange_rate: Current exchange rate
         trend_pct: Exchange rate trend percentage
         route_quality: Quality of route (0-1)
+        fare_price: Flight fare price (0 if unavailable)
+        base_price: Base price for fare comparison ($500 by default)
 
     Returns:
         Score from 0-100
     """
     # Normalize factors
-    rate_factor = min(1.0, exchange_rate / 10) * 40  # 40% weight
+    rate_factor = (
+        min(1.0, exchange_rate / 10) * 30
+    )  # 30% weight (reduced from 40%)
     trend_factor = (
-        (trend_pct + 10) / 20 * 40
-    )  # 40% weight (assumes trend between -10% and +10%)
+        (trend_pct + 10) / 20 * 30
+    )  # 30% weight (reduced from 40%) (assumes trend between -10% and +10%)
     route_factor = route_quality * 20  # 20% weight
 
-    # Clamp values
-    trend_factor = max(0, min(40, trend_factor))
+    # Add fare factor (if fare data available)
+    fare_factor = 0
+    if fare_price > 0:
+        # Lower price is better - invert the score
+        # 0 score for prices >= 2x base price, 20 score for price = 0
+        fare_factor = max(0, min(20, 20 * (1 - fare_price / (base_price * 2))))
+    else:
+        # No fare data, neutral score
+        fare_factor = 10  # Middle score if no fare data available
 
-    return rate_factor + trend_factor + route_factor
+    # Clamp values
+    trend_factor = max(0, min(30, trend_factor))
+
+    return rate_factor + trend_factor + route_factor + fare_factor
 
 
 def find_flight_destinations(
@@ -326,136 +382,35 @@ def find_flight_destinations(
     return results[:max_results]
 
 
-def get_demo_destinations(departure_airport: str) -> List[Dict[str, Any]]:
+def fetch_fares_for_destinations(
+    departure_airport: str,
+    destinations: List[Dict[str, Any]],
+    currency: str = "USD",
+) -> Dict[str, Dict[str, Any]]:
     """
-    Create demo destinations data for testing when route data is not available.
+    Fetch flight fares for a list of destination airports.
 
     Args:
         departure_airport: IATA code of departure airport
+        destinations: List of destination dictionaries
+        currency: Currency for fare prices
 
     Returns:
-        List of demo destinations
+        Dictionary mapping arrival airports to fare data
     """
-    print("Creating demo destinations for testing...")
+    # Extract arrival airport codes
+    arrival_airports = [dest["arrival_airport"] for dest in destinations]
 
-    # Common international destinations with different currencies
-    demo_data = [
-        {"iata": "LHR", "city": "London", "country": "GB", "currency": "GBP"},
-        {"iata": "CDG", "city": "Paris", "country": "FR", "currency": "EUR"},
-        {"iata": "NRT", "city": "Tokyo", "country": "JP", "currency": "JPY"},
-        {"iata": "SYD", "city": "Sydney", "country": "AU", "currency": "AUD"},
-        {
-            "iata": "MEX",
-            "city": "Mexico City",
-            "country": "MX",
-            "currency": "MXN",
-        },
-        {"iata": "YYZ", "city": "Toronto", "country": "CA", "currency": "CAD"},
-        {
-            "iata": "HKG",
-            "city": "Hong Kong",
-            "country": "HK",
-            "currency": "HKD",
-        },
-        {"iata": "ZRH", "city": "Zurich", "country": "CH", "currency": "CHF"},
-        {"iata": "PEK", "city": "Beijing", "country": "CN", "currency": "CNY"},
-        {
-            "iata": "JNB",
-            "city": "Johannesburg",
-            "country": "ZA",
-            "currency": "ZAR",
-        },
-        {
-            "iata": "GRU",
-            "city": "Sao Paulo",
-            "country": "BR",
-            "currency": "BRL",
-        },
-        {
-            "iata": "DEL",
-            "city": "New Delhi",
-            "country": "IN",
-            "currency": "INR",
-        },
-        {
-            "iata": "IST",
-            "city": "Istanbul",
-            "country": "TR",
-            "currency": "TRY",
-        },
-        {"iata": "BKK", "city": "Bangkok", "country": "TH", "currency": "THB"},
-        {
-            "iata": "AKL",
-            "city": "Auckland",
-            "country": "NZ",
-            "currency": "NZD",
-        },
-        {
-            "iata": "SGN",
-            "city": "Ho Chi Minh City",
-            "country": "VN",
-            "currency": "VND",
-        },
-        {
-            "iata": "CPT",
-            "city": "Cape Town",
-            "country": "ZA",
-            "currency": "ZAR",
-        },
-        {
-            "iata": "KUL",
-            "city": "Kuala Lumpur",
-            "country": "MY",
-            "currency": "MYR",
-        },
-        {"iata": "MNL", "city": "Manila", "country": "PH", "currency": "PHP"},
-        {"iata": "BOG", "city": "Bogotá", "country": "CO", "currency": "COP"},
-    ]
-
-    # Get country currency map for filtering
-    airport_country_map = get_airport_country_map()
-    country_currency_map = get_country_currency_map()
-
-    # Determine base currency
-    departure_country = airport_country_map.get(departure_airport, "US")
-    base_currency = country_currency_map.get(departure_country, "USD")
-
-    # Filter out destinations that use the same currency
-    filtered_data = [d for d in demo_data if d["currency"] != base_currency]
-
-    # If we filtered everything, just use original list
-    if not filtered_data:
-        filtered_data = demo_data
-
-    print(
-        f"Generated {len(filtered_data)} demo destinations with currencies different from {base_currency}"
+    # Fetch fares for all destinations
+    fares = fetch_multiple_fares(
+        departure_id=departure_airport,
+        arrival_ids=arrival_airports[
+            :10
+        ],  # Limit to top 10 to avoid API rate limits
+        currency=currency,
     )
 
-    results = []
-
-    for dest in filtered_data:
-        # Create a demo route info structure
-        route_info = {
-            "Departure-IATA": departure_airport,
-            "Arrival-IATA": dest["iata"],
-            "Airline": "Demo Airline",
-            "Distance-km": 5000,  # Demo distance
-            "Equipment": "B777",  # Demo equipment
-            "Stops": 0,  # Direct flight
-        }
-
-        result = {
-            "arrival_airport": dest["iata"],
-            "country": dest["country"],
-            "city": dest["city"],
-            "currency": dest["currency"],  # Include the currency in the result
-            "route_info": route_info,
-            "route_quality": 1.0,  # Direct flight quality
-        }
-
-        results.append(result)
-
-    return results
+    return fares
 
 
 @app.get("/")
@@ -474,9 +429,23 @@ def get_recommendations(
     direct_only: bool = Query(
         False, description="Only consider direct flights"
     ),
+    use_realtime_data: bool = Query(
+        True, description="Fetch real-time forex data for destinations"
+    ),
+    include_fares: bool = Query(
+        True, description="Include flight fare data from SerpAPI"
+    ),
+    outbound_date: str = Query(
+        None,
+        description="Departure date (YYYY-MM-DD, default: 3 months from now)",
+    ),
+    return_date: str = Query(
+        None,
+        description="Return date (YYYY-MM-DD, default: 1 week after outbound)",
+    ),
 ):
     """
-    Get destination recommendations based on favorable exchange rates.
+    Get destination recommendations based on favorable exchange rates and flight fares.
     """
     # Get airport to country map
     airport_country_map = get_airport_country_map()
@@ -504,29 +473,57 @@ def get_recommendations(
     )
 
     if not destinations:
-        # Try demo destinations as a fallback
-        destinations = get_demo_destinations(departure_airport)
-        if not destinations:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No routes found from {departure_airport}",
-            )
+        raise HTTPException(
+            status_code=404,
+            detail=f"No routes found from {departure_airport}",
+        )
 
     # For USD currency departures, prioritize non-USD currency destinations
-    if base_currency == "USD":
-        # Filter destinations to only include those with non-USD currencies
-        non_usd_destinations = []
-        for dest in destinations:
-            country = dest["country"]
-            quote_currency = (
-                country_currency_map.get(country, "USD") if country else "USD"
-            )
-            if quote_currency != "USD":
-                non_usd_destinations.append(dest)
+    non_usd_destinations = []
+    for dest in destinations:
+        country = dest["country"]
+        quote_currency = (
+            country_currency_map.get(country, "USD") if country else "USD"
+        )
+        if quote_currency != "USD":
+            non_usd_destinations.append(dest)
 
-        # If we found non-USD destinations, use those instead
-        if non_usd_destinations:
-            destinations = non_usd_destinations
+    if non_usd_destinations:
+        destinations = non_usd_destinations
+
+    # Fetch real-time forex data for all destinations if requested
+    forex_data = None
+    if use_realtime_data:
+        print(
+            f"Fetching real-time forex data for destinations from {departure_airport}"
+        )
+        forex_data = fetch_realtime_forex_data(
+            base_currency, destinations, country_currency_map
+        )
+        if not forex_data.empty:
+            print(
+                f"Successfully fetched real-time forex data with shape {forex_data.shape}"
+            )
+        else:
+            print(
+                "Could not fetch real-time forex data, falling back to cached data"
+            )
+
+    # Fetch flight fares if requested
+    fare_data = {}
+    if include_fares:
+        try:
+            fare_data = fetch_fares_for_destinations(
+                departure_airport=departure_airport,
+                destinations=destinations,
+                currency=base_currency,
+            )
+            print(
+                f"Successfully fetched fare data for {len(fare_data)} destinations"
+            )
+        except Exception as e:
+            print(f"Error fetching flight fares: {e}")
+            # Continue without fare data
 
     recommendations = []
 
@@ -543,19 +540,67 @@ def get_recommendations(
         if quote_currency == base_currency:
             continue
 
-        # Get exchange rate and trend
-        exchange_rate, trend = get_exchange_rate_trend(
-            base_currency, quote_currency
-        )
+        # Check if we have demo exchange rates
+        if "demo_rate" in dest and "demo_trend" in dest:
+            exchange_rate = dest["demo_rate"]
+            trend = dest["demo_trend"]
+            print(
+                f"Using demo rate for {arrival_airport}: {exchange_rate:.4f}, trend: {trend:.2f}%"
+            )
+        else:
+            # Get exchange rate and trend using real-time data if available
+            if forex_data is not None and not forex_data.empty:
+                # Use in-memory forex data that was just fetched
+                from backend.api.forex_calculator import (
+                    calculate_cross_rate,
+                    calculate_trend,
+                )
+
+                exchange_rate, is_direct = calculate_cross_rate(
+                    base_currency, quote_currency, forex_data, use_cache=False
+                )
+                trend = calculate_trend(
+                    base_currency, quote_currency, 7, forex_data
+                )
+                print(
+                    f"Real-time rate for {arrival_airport} ({quote_currency}): {exchange_rate:.4f}, trend: {trend:.2f}%"
+                )
+            else:
+                # Fall back to the existing method
+                exchange_rate, trend = get_exchange_rate_trend(
+                    base_currency, quote_currency
+                )
 
         # Skip if no exchange rate data
         if exchange_rate == 0:
             continue
 
-        # Calculate destination score
-        score = calculate_destination_score(
-            exchange_rate, trend, dest["route_quality"]
+        # Check if we have fare data for this destination
+        fare_info = fare_data.get(arrival_airport, {})
+        fare_price = (
+            float(fare_info.get("price", 0))
+            if fare_info.get("success", False)
+            else 0
         )
+
+        # Calculate destination score (now including fare if available)
+        score = calculate_destination_score(
+            exchange_rate, trend, dest["route_quality"], fare_price
+        )
+
+        # Create fare object if data exists
+        fare_obj = None
+        if fare_info.get("success", False):
+            fare_obj = FlightFare(
+                price=fare_price,
+                currency=fare_info.get("currency", base_currency),
+                airlines=fare_info.get("airlines", []),
+                duration=fare_info.get("duration", ""),
+                outbound_date=fare_info.get(
+                    "outbound_date", outbound_date or ""
+                ),
+                return_date=fare_info.get("return_date", return_date or ""),
+            )
 
         recommendation = DestinationRecommendation(
             departure_airport=departure_airport,
@@ -566,6 +611,7 @@ def get_recommendations(
             exchange_rate_trend=trend,
             flight_route=dest["route_info"] if dest["route_info"] else {},
             score=score,
+            fare=fare_obj,
         )
 
         recommendations.append(recommendation)
@@ -588,402 +634,101 @@ def get_routes(
     ),
 ):
     """
-    Get route options between two airports.
+    Get flight route information between airports.
     """
-    route_info = get_complete_route_info(start_airport, end_airport)
-
-    if (
-        route_info["direct"].empty
-        and route_info["one_stop"].empty
-        and route_info["two_stop"].empty
-    ):
+    # Ensure we have the route data
+    try:
+        route_mapper()
+    except Exception as e:
         raise HTTPException(
-            status_code=404,
-            detail=f"No routes found from {start_airport} to {end_airport}",
+            status_code=500, detail=f"Error mapping routes: {str(e)}"
         )
 
-    return {
-        "direct": route_info["direct"].to_dict("records")
-        if not route_info["direct"].empty
-        else [],
-        "one_stop": route_info["one_stop"].to_dict("records")
-        if not route_info["one_stop"].empty
-        else [],
-        "two_stop": route_info["two_stop"].to_dict("records")
-        if not route_info["two_stop"].empty
-        else [],
-    }
+    try:
+        route_info = get_complete_route_info(start_airport, end_airport)
 
-
-@app.get("/forex/{base_currency}/{quote_currency}")
-def get_forex(
-    base_currency: str,
-    quote_currency: str,
-    days: int = Query(30, description="Number of days of history"),
-):
-    """
-    Get forex data for a currency pair.
-    """
-    forex_file = os.path.join(
-        FOREX_DIR, "parquet/yahoo_finance_forex_data.parquet"
-    )
-    mapping_file = os.path.join(FOREX_DIR, "json/forex_mappings.json")
-
-    # Get forex data for the pair
-    pair_data = get_currency_pair(
-        base_currency, quote_currency, forex_file, mapping_file
-    )
-
-    # Calculate current rate and trend using the new forex calculator
-    exchange_rate, trend = get_exchange_rate_trend(
-        base_currency, quote_currency, days
-    )
-
-    if exchange_rate == 0:
-        # Try to fetch fresh data if rate not found
-        symbols = [
-            f"{base_currency}USD=X",
-            f"USD{base_currency}=X",
-            f"{quote_currency}USD=X",
-            f"USD{quote_currency}=X",
-        ]
-        get_forex_data(symbols=symbols)
-        # Try again with fresh data
-        exchange_rate, trend = get_exchange_rate_trend(
-            base_currency, quote_currency, days
-        )
-
-        if exchange_rate == 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No forex data found for {base_currency}/{quote_currency}",
-            )
-
-    # If the pair data is empty but we calculated a rate, the rate was derived from USD pairs
-    if pair_data.empty:
-        # Just return the calculated rate without history
-        return {
-            "base_currency": base_currency,
-            "quote_currency": quote_currency,
-            "current_rate": exchange_rate,
-            "trend_percentage": trend,
-            "history": [],
-            "derived": True,
+        # Format the results
+        result = {
+            "start_airport": start_airport,
+            "end_airport": end_airport,
+            "direct_routes": route_info["direct"].to_dict("records")
+            if not route_info["direct"].empty
+            else [],
+            "one_stop_routes": route_info["one_stop"].to_dict("records")
+            if not route_info["one_stop"].empty
+            else [],
+            "two_stop_routes": route_info["two_stop"].to_dict("records")
+            if not route_info["two_stop"].empty
+            else [],
         }
 
-    # Limit to requested days
-    if len(pair_data) > days:
-        pair_data = pair_data.iloc[-days:]
+        if include_details:
+            # Add airport details
+            airports_path = os.path.join(ENRICHED_DIR, "airports.parquet")
+            try:
+                airports_df = pd.read_parquet(airports_path)
 
-    return {
-        "base_currency": base_currency,
-        "quote_currency": quote_currency,
-        "current_rate": exchange_rate,
-        "trend_percentage": trend,
-        "history": pair_data.reset_index().to_dict("records")
-        if not pair_data.empty
-        else [],
-        "derived": False,
-    }
+                # Add departure airport details
+                dep_airport = airports_df[airports_df["IATA"] == start_airport]
+                if not dep_airport.empty:
+                    result["departure_details"] = dep_airport.iloc[0].to_dict()
 
+                # Add arrival airport details
+                arr_airport = airports_df[airports_df["IATA"] == end_airport]
+                if not arr_airport.empty:
+                    result["arrival_details"] = arr_airport.iloc[0].to_dict()
 
-@app.get("/debug/forex")
-def debug_forex():
-    """
-    Debug endpoint for forex data.
-    """
-    # Load forex file path
-    forex_file = os.path.join(
-        FOREX_DIR, "parquet/yahoo_finance_forex_data.parquet"
-    )
+            except Exception as e:
+                print(f"Warning: Could not load airport details: {e}")
 
-    # Check if file exists
-    file_exists = os.path.exists(forex_file)
+        return result
 
-    # Get debug info
-    debug_info = debug_forex_data()
-
-    # Get available currencies
-    currencies = list_available_currencies()
-
-    return {
-        "forex_file": forex_file,
-        "file_exists": file_exists,
-        "file_size_bytes": os.path.getsize(forex_file) if file_exists else 0,
-        "debug_info": debug_info,
-        "available_currencies": currencies,
-    }
+    except Exception as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Error finding route from {start_airport} to {end_airport}: {str(e)}",
+        )
 
 
-@app.get("/debug/currency-map")
-def debug_currency_map():
-    """
-    Debug endpoint for currency mapping data.
-    """
-    country_currency = get_country_currency_map()
-    airport_country = get_airport_country_map()
-
-    # Get sample of airport to currency mapping
-    sample_airports = list(airport_country.keys())[:20]
-    airport_currency = {}
-
-    for airport in sample_airports:
-        country = airport_country.get(airport, "")
-        currency = country_currency.get(country, "USD") if country else "USD"
-        airport_currency[airport] = {"country": country, "currency": currency}
-
-    return {
-        "country_to_currency_count": len(country_currency),
-        "airport_to_country_count": len(airport_country),
-        "sample_airport_mappings": airport_currency,
-    }
-
-
-def test_destination_recommendations(
-    departure_airport: str = "JFK", max_results: int = 10
+@app.get("/flight_fare/{departure_airport}/{arrival_airport}")
+def get_flight_fare(
+    departure_airport: str,
+    arrival_airport: str,
+    outbound_date: str = Query(
+        None, description="Departure date (YYYY-MM-DD)"
+    ),
+    return_date: str = Query(None, description="Return date (YYYY-MM-DD)"),
+    currency: str = Query("USD", description="Currency for fare prices"),
 ):
     """
-    Test function to demonstrate the integration of forex data and flight routes.
-
-    Args:
-        departure_airport: IATA code of departure airport
-        max_results: Maximum number of recommendations to return
-
-    Returns:
-        List of destination recommendations sorted by favorable exchange rates
+    Get flight fare information between two airports using SerpAPI.
     """
-    print(
-        f"Finding top {max_results} destinations from {departure_airport} based on forex rates..."
-    )
-
-    # Step 1: Update forex data to get the latest exchange rates
-    print("Checking forex data...")
     try:
-        # Instead of updating all forex data (which can lead to many 404s),
-        # we'll use the existing data and only update when needed
-        forex_file = os.path.join(
-            FOREX_DIR, "parquet/yahoo_finance_forex_data.parquet"
+        fare_data = fetch_flight_fare(
+            departure_id=departure_airport,
+            arrival_id=arrival_airport,
+            outbound_date=outbound_date,
+            return_date=return_date,
+            currency=currency,
         )
-        if not os.path.exists(forex_file):
-            print("Forex data file not found, downloading essential data...")
-            # Download only major currency pairs to avoid excessive API calls
-            major_currencies = [
-                "USD",
-                "EUR",
-                "GBP",
-                "JPY",
-                "CAD",
-                "AUD",
-                "CHF",
-            ]
-            symbols = [
-                f"{a}{b}=X"
-                for a in major_currencies
-                for b in major_currencies
-                if a != b
-            ]
-            get_forex_data(symbols=symbols)  # type: ignore
-            print("Basic forex data downloaded")
-        else:
-            print("Using existing forex data")
+
+        if not fare_data.get("success", False):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Could not fetch fare data: {fare_data.get('error', 'Unknown error')}",
+            )
+
+        return fare_data
+
     except Exception as e:
-        print(f"Warning: Error checking forex data: {e}")
-        print("Continuing with existing data...")
-
-    # Step 2: Get airport to country and country to currency mappings
-    airport_country_map = get_airport_country_map()
-    country_currency_map = get_country_currency_map()
-
-    if departure_airport not in airport_country_map:
-        print(f"Error: Airport {departure_airport} not found")
-        return None
-
-    # Step 3: Get departure country and base currency
-    departure_country = airport_country_map.get(departure_airport, "")
-    base_currency = country_currency_map.get(departure_country, "USD")
-
-    print(
-        f"Departure country: {departure_country}, Base currency: {base_currency}"
-    )
-
-    # Step 4: Find flight destinations
-    print("Finding flight destinations...")
-    destinations = find_flight_destinations(
-        departure_airport, max_results * 2, direct_only=False
-    )
-
-    # If no destinations found, try using demo data
-    if not destinations:
-        print("No destinations found, using demo data for testing purposes...")
-        destinations = get_demo_destinations(departure_airport)
-
-    use_demo_data = False
-
-    # Special handling for USD currency: only include non-USD currency destinations
-    if base_currency == "USD":
-        print(
-            "USD departure airport detected: Will only recommend destinations with different currencies"
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching flight fare: {str(e)}"
         )
-        # Filter destinations to only include those with non-USD currencies
-        non_usd_destinations = []
-        for dest in destinations:
-            country = dest["country"]
-            quote_currency = (
-                country_currency_map.get(country, "USD") if country else "USD"
-            )
-            if quote_currency != "USD":
-                non_usd_destinations.append(dest)
-                print(
-                    f"  - Including {dest['arrival_airport']} ({country}): Uses {quote_currency} currency"
-                )
-            else:
-                print(
-                    f"  - Excluding {dest['arrival_airport']} ({country}): Uses USD currency"
-                )
-
-        # If we have filtered out all destinations, use demo data as a fallback
-        if not non_usd_destinations:
-            print("No non-USD destinations found, using demo data...")
-            use_demo_data = True
-            destinations = get_demo_destinations(departure_airport)
-        else:
-            destinations = non_usd_destinations
-
-    recommendations = []
-
-    # Step 5: Process destinations
-    print("Processing destinations...")
-    for dest in destinations:
-        arrival_airport = dest["arrival_airport"]
-        country = dest["country"]
-
-        # Get currency for destination country
-        quote_currency = (
-            country_currency_map.get(country, "USD") if country else "USD"
-        )
-
-        # If we're using demo data, get the currency from the demo data
-        if use_demo_data and "currency" in dest:
-            quote_currency = dest["currency"]
-
-        # Skip if same currency as base
-        if quote_currency == base_currency:
-            print(
-                f"  - Skipping {arrival_airport} ({country}): Same currency as base ({base_currency})"
-            )
-            continue
-
-        print(
-            f"  - Processing {arrival_airport} ({country}): {base_currency}/{quote_currency}"
-        )
-
-        # Get exchange rate and trend
-        try:
-            exchange_rate, trend = get_exchange_rate_trend(
-                base_currency, quote_currency
-            )
-
-            # Skip if no exchange rate data
-            if exchange_rate == 0:
-                # Try direct Yahoo Finance symbol fetch as a last resort
-                try:
-                    symbols = [f"{base_currency}{quote_currency}=X"]
-                    get_forex_data(symbols=symbols)
-                    exchange_rate, trend = get_exchange_rate_trend(
-                        base_currency, quote_currency
-                    )
-                except Exception as e:
-                    print(f"    Error fetching direct rate: {e}")
-
-            if exchange_rate == 0:
-                print(
-                    f"    No exchange rate available for {base_currency}/{quote_currency}"
-                )
-                continue
-
-            print(f"    Rate: {exchange_rate:.4f}, Trend: {trend:.2f}%")
-
-            # Calculate destination score
-            score = calculate_destination_score(
-                exchange_rate, trend, dest["route_quality"]
-            )
-
-            recommendation = DestinationRecommendation(
-                departure_airport=departure_airport,
-                arrival_airport=arrival_airport,
-                city=dest["city"],
-                country=country,
-                exchange_rate=exchange_rate,
-                exchange_rate_trend=trend,
-                flight_route=dest["route_info"] if dest["route_info"] else {},
-                score=score,
-            )
-
-            recommendations.append(recommendation)
-        except Exception as e:
-            print(
-                f"    Error processing {base_currency}/{quote_currency}: {e}"
-            )
-            continue
-
-    # Sort by score (descending)
-    recommendations.sort(key=lambda x: x.score, reverse=True)
-    recommendations = recommendations[:max_results]
-
-    # Step 6: Print results
-    print(
-        f"\nTop {len(recommendations)} destinations from {departure_airport} based on forex rates:"
-    )
-    print(
-        f"{'Rank':<5} {'Airport':<8} {'City, Country':<25} {'Exchange Rate':<15} {'Trend %':<10} {'Score':<10}"
-    )
-    print("-" * 80)
-    for i, rec in enumerate(recommendations, 1):
-        print(
-            f"{i:<5} {rec.arrival_airport:<8} {rec.city}, {rec.country:<15} {rec.exchange_rate:<15.4f} {rec.exchange_rate_trend:<10.2f} {rec.score:<10.2f}"
-        )
-
-    # Step 7: Get detailed route info for the top recommendation
-    if recommendations:
-        top_dest = recommendations[0]
-        print(
-            f"\nDetailed route info for top recommendation: {top_dest.city}, {top_dest.country} ({top_dest.arrival_airport})"
-        )
-        route_info = get_complete_route_info(
-            departure_airport, top_dest.arrival_airport
-        )
-
-        if not route_info["direct"].empty:
-            print("\nDirect flights available:")
-            print(route_info["direct"].to_string())
-        elif not route_info["one_stop"].empty:
-            print("\nOne-stop connections available:")
-            print(route_info["one_stop"].to_string())
-        elif not route_info["two_stop"].empty:
-            print("\nTwo-stop connections available:")
-            print(route_info["two_stop"].to_string())
-
-    return recommendations
 
 
 if __name__ == "__main__":
-    # Run the test for JFK airport (New York) to demonstrate functionality
-    print("Running ChasquiForex test case...")
+    import uvicorn
 
-    # Check forex data availability first
-    print("Checking forex data availability...")
-    debug_info = debug_forex_data()
-    print(
-        f"Available currencies: {debug_info.get('available_currencies', [])}"
-    )
-    print(f"Data shape: {debug_info.get('shape', (0, 0))}")
-
-    # Can also try with other airports:
-    # LIM - Lima, Peru
-    # MEX - Mexico City, Mexico
-    # GRU - Sao Paulo, Brazil
-    # MAD - Madrid, Spain
-    test_destination_recommendations(departure_airport="JFK", max_results=10)
-
-    # To run the FastAPI server, use the command:
-    # uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000
+    # Run the FastAPI app with reload=True for development
+    print("Starting ChasquiForex API server...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

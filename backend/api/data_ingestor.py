@@ -404,6 +404,122 @@ def update_forex_data(
     )
 
 
+def fetch_forex_data_for_currencies(
+    base_currency: str, quote_currencies: List[str], days: int = 30
+) -> pd.DataFrame:
+    """
+    Dynamically fetch forex data for a specific base currency and multiple quote currencies.
+
+    Args:
+        base_currency: The base currency code (e.g., 'USD')
+        quote_currencies: List of quote currency codes (e.g., ['EUR', 'GBP', 'JPY'])
+        days: Number of days of historical data to fetch
+
+    Returns:
+        DataFrame containing forex data for the requested pairs
+    """
+    # Calculate start and end dates
+    end_date = pd.Timestamp.today().strftime("%Y-%m-%d")
+    start_date = (pd.Timestamp.today() - pd.DateOffset(days=days)).strftime(
+        "%Y-%m-%d"
+    )
+
+    # Create symbols for the direct and inverse pairs
+    symbols = []
+    for quote in quote_currencies:
+        # Skip if same as base currency
+        if quote == base_currency:
+            continue
+
+        # Add direct pair (BASE/QUOTE)
+        symbols.append(f"{base_currency}{quote}=X")
+
+        # Add inverse pair (QUOTE/BASE) for cross-rate calculation if needed
+        symbols.append(f"{quote}{base_currency}=X")
+
+    # For cross-rates calculation, ensure we have USD pairs when base is not USD
+    if base_currency != "USD":
+        symbols.append(f"{base_currency}USD=X")
+        symbols.append(f"USD{base_currency}=X")
+
+    # For each quote currency, ensure we have USD pairs when quote is not USD
+    for quote in quote_currencies:
+        if quote != "USD" and quote != base_currency:
+            symbols.append(f"{quote}USD=X")
+            symbols.append(f"USD{quote}=X")
+
+    # Remove duplicates while preserving order
+    unique_symbols = []
+    seen = set()
+    for symbol in symbols:
+        if symbol not in seen:
+            seen.add(symbol)
+            unique_symbols.append(symbol)
+
+    logger.info(
+        f"Fetching {len(unique_symbols)} forex pairs for {base_currency} against {quote_currencies}"
+    )
+
+    try:
+        # Use the existing function to fetch data
+        df = fetch_data_parallel(unique_symbols, start_date, end_date)
+        processed_df = process_data(df)
+
+        # Save to temporary files with timestamp to avoid overwriting the main files
+        timestamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
+        temp_parquet = os.path.join(
+            PARQUET_DIR, f"temp_forex_{timestamp}.parquet"
+        )
+        temp_mapping = os.path.join(
+            JSON_DIR, f"temp_forex_mappings_{timestamp}.json"
+        )
+
+        save_data_parquet(processed_df, temp_parquet, temp_mapping)
+
+        return processed_df
+    except Exception as e:
+        logger.error(f"Error fetching forex data for {base_currency}: {e}")
+        # Return empty DataFrame on error
+        return pd.DataFrame()
+
+
+def fetch_forex_data_for_currencies(
+    base_currency: str, quote_currencies: List[str]
+) -> pd.DataFrame:
+    """
+    Fetch forex data for specific currency pairs.
+
+    Args:
+        base_currency: Base currency code
+        quote_currencies: List of quote currency codes
+
+    Returns:
+        DataFrame containing forex data for the specified currency pairs
+    """
+    # Generate symbols for each currency pair
+    symbols = []
+    for quote_currency in quote_currencies:
+        if base_currency != quote_currency:
+            symbols.append(f"{base_currency}{quote_currency}=X")
+            symbols.append(
+                f"{quote_currency}{base_currency}=X"
+            )  # Add reverse pair too
+
+    # Call the existing function with specific symbols
+    result = get_forex_data(symbols=symbols)
+
+    # Return data from the result if successful
+    if result.get("success", False) and "data" in result:
+        return result["data"]
+
+    # If not successful, try to load existing data
+    forex_file = os.path.join(PARQUET_DIR, "yahoo_finance_forex_data.parquet")
+    if os.path.exists(forex_file):
+        return pd.read_parquet(forex_file)
+
+    return pd.DataFrame()
+
+
 if __name__ == "__main__":
     test_pairs = forex_pairs_list[:10]
     data = get_forex_data(

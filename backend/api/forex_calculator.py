@@ -429,11 +429,26 @@ def get_exchange_rate_with_trend(
     if base_currency == quote_currency:
         return 1.0, 0.0
 
+    # Add debug logging to help diagnose issues
+    logger.info(
+        f"Calculating exchange rate for {base_currency}/{quote_currency}"
+    )
+
     # Load forex data
     df = load_forex_data()
 
     # Calculate exchange rate
     rate, is_direct = calculate_cross_rate(base_currency, quote_currency, df)
+
+    # Log if rate was found
+    if rate > 0:
+        logger.info(
+            f"Found rate for {base_currency}/{quote_currency}: {rate} (direct: {is_direct})"
+        )
+    else:
+        logger.warning(
+            f"No rate available for {base_currency}/{quote_currency}"
+        )
 
     # Calculate trend
     trend_pct = calculate_trend(base_currency, quote_currency, days, df)
