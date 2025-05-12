@@ -398,19 +398,56 @@ def fetch_fares_for_destinations(
     Returns:
         Dictionary mapping arrival airports to fare data
     """
+    from backend.api.ticket_fare_fetcher import fetch_multiple_fares
+    import time
+
     # Extract arrival airport codes
     arrival_airports = [dest["arrival_airport"] for dest in destinations]
 
-    # Fetch fares for all destinations
-    fares = fetch_multiple_fares(
-        departure_id=departure_airport,
-        arrival_ids=arrival_airports[
-            :10
-        ],  # Limit to top 10 to avoid API rate limits
-        currency=currency,
+    # Limit to top 10 to avoid API rate limits and reduce processing time
+    arrival_airports = arrival_airports[:10]
+
+    # Set timeout handling and batch processing
+    max_batch_size = 5
+    timeout_sec = (
+        25  # Set a timeout that's slightly shorter than the frontend timeout
     )
 
-    return fares
+    results = {}
+
+    try:
+        # Process in smaller batches to avoid timeouts
+        for i in range(0, len(arrival_airports), max_batch_size):
+            batch = arrival_airports[i : i + max_batch_size]
+            print(
+                f"Fetching fares for batch {i // max_batch_size + 1}: {batch}"
+            )
+
+            # Calculate remaining time
+            start_time = time.time()
+
+            # Fetch this batch with concurrent execution
+            batch_results = fetch_multiple_fares(
+                departure_id=departure_airport,
+                arrival_ids=batch,
+                currency=currency,
+                max_concurrent=3,  # Limit concurrent API calls
+            )
+
+            # Add batch results to our overall results
+            results.update(batch_results)
+
+            # Check if we're approaching timeout
+            elapsed = time.time() - start_time
+            if elapsed > timeout_sec * 0.8:  # If we've used 80% of our timeout
+                print("Approaching timeout, returning partial results")
+                break
+
+    except Exception as e:
+        print(f"Error in fare fetching: {e}")
+        # Continue with partial results
+
+    return results
 
 
 def fetch_realtime_forex_data(

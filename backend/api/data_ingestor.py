@@ -154,6 +154,10 @@ def fetch_data_parallel(
         fetch_symbol_data, start_date=start_date, end_date=end_date
     )
 
+    # Ensure num_workers is at least 1
+    if max_workers is not None and max_workers < 1:
+        max_workers = 1
+
     num_workers = (
         max_workers if max_workers else min(mp.cpu_count(), len(symbols))
     )

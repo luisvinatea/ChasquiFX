@@ -56,7 +56,7 @@ fi
 # Activate virtual environment
 print_message "yellow" "Activating virtual environment..."
 # shellcheck source=.ChasquiFX/bin/activate
-source .ChasquiFX/bin/activate
+source .chasquifx/bin/activate
 if [ $? -ne 0 ]; then
     print_message "red" "✗ Failed to activate virtual environment."
     exit 1
@@ -74,7 +74,7 @@ if [ -f "requirements.txt" ]; then
     print_message "green" "✓ Dependencies installed successfully."
 else
     print_message "yellow" "No requirements.txt found. Installing core dependencies..."
-    pip install fastapi uvicorn pandas streamlit plotly folium streamlit-folium
+    pip install fastapi uvicorn pandas streamlit plotly folium streamlit-folium serpapi google-search-results python-dotenv
     if [ $? -ne 0 ]; then
         print_message "red" "✗ Failed to install core dependencies."
         exit 1
@@ -88,8 +88,8 @@ mkdir -p logs frontend/assets backend/assets/data/{forex,geo}/{json,parquet}
 
 # Make scripts executable
 print_message "yellow" "Making launcher scripts executable..."
-chmod +x run_ChasquiFX.sh stop_ChasquiFX.sh status_ChasquiFX.sh
-
+chmod +x run_chasquifx.sh stop_chasquifx.sh status_chasquifx.sh
+chmod +x ChasquiFX.desktop
 # Create desktop shortcut
 print_message "yellow" "Setting up desktop shortcut..."
 if [ -d "$HOME/.local/share/applications" ]; then

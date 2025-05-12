@@ -139,7 +139,9 @@ def get_recommendations(
             f"Fetching recommendations for {departure_airport} with params: {params}"
         )
         with st.spinner("Fetching data from API..."):
-            response = requests.get(url, params=params, timeout=15)
+            response = requests.get(
+                url, params=params, timeout=30
+            )  # Increased timeout from 15 to 30 seconds
 
         if response.status_code == 200:
             data = response.json()

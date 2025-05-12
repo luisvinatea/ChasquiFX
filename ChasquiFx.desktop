@@ -4,6 +4,6 @@ Type=Application
 Name=ChasquiFX Explorer
 Comment=Flight and Forex Recommendations
 Exec=bash -c 'cd /home/luisvinatea/DEVinatea/Repos/ChasquiFX && ./run_ChasquiFX.sh'
-Icon=/home/luisvinatea/DEVinatea/Repos/ChasquiFX/frontend/assets/icon.png
+Icon=frontend/assets/ChasquiFX.png
 Terminal=true
 Categories=Finance;Travel;

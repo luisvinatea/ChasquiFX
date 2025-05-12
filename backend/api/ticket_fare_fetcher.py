@@ -132,21 +132,60 @@ def get_best_fare(results: Dict[str, Any]) -> Dict[str, Any]:
         # If no best_flights, try other locations in the response
         if "flights" in results and results["flights"]:
             first_flight = results["flights"][0]
-            return {
-                "price": first_flight.get("price", 0),
-                "currency": results.get("query", {}).get("currency", "USD"),
-                "departure_id": results.get("query", {}).get(
-                    "departure_id", ""
-                ),
-                "arrival_id": results.get("query", {}).get("arrival_id", ""),
-                "outbound_date": results.get("query", {}).get(
-                    "outbound_date", ""
-                ),
-                "return_date": results.get("query", {}).get("return_date", ""),
-                "airlines": first_flight.get("airlines", []),
-                "duration": first_flight.get("duration", ""),
-                "success": True,
-            }
+
+            # Handle the case when first_flight is a list or dictionary
+            if isinstance(first_flight, dict):
+                return {
+                    "price": first_flight.get("price", 0),
+                    "currency": results.get("query", {}).get(
+                        "currency", "USD"
+                    ),
+                    "departure_id": results.get("query", {}).get(
+                        "departure_id", ""
+                    ),
+                    "arrival_id": results.get("query", {}).get(
+                        "arrival_id", ""
+                    ),
+                    "outbound_date": results.get("query", {}).get(
+                        "outbound_date", ""
+                    ),
+                    "return_date": results.get("query", {}).get(
+                        "return_date", ""
+                    ),
+                    "airlines": first_flight.get("airlines", []),
+                    "duration": first_flight.get("duration", ""),
+                    "success": True,
+                }
+            elif isinstance(first_flight, list) and first_flight:
+                # If first_flight is a list, try to use the first element
+                flight_data = (
+                    first_flight[0]
+                    if isinstance(first_flight[0], dict)
+                    else {}
+                )
+                return {
+                    "price": flight_data.get("price", 0),
+                    "currency": results.get("query", {}).get(
+                        "currency", "USD"
+                    ),
+                    "departure_id": results.get("query", {}).get(
+                        "departure_id", ""
+                    ),
+                    "arrival_id": results.get("query", {}).get(
+                        "arrival_id", ""
+                    ),
+                    "outbound_date": results.get("query", {}).get(
+                        "outbound_date", ""
+                    ),
+                    "return_date": results.get("query", {}).get(
+                        "return_date", ""
+                    ),
+                    "airlines": flight_data.get("airlines", []),
+                    "duration": flight_data.get("duration", ""),
+                    "success": True,
+                }
+            else:
+                return {}
 
         return {}
 
@@ -161,9 +200,10 @@ def fetch_multiple_fares(
     outbound_date: Optional[str] = None,
     return_date: Optional[str] = None,
     currency: str = "USD",
+    max_concurrent: int = 3,  # Limit concurrent requests to avoid overwhelming the API
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Fetch flight fares for multiple destinations.
+    Fetch flight fares for multiple destinations using concurrent execution.
 
     Args:
         departure_id: IATA code of departure airport
@@ -171,26 +211,54 @@ def fetch_multiple_fares(
         outbound_date: Departure date (YYYY-MM-DD)
         return_date: Return date (YYYY-MM-DD)
         currency: Currency code
+        max_concurrent: Maximum number of concurrent API requests
 
     Returns:
         Dictionary mapping destination airports to fare information
     """
+    import concurrent.futures
+
     results = {}
 
-    for arrival_id in arrival_ids:
-        fare_data = fetch_flight_fare(
-            departure_id=departure_id,
-            arrival_id=arrival_id,
-            outbound_date=outbound_date,
-            return_date=return_date,
-            currency=currency,
-        )
+    # Function to fetch and process a single fare
+    def fetch_and_process_fare(arrival_id):
+        try:
+            fare_data = fetch_flight_fare(
+                departure_id=departure_id,
+                arrival_id=arrival_id,
+                outbound_date=outbound_date,
+                return_date=return_date,
+                currency=currency,
+            )
 
-        # Extract best fare
-        best_fare = get_best_fare(fare_data)
+            # Extract best fare
+            best_fare = get_best_fare(fare_data)
+            return arrival_id, best_fare if best_fare else {"success": False}
+        except Exception as e:
+            logger.error(f"Error fetching fare for {arrival_id}: {str(e)}")
+            return arrival_id, {"success": False, "error": str(e)}
 
-        # Store in results dictionary
-        results[arrival_id] = best_fare if best_fare else {"success": False}
+    # Use ThreadPoolExecutor for concurrent execution
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=max_concurrent
+    ) as executor:
+        # Submit all tasks
+        future_to_airport = {
+            executor.submit(fetch_and_process_fare, arrival_id): arrival_id
+            for arrival_id in arrival_ids
+        }
+
+        # Process results as they complete
+        for future in concurrent.futures.as_completed(future_to_airport):
+            try:
+                arrival_id, fare_data = future.result()
+                results[arrival_id] = fare_data
+            except Exception as e:
+                arrival_id = future_to_airport[future]
+                logger.error(
+                    f"Failed to process fare for {arrival_id}: {str(e)}"
+                )
+                results[arrival_id] = {"success": False, "error": str(e)}
 
     return results
 
