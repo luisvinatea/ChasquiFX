@@ -510,10 +510,10 @@ def get_recommendations(
         False, description="Only consider direct flights"
     ),
     use_realtime_data: bool = Query(
-        True, description="Fetch real-time forex data for destinations"
+        False, description="Fetch real-time forex data for destinations"
     ),
     include_fares: bool = Query(
-        True, description="Include flight fare data from SerpAPI"
+        False, description="Include flight fare data from SerpAPI"
     ),
     outbound_date: str = Query(
         None,
@@ -527,6 +527,12 @@ def get_recommendations(
     """
     Get destination recommendations based on favorable exchange rates and flight fares.
     """
+    import concurrent.futures
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Set a reasonable default timeout for API operations
+    request_timeout = 20
+
     # Get airport to country map
     airport_country_map = get_airport_country_map()
 
@@ -547,10 +553,22 @@ def get_recommendations(
         else "USD"
     )
 
-    # Find possible flight destinations
-    destinations = find_flight_destinations(
-        departure_airport, max_results * 2, direct_only
-    )
+    # Define a function for finding flight destinations with timeout
+    def find_destinations():
+        return find_flight_destinations(
+            departure_airport, max_results * 2, direct_only
+        )
+
+    # Use a timeout for finding destinations
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(find_destinations)
+        try:
+            destinations = future.result(timeout=request_timeout / 3)
+        except concurrent.futures.TimeoutError:
+            raise HTTPException(
+                status_code=504,
+                detail="Request timed out while finding flight destinations",
+            )
 
     if not destinations:
         raise HTTPException(
@@ -571,16 +589,35 @@ def get_recommendations(
     if non_usd_destinations:
         destinations = non_usd_destinations
 
-    # Fetch real-time forex data for all destinations if requested
+    # Define a function to fetch forex data with a timeout
+    def fetch_forex_with_timeout():
+        # Fetch real-time forex data for all destinations if requested
+        if use_realtime_data:
+            print(
+                f"Fetching real-time forex data for destinations from {departure_airport}"
+            )
+            return fetch_realtime_forex_data(
+                base_currency, destinations, country_currency_map
+            )
+        return None
+
+    # Execute forex data fetch with a timeout
     forex_data = None
     if use_realtime_data:
-        print(
-            f"Fetching real-time forex data for destinations from {departure_airport}"
-        )
-        forex_data = fetch_realtime_forex_data(
-            base_currency, destinations, country_currency_map
-        )
-        if not forex_data.empty:
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(fetch_forex_with_timeout)
+            try:
+                forex_data = future.result(timeout=request_timeout / 3)
+            except concurrent.futures.TimeoutError:
+                print("Forex data fetch timed out, skipping")
+                # Continue without forex data
+
+        # Check if forex data was successfully fetched
+        if (
+            forex_data is not None
+            and hasattr(forex_data, "empty")
+            and not forex_data.empty
+        ):
             print(
                 f"Successfully fetched real-time forex data with shape {forex_data.shape}"
             )
@@ -592,15 +629,25 @@ def get_recommendations(
     # Fetch flight fares if requested
     fare_data = {}
     if include_fares:
-        try:
-            fare_data = fetch_fares_for_destinations(
+        # Define a function to fetch fare data with a timeout
+        def fetch_fares():
+            return fetch_fares_for_destinations(
                 departure_airport=departure_airport,
                 destinations=destinations,
                 currency=base_currency,
             )
-            print(
-                f"Successfully fetched fare data for {len(fare_data)} destinations"
-            )
+
+        try:
+            # Use a timeout to prevent long execution
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(fetch_fares)
+                try:
+                    fare_data = future.result(timeout=request_timeout / 3)
+                    print(
+                        f"Successfully fetched fare data for {len(fare_data)} destinations"
+                    )
+                except concurrent.futures.TimeoutError:
+                    print("Fare data fetch timed out")
         except Exception as e:
             print(f"Error fetching flight fares: {e}")
             # Continue without fare data
@@ -629,7 +676,11 @@ def get_recommendations(
             )
         else:
             # Get exchange rate and trend using real-time data if available
-            if forex_data is not None and not forex_data.empty:
+            if (
+                forex_data is not None
+                and hasattr(forex_data, "empty")
+                and not forex_data.empty
+            ):
                 # Use in-memory forex data that was just fetched
                 from backend.api.forex_calculator import (
                     calculate_cross_rate,

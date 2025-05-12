@@ -195,26 +195,35 @@ def enrich_route_data(
             "Departure-Region",
             "Departure-Continent",
         ]:
-            if col not in row:
+            if col not in enriched_df.columns:
                 # Add the column to the dataframe
                 enriched_df[col] = ""
 
+        # Create a new dict to store the values
+        updates = {}
+
         if dep_iata in airport_dict:
             airport = airport_dict[dep_iata]
-            row["Departure-Airport-Name"] = airport.get("name", "")
-            row["Departure-City"] = airport.get("city", "")
-            row["Departure-Country"] = airport.get("country", "")
-            row["Departure-Latitude"] = airport.get("latitude", 0.0)
-            row["Departure-Longitude"] = airport.get("longitude", 0.0)
+            updates["Departure-Airport-Name"] = airport.get("name", "")
+            updates["Departure-City"] = airport.get("city", "")
+            updates["Departure-Country"] = airport.get("country", "")
+            updates["Departure-Latitude"] = airport.get("latitude", 0.0)
+            updates["Departure-Longitude"] = airport.get("longitude", 0.0)
 
             # Add country details
-            country = row["Departure-Country"]
+            country = airport.get("country", "")
             if country in country_dict:
                 country_info = country_dict[country]
-                row["Departure-Country-Code"] = country_info.get("code", "")
-                row["Departure-Region"] = country_info.get("region", "")
-                row["Departure-Continent"] = country_info.get("continent", "")
-        return row
+                updates["Departure-Country-Code"] = country_info.get(
+                    "code", ""
+                )
+                updates["Departure-Region"] = country_info.get("region", "")
+                updates["Departure-Continent"] = country_info.get(
+                    "continent", ""
+                )
+
+        # Return both the original row and the updates
+        return updates
 
     # Add arrival airport details
     def add_arrival_details(row):
@@ -230,26 +239,31 @@ def enrich_route_data(
             "Arrival-Region",
             "Arrival-Continent",
         ]:
-            if col not in row:
+            if col not in enriched_df.columns:
                 # Add the column to the dataframe
                 enriched_df[col] = ""
 
+        # Create a new dict to store the updates
+        updates = {}
+
         if arr_iata in airport_dict:
             airport = airport_dict[arr_iata]
-            row["Arrival-Airport-Name"] = airport.get("name", "")
-            row["Arrival-City"] = airport.get("city", "")
-            row["Arrival-Country"] = airport.get("country", "")
-            row["Arrival-Latitude"] = airport.get("latitude", 0.0)
-            row["Arrival-Longitude"] = airport.get("longitude", 0.0)
+            updates["Arrival-Airport-Name"] = airport.get("name", "")
+            updates["Arrival-City"] = airport.get("city", "")
+            updates["Arrival-Country"] = airport.get("country", "")
+            updates["Arrival-Latitude"] = airport.get("latitude", 0.0)
+            updates["Arrival-Longitude"] = airport.get("longitude", 0.0)
 
             # Add country details
-            country = row["Arrival-Country"]
+            country = airport.get("country", "")
             if country in country_dict:
                 country_info = country_dict[country]
-                row["Arrival-Country-Code"] = country_info.get("code", "")
-                row["Arrival-Region"] = country_info.get("region", "")
-                row["Arrival-Continent"] = country_info.get("continent", "")
-        return row
+                updates["Arrival-Country-Code"] = country_info.get("code", "")
+                updates["Arrival-Region"] = country_info.get("region", "")
+                updates["Arrival-Continent"] = country_info.get(
+                    "continent", ""
+                )
+        return updates
 
     # Add airline details
     def add_airline_details(row):
@@ -263,27 +277,28 @@ def enrich_route_data(
             "Airline-Active",
             "Route",
         ]:
-            if col not in row:
+            if col not in enriched_df.columns:
                 # Add the column to the dataframe
                 enriched_df[col] = ""
+
+        updates = {}
 
         airline_id = row.get("AirlineID")
         if airline_id and str(airline_id) in airline_dict:
             airline = airline_dict[str(airline_id)]
-            row["Airline-Name"] = airline.get("name", "")
-            row["Airline-IATA"] = airline.get("iata", "")
-            row["Airline-ICAO"] = airline.get("icao", "")
-            row["Airline-Callsign"] = airline.get("callsign", "")
-            row["Airline-Country"] = airline.get("country", "")
-            row["Airline-Active"] = airline.get("active", False)
+            updates["Airline-Name"] = airline.get("name", "")
+            updates["Airline-IATA"] = airline.get("iata", "")
+            updates["Airline-ICAO"] = airline.get("icao", "")
+            updates["Airline-Callsign"] = airline.get("callsign", "")
+            updates["Airline-Country"] = airline.get("country", "")
+            updates["Airline-Active"] = airline.get("active", False)
 
         # Ensure Route field exists for routes_index
-        if "Route" not in row:
-            row["Route"] = (
-                f"{row.get('Departure-IATA', '')}-{row.get('Arrival-IATA', '')}"
-            )
+        updates["Route"] = (
+            f"{row.get('Departure-IATA', '')}-{row.get('Arrival-IATA', '')}"
+        )
 
-        return row
+        return updates
 
     # Process in chunks for memory efficiency
     chunk_size = 5000
@@ -291,10 +306,28 @@ def enrich_route_data(
 
     for i in range(0, len(enriched_df), chunk_size):
         chunk = enriched_df.iloc[i : i + chunk_size].copy()
-        # Apply transformations
-        chunk = chunk.apply(add_departure_details, axis=1)
-        chunk = chunk.apply(add_arrival_details, axis=1)
-        chunk = chunk.apply(add_airline_details, axis=1)
+
+        # Apply transformations - get updates for each row for departure details
+        departure_updates = chunk.apply(add_departure_details, axis=1)
+        for idx, updates in departure_updates.items():
+            if updates:  # Only update if there are values
+                for col, value in updates.items():
+                    chunk.at[idx, col] = value
+
+        # Apply transformations - get updates for each row for arrival details
+        arrival_updates = chunk.apply(add_arrival_details, axis=1)
+        for idx, updates in arrival_updates.items():
+            if updates:  # Only update if there are values
+                for col, value in updates.items():
+                    chunk.at[idx, col] = value
+
+        # Apply transformations - get updates for each row for airline details
+        airline_updates = chunk.apply(add_airline_details, axis=1)
+        for idx, updates in airline_updates.items():
+            if updates:  # Only update if there are values
+                for col, value in updates.items():
+                    chunk.at[idx, col] = value
+
         result_chunks.append(chunk)
 
     # Combine chunks
