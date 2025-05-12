@@ -1,6 +1,6 @@
 """
-ChasquiForex Streamlit Demo
-A sophisticated interface for the ChasquiForex API with enhanced user experience
+ChasquiFX Streamlit Demo
+A sophisticated interface for the ChasquiFX API with enhanced user experience
 """
 
 import streamlit as st
@@ -34,14 +34,14 @@ API_BASE_URL = "http://localhost:8000"
 
 # Page configuration
 st.set_page_config(
-    page_title="ChasquiForex Explorer",
+    page_title="ChasquiFX Explorer",
     page_icon="✈️",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        "Get Help": "https://github.com/username/ChasquiForex",
-        "Report a bug": "https://github.com/username/ChasquiForex/issues",
-        "About": "ChasquiForex - Find destinations with favorable exchange rates",
+        "Get Help": "https://github.com/username/ChasquiFX",
+        "Report a bug": "https://github.com/username/ChasquiFX/issues",
+        "About": "ChasquiFX - Find destinations with favorable exchange rates",
     },
 )
 
@@ -219,7 +219,7 @@ if "favorites" not in st.session_state:
     st.session_state.favorites = []
 
 # Main app
-st.title("ChasquiForex Explorer")
+st.title("ChasquiFX Explorer")
 st.write(
     "Find destinations with favorable exchange rates from your departure airport"
 )
@@ -330,7 +330,7 @@ if search_button:
         )
         with st.expander("How to start the API server"):
             st.code(
-                "cd /home/luisvinatea/DEVinatea/Repos/ChasquiForex\npython backend/api/main.py",
+                "cd /home/luisvinatea/DEVinatea/Repos/ChasquiFX\npython backend/api/main.py",
                 language="bash",
             )
             st.info(
@@ -426,7 +426,7 @@ if search_button:
                     export_col2.download_button(
                         label="📥 CSV",
                         data=csv_data,
-                        file_name=f"chasquiforex_{departure_airport}_{datetime.now().strftime('%Y%m%d')}.csv",
+                        file_name=f"ChasquiFX_{departure_airport}_{datetime.now().strftime('%Y%m%d')}.csv",
                         mime="text/csv",
                     )
 
@@ -730,13 +730,13 @@ if search_button:
 # Default instructions (shown on initial load)
 else:
     st.markdown("""
-    # Welcome to ChasquiForex Explorer! ✈️ 💱
+    # Welcome to ChasquiFX Explorer! ✈️ 💱
     
     Find destinations with favorable exchange rates for your next trip!
     
     ## How it works
     
-    ChasquiForex analyzes both **foreign exchange rates** and **available flight routes** 
+    ChasquiFX analyzes both **foreign exchange rates** and **available flight routes** 
     to recommend destinations where your money will go further.
     
     ### API Status
@@ -759,7 +759,7 @@ else:
         st.error("❌ API server is not running")
         with st.expander("How to start the API server"):
             st.code(
-                "cd /home/luisvinatea/DEVinatea/Repos/ChasquiForex\npython backend/api/main.py",
+                "cd /home/luisvinatea/DEVinatea/Repos/ChasquiFX\npython backend/api/main.py",
                 language="bash",
             )
             st.warning(
@@ -800,9 +800,9 @@ else:
 
 # Footer
 st.sidebar.markdown("---")
-with st.sidebar.expander("About ChasquiForex"):
+with st.sidebar.expander("About ChasquiFX"):
     st.markdown("""
-    **ChasquiForex** combines real-time forex data with flight route information to recommend 
+    **ChasquiFX** combines real-time forex data with flight route information to recommend 
     destinations with favorable exchange rates.
     
     The name "Chasqui" refers to the messengers of the Inca Empire, who carried information 
@@ -812,5 +812,5 @@ with st.sidebar.expander("About ChasquiForex"):
     * **Documentation**: [API Docs](http://localhost:8000/docs)
     """)
 
-st.sidebar.caption("© 2025 ChasquiForex")
+st.sidebar.caption("© 2025 ChasquiFX")
 st.sidebar.caption("Built with Streamlit and FastAPI")

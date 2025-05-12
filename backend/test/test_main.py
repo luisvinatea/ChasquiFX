@@ -105,7 +105,7 @@ class TestMain(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.json(), {"message": "Welcome to ChasquiForex API"}
+            response.json(), {"message": "Welcome to ChasquiFX API"}
         )
 
     @patch("api.main.get_airport_country_map")

@@ -40,7 +40,7 @@ from backend.api.ticket_fare_fetcher import (
 
 # Initialize FastAPI
 app = FastAPI(
-    title="ChasquiForex API",
+    title="ChasquiFX API",
     description="API for flight and forex recommendations",
     version="1.0.0",
 )
@@ -451,7 +451,7 @@ def fetch_realtime_forex_data(
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to ChasquiForex API"}
+    return {"message": "Welcome to ChasquiFX API"}
 
 
 @app.get("/recommendations", response_model=RecommendationsResponse)
@@ -766,5 +766,5 @@ if __name__ == "__main__":
     import uvicorn
 
     # Run the FastAPI app with reload=True for development
-    print("Starting ChasquiForex API server...")
+    print("Starting ChasquiFX API server...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,16 @@
+fastapi==0.110.0
+uvicorn==0.29.0
+pandas==2.2.0
+numpy==1.26.0
+plotly==5.21.0
+folium==0.15.0 
+streamlit==1.45.0
+streamlit-folium==0.15.0
+requests==2.31.0
+yfinance==0.2.36
+pydantic==2.6.0
+python-dateutil==2.9.0
+pytz==2024.1
+setuptools==68.2.2
+wheel==0.42.0
+pytest==8.0.0
