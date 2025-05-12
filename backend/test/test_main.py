@@ -127,10 +127,12 @@ class TestMain(unittest.TestCase):
     @patch("api.main.get_currency_pair")
     def test_get_exchange_rate_trend(self, mock_get_pair):
         # Create mock forex data with a trend
-        mock_data = pd.DataFrame({
-            "Date": pd.date_range(start="2025-01-01", periods=10),
-            "Close": [4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4],
-        })
+        mock_data = pd.DataFrame(
+            {
+                "Date": pd.date_range(start="2025-01-01", periods=10),
+                "Close": [4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4],
+            }
+        )
         mock_get_pair.return_value = mock_data
 
         rate, trend = get_exchange_rate_trend("USD", "BRL", days=7)
@@ -229,10 +231,12 @@ class TestMain(unittest.TestCase):
     @patch("api.main.get_currency_pair")
     def test_get_forex(self, mock_get_pair):
         # Create mock forex data
-        mock_data = pd.DataFrame({
-            "Date": pd.date_range(start="2025-01-01", periods=10),
-            "Close": [4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4],
-        })
+        mock_data = pd.DataFrame(
+            {
+                "Date": pd.date_range(start="2025-01-01", periods=10),
+                "Close": [4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4],
+            }
+        )
         mock_get_pair.return_value = mock_data
 
         with patch("api.main.get_exchange_rate_trend") as mock_trend:

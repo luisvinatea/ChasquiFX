@@ -20,6 +20,7 @@ sys.path.insert(
 )
 
 # Import from other modules
+import backend.api.mapper as mapper
 from backend.api.data_ingestor import (
     get_forex_data,
     get_currency_pair,
@@ -39,12 +40,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Define data directories
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "assets/data")
+# Define data directories with absolute paths
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+DATA_DIR = os.path.join(BASE_DIR, "backend/assets/data")
 FOREX_DIR = os.path.join(DATA_DIR, "forex")
 GEO_DIR = os.path.join(DATA_DIR, "geo")
 ENRICHED_DIR = os.path.join(GEO_DIR, "enriched")
+
+# Override mapper module paths with absolute paths
+mapper.DATA_DIR = GEO_DIR
+mapper.JSON_DIR = os.path.join(GEO_DIR, "json")
+mapper.PARQUET_DIR = os.path.join(GEO_DIR, "parquet")
+mapper.OUTPUT_DIR = ENRICHED_DIR
 
 # Ensure directories exist
 os.makedirs(ENRICHED_DIR, exist_ok=True)
@@ -358,11 +365,75 @@ def get_demo_destinations(departure_airport: str) -> List[Dict[str, Any]]:
             "country": "ZA",
             "currency": "ZAR",
         },
+        {
+            "iata": "GRU",
+            "city": "Sao Paulo",
+            "country": "BR",
+            "currency": "BRL",
+        },
+        {
+            "iata": "DEL",
+            "city": "New Delhi",
+            "country": "IN",
+            "currency": "INR",
+        },
+        {
+            "iata": "IST",
+            "city": "Istanbul",
+            "country": "TR",
+            "currency": "TRY",
+        },
+        {"iata": "BKK", "city": "Bangkok", "country": "TH", "currency": "THB"},
+        {
+            "iata": "AKL",
+            "city": "Auckland",
+            "country": "NZ",
+            "currency": "NZD",
+        },
+        {
+            "iata": "SGN",
+            "city": "Ho Chi Minh City",
+            "country": "VN",
+            "currency": "VND",
+        },
+        {
+            "iata": "CPT",
+            "city": "Cape Town",
+            "country": "ZA",
+            "currency": "ZAR",
+        },
+        {
+            "iata": "KUL",
+            "city": "Kuala Lumpur",
+            "country": "MY",
+            "currency": "MYR",
+        },
+        {"iata": "MNL", "city": "Manila", "country": "PH", "currency": "PHP"},
+        {"iata": "BOG", "city": "Bogotá", "country": "CO", "currency": "COP"},
     ]
+
+    # Get country currency map for filtering
+    airport_country_map = get_airport_country_map()
+    country_currency_map = get_country_currency_map()
+
+    # Determine base currency
+    departure_country = airport_country_map.get(departure_airport, "US")
+    base_currency = country_currency_map.get(departure_country, "USD")
+
+    # Filter out destinations that use the same currency
+    filtered_data = [d for d in demo_data if d["currency"] != base_currency]
+
+    # If we filtered everything, just use original list
+    if not filtered_data:
+        filtered_data = demo_data
+
+    print(
+        f"Generated {len(filtered_data)} demo destinations with currencies different from {base_currency}"
+    )
 
     results = []
 
-    for dest in demo_data:
+    for dest in filtered_data:
         # Create a demo route info structure
         route_info = {
             "Departure-IATA": departure_airport,
@@ -377,6 +448,7 @@ def get_demo_destinations(departure_airport: str) -> List[Dict[str, Any]]:
             "arrival_airport": dest["iata"],
             "country": dest["country"],
             "city": dest["city"],
+            "currency": dest["currency"],  # Include the currency in the result
             "route_info": route_info,
             "route_quality": 1.0,  # Direct flight quality
         }
@@ -432,9 +504,29 @@ def get_recommendations(
     )
 
     if not destinations:
-        raise HTTPException(
-            status_code=404, detail=f"No routes found from {departure_airport}"
-        )
+        # Try demo destinations as a fallback
+        destinations = get_demo_destinations(departure_airport)
+        if not destinations:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No routes found from {departure_airport}",
+            )
+
+    # For USD currency departures, prioritize non-USD currency destinations
+    if base_currency == "USD":
+        # Filter destinations to only include those with non-USD currencies
+        non_usd_destinations = []
+        for dest in destinations:
+            country = dest["country"]
+            quote_currency = (
+                country_currency_map.get(country, "USD") if country else "USD"
+            )
+            if quote_currency != "USD":
+                non_usd_destinations.append(dest)
+
+        # If we found non-USD destinations, use those instead
+        if non_usd_destinations:
+            destinations = non_usd_destinations
 
     recommendations = []
 
@@ -725,6 +817,38 @@ def test_destination_recommendations(
         print("No destinations found, using demo data for testing purposes...")
         destinations = get_demo_destinations(departure_airport)
 
+    use_demo_data = False
+
+    # Special handling for USD currency: only include non-USD currency destinations
+    if base_currency == "USD":
+        print(
+            "USD departure airport detected: Will only recommend destinations with different currencies"
+        )
+        # Filter destinations to only include those with non-USD currencies
+        non_usd_destinations = []
+        for dest in destinations:
+            country = dest["country"]
+            quote_currency = (
+                country_currency_map.get(country, "USD") if country else "USD"
+            )
+            if quote_currency != "USD":
+                non_usd_destinations.append(dest)
+                print(
+                    f"  - Including {dest['arrival_airport']} ({country}): Uses {quote_currency} currency"
+                )
+            else:
+                print(
+                    f"  - Excluding {dest['arrival_airport']} ({country}): Uses USD currency"
+                )
+
+        # If we have filtered out all destinations, use demo data as a fallback
+        if not non_usd_destinations:
+            print("No non-USD destinations found, using demo data...")
+            use_demo_data = True
+            destinations = get_demo_destinations(departure_airport)
+        else:
+            destinations = non_usd_destinations
+
     recommendations = []
 
     # Step 5: Process destinations
@@ -737,6 +861,10 @@ def test_destination_recommendations(
         quote_currency = (
             country_currency_map.get(country, "USD") if country else "USD"
         )
+
+        # If we're using demo data, get the currency from the demo data
+        if use_demo_data and "currency" in dest:
+            quote_currency = dest["currency"]
 
         # Skip if same currency as base
         if quote_currency == base_currency:

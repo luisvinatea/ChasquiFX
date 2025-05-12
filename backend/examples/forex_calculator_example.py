@@ -80,7 +80,9 @@ def main():
             if rate > 0:
                 # Get the full rate with trend
                 full_rate, trend = get_exchange_rate_with_trend(
-                    base, quote, df=df # type: ignore
+                    base,
+                    quote,
+                    df=df,  # type: ignore
                 )
                 method = "Direct" if is_direct else "Via USD"
                 print(

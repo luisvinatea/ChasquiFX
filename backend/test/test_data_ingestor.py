@@ -27,11 +27,13 @@ class TestDataIngestor(unittest.TestCase):
 
         # Sample data for tests
         self.sample_currency_codes = {"USD": "USD", "EUR": "EUR", "JPY": "JPY"}
-        sample_df = pd.DataFrame({
-            "Date": pd.date_range(start="2023-01-01", periods=5),  # type: ignore
-            "Close": [1.1, 1.2, 1.3, 1.4, 1.5],
-            "Open": [1.0, 1.1, 1.2, 1.3, 1.4],
-        })
+        sample_df = pd.DataFrame(
+            {
+                "Date": pd.date_range(start="2023-01-01", periods=5),  # type: ignore
+                "Close": [1.1, 1.2, 1.3, 1.4, 1.5],
+                "Open": [1.0, 1.1, 1.2, 1.3, 1.4],
+            }
+        )
         self.sample_df = sample_df.set_index("Date")  # type: ignore
 
         # Create MultiIndex DataFrame

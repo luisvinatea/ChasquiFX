@@ -184,6 +184,21 @@ def enrich_route_data(
     # Add departure airport details
     def add_departure_details(row):
         dep_iata = row["Departure-IATA"]
+        # Create a new dataframe with the needed columns if they don't exist
+        for col in [
+            "Departure-Airport-Name",
+            "Departure-City",
+            "Departure-Country",
+            "Departure-Latitude",
+            "Departure-Longitude",
+            "Departure-Country-Code",
+            "Departure-Region",
+            "Departure-Continent",
+        ]:
+            if col not in row:
+                # Add the column to the dataframe
+                enriched_df[col] = ""
+
         if dep_iata in airport_dict:
             airport = airport_dict[dep_iata]
             row["Departure-Airport-Name"] = airport.get("name", "")
@@ -204,6 +219,21 @@ def enrich_route_data(
     # Add arrival airport details
     def add_arrival_details(row):
         arr_iata = row.get("Arrival-IATA")
+        # Create a new dataframe with the needed columns if they don't exist
+        for col in [
+            "Arrival-Airport-Name",
+            "Arrival-City",
+            "Arrival-Country",
+            "Arrival-Latitude",
+            "Arrival-Longitude",
+            "Arrival-Country-Code",
+            "Arrival-Region",
+            "Arrival-Continent",
+        ]:
+            if col not in row:
+                # Add the column to the dataframe
+                enriched_df[col] = ""
+
         if arr_iata in airport_dict:
             airport = airport_dict[arr_iata]
             row["Arrival-Airport-Name"] = airport.get("name", "")
@@ -223,6 +253,20 @@ def enrich_route_data(
 
     # Add airline details
     def add_airline_details(row):
+        # Create a new dataframe with the needed columns if they don't exist
+        for col in [
+            "Airline-Name",
+            "Airline-IATA",
+            "Airline-ICAO",
+            "Airline-Callsign",
+            "Airline-Country",
+            "Airline-Active",
+            "Route",
+        ]:
+            if col not in row:
+                # Add the column to the dataframe
+                enriched_df[col] = ""
+
         airline_id = row.get("AirlineID")
         if airline_id and str(airline_id) in airline_dict:
             airline = airline_dict[str(airline_id)]
@@ -355,18 +399,20 @@ def create_route_lookups(enriched_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         cities_data = []
         for (city, country), group in city_groups:
             if city and country:  # Ensure city and country are not empty
-                cities_data.append({
-                    "City": city,
-                    "Country": country,
-                    "Airport-IATAs": group["IATA"].tolist(),
-                    "Airport-Names": group["Airport-Name"].tolist(),
-                    "Latitude": group["Latitude"].mean()
-                    if not group["Latitude"].isna().all()
-                    else 0.0,
-                    "Longitude": group["Longitude"].mean()
-                    if not group["Longitude"].isna().all()
-                    else 0.0,
-                })
+                cities_data.append(
+                    {
+                        "City": city,
+                        "Country": country,
+                        "Airport-IATAs": group["IATA"].tolist(),
+                        "Airport-Names": group["Airport-Name"].tolist(),
+                        "Latitude": group["Latitude"].mean()
+                        if not group["Latitude"].isna().all()
+                        else 0.0,
+                        "Longitude": group["Longitude"].mean()
+                        if not group["Longitude"].isna().all()
+                        else 0.0,
+                    }
+                )
 
         # Create cities DataFrame
         cities = pd.DataFrame(cities_data) if cities_data else pd.DataFrame()
@@ -528,7 +574,9 @@ def route_mapper(
 
 
 def get_complete_route_info(
-    start_airport: str, end_airport: str, output_dir: str = OUTPUT_DIR
+    start_airport: str,
+    end_airport: str,
+    output_dir: str = None,  # type: ignore
 ) -> Dict[str, pd.DataFrame]:
     """
     Get complete route information for a specific trip.
@@ -543,7 +591,11 @@ def get_complete_route_info(
     Returns:
         Dictionary with direct, one-stop, and two-stop route options
     """
-    # Load necessary dataframes
+    # Use provided output_dir or fall back to global OUTPUT_DIR
+    if output_dir is None:
+        output_dir = OUTPUT_DIR
+
+    # Check if files exist in OUTPUT_DIR
     routes_path = os.path.join(output_dir, "enriched_routes.parquet")
     airports_path = os.path.join(output_dir, "airports.parquet")
 

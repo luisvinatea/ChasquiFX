@@ -292,17 +292,21 @@ class TestMapper(unittest.TestCase):
         self.assertIsNotNone(transformed_data)
 
     def test_combine_route_with_lookup_data(self):
-        route_df = pd.DataFrame({
-            "Departure-IATA": ["FLN", "BOG"],
-            "Arrival-IATA": ["LIM", "LIM"],
-            "Route": ["FLN-LIM", "BOG-LIM"],
-        })
+        route_df = pd.DataFrame(
+            {
+                "Departure-IATA": ["FLN", "BOG"],
+                "Arrival-IATA": ["LIM", "LIM"],
+                "Route": ["FLN-LIM", "BOG-LIM"],
+            }
+        )
 
-        airport_df = pd.DataFrame({
-            "IATA": ["FLN", "LIM", "BOG"],
-            "Airport-Name": ["Florianopolis", "Jorge Chavez", "El Dorado"],
-            "City": ["Florianopolis", "Lima", "Bogota"],
-        })
+        airport_df = pd.DataFrame(
+            {
+                "IATA": ["FLN", "LIM", "BOG"],
+                "Airport-Name": ["Florianopolis", "Jorge Chavez", "El Dorado"],
+                "City": ["Florianopolis", "Lima", "Bogota"],
+            }
+        )
 
         result = combine_route_with_lookup_data(route_df, airport_df)
         self.assertEqual(len(result), 2)

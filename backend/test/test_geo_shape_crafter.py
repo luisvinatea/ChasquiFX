@@ -90,12 +90,14 @@ class TestGeoShapeCrafter(unittest.TestCase):
         """Test loading geojson globe"""
         with patch("geopandas.read_file") as mock_read:
             mock_world = MagicMock()
-            mock_world.to_json.return_value = json.dumps({
-                "type": "FeatureCollection",
-                "features": [
-                    {"type": "Feature", "properties": {"name": "World"}}
-                ],
-            })
+            mock_world.to_json.return_value = json.dumps(
+                {
+                    "type": "FeatureCollection",
+                    "features": [
+                        {"type": "Feature", "properties": {"name": "World"}}
+                    ],
+                }
+            )
             mock_read.return_value = mock_world
 
             result = load_geojson_globe()
@@ -189,12 +191,14 @@ class TestGeoShapeCrafter(unittest.TestCase):
         mock_transform.return_value = mock_airports_gdf
 
         mock_combined_gdf = gpd.GeoDataFrame(
-            pd.concat([
-                gpd.GeoDataFrame.from_features(
-                    mock_globe_json["features"], crs="EPSG:4326"
-                ),
-                mock_airports_gdf,
-            ]),
+            pd.concat(
+                [
+                    gpd.GeoDataFrame.from_features(
+                        mock_globe_json["features"], crs="EPSG:4326"
+                    ),
+                    mock_airports_gdf,
+                ]
+            ),
             crs="EPSG:4326",
         )
         mock_combine.return_value = mock_combined_gdf

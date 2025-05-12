@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api.forex_calculator import (
     calculate_cross_rate,
     load_forex_data,
-    get_latest_rate
+    get_latest_rate,
 )
 
 
@@ -19,13 +19,13 @@ class TestForexCalculator(unittest.TestCase):
         rate, is_direct = calculate_cross_rate("USD", "USD")
         self.assertEqual(rate, 1.0)
         self.assertTrue(is_direct)
-    
+
     def test_get_latest_rate_empty_df(self):
         """Test getting latest rate from empty dataframe."""
         df = pd.DataFrame()
         rate = get_latest_rate(df, "EURUSD=X")
         self.assertEqual(rate, 0.0)
-        
+
     def test_load_forex_data_nonexistent(self):
         """Test loading forex data from nonexistent file."""
         df = load_forex_data("/path/does/not/exist.parquet")
