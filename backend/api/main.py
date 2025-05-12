@@ -398,7 +398,6 @@ def fetch_fares_for_destinations(
     Returns:
         Dictionary mapping arrival airports to fare data
     """
-    from backend.api.ticket_fare_fetcher import fetch_multiple_fares
     import time
 
     # Extract arrival airport codes
@@ -477,6 +476,14 @@ def fetch_realtime_forex_data(
 
     # Convert set to list
     quote_currencies_list = list(quote_currencies)
+
+    # If no currencies were found, add some popular ones as fallback
+    if not quote_currencies_list:
+        fallback_currencies = ["EUR", "GBP", "JPY", "CAD", "AUD", "CHF"]
+        quote_currencies_list = [
+            c for c in fallback_currencies if c != base_currency
+        ]
+        print(f"Using fallback currencies: {quote_currencies_list}")
 
     print(
         f"Fetching data for base={base_currency}, quotes={quote_currencies_list}"

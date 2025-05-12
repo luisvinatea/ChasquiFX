@@ -12,6 +12,7 @@ import sys
 import os
 from datetime import datetime, timedelta
 import logging
+from typing import Optional, Dict, Any
 
 # Configure logging
 logging.basicConfig(
@@ -110,22 +111,26 @@ def is_api_running():
 
 # Function to fetch recommendations from API
 def get_recommendations(
-    departure_airport,
-    max_results=5,
-    direct_only=False,
-    use_realtime_data=True,
-    outbound_date=None,
-    return_date=None,
-    include_fares=True,
-):
-    """Get destination recommendations from the API"""
+    departure_airport: str,
+    max_results: int = 5,
+    direct_only: bool = False,
+    include_fares: bool = True,
+    use_realtime_data: bool = True,
+    outbound_date: Optional[str] = None,
+    return_date: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Get destination recommendations from the API.
+
+    Returns a dictionary containing recommendations or None if failed.
+    """
     url = f"{API_BASE_URL}/recommendations"
     params = {
         "departure_airport": departure_airport,
         "max_results": max_results,
-        "direct_only": direct_only,
-        "use_realtime_data": use_realtime_data,
-        "include_fares": include_fares,
+        "direct_only": str(direct_only).lower(),
+        "use_realtime_data": str(use_realtime_data).lower(),
+        "include_fares": str(include_fares).lower(),
     }
 
     # Add optional date parameters if provided
@@ -138,10 +143,47 @@ def get_recommendations(
         logger.info(
             f"Fetching recommendations for {departure_airport} with params: {params}"
         )
-        with st.spinner("Fetching data from API..."):
-            response = requests.get(
-                url, params=params, timeout=30
-            )  # Increased timeout from 15 to 30 seconds
+
+        # Create a progress bar for better user experience
+        progress_text = "Fetching recommendations... This may take a moment."
+        with st.spinner(progress_text):
+            # First, make a simplified request to check if API is available
+            # Use a short timeout just to verify connectivity
+            try:
+                check_response = requests.get(f"{API_BASE_URL}/", timeout=3)
+                if check_response.status_code != 200:
+                    st.warning(
+                        "API server may be experiencing issues. Trying anyway..."
+                    )
+            except Exception as e:
+                st.warning(
+                    f"API connectivity check failed: {str(e)}. Attempting to fetch data anyway..."
+                )
+
+            # Try the main request with increased timeout
+            try:
+                response = requests.get(
+                    url,
+                    params=params,
+                    timeout=40,  # Increased timeout further
+                )
+            except requests.exceptions.Timeout:
+                # If timing out, try with simpler parameters
+                st.info(
+                    "Request is taking longer than expected. Trying with simplified parameters..."
+                )
+                simpler_params = params.copy()
+                simpler_params["include_fares"] = (
+                    "false"  # Disable fares to speed up request
+                )
+                simpler_params["use_realtime_data"] = (
+                    "false"  # Use cached forex data
+                )
+                simpler_params["max_results"] = min(
+                    max_results, 3
+                )  # Request fewer results
+
+                response = requests.get(url, params=simpler_params, timeout=30)
 
         if response.status_code == 200:
             data = response.json()
@@ -167,6 +209,9 @@ def get_recommendations(
         error_msg = f"API request timed out: {str(e)}"
         logger.error(error_msg)
         st.error("Request timed out. The API server might be overloaded.")
+        st.info(
+            "Try disabling real-time data or fare information to speed up the request."
+        )
         return None
     except Exception as e:
         error_msg = f"API connection error: {str(e)}"
@@ -344,10 +389,10 @@ if search_button:
                 departure_airport.upper(),
                 max_results,
                 direct_only,
+                include_fares,
                 use_realtime_data,
                 outbound_str,
                 return_str,
-                include_fares,
             )
 
             if data and data.get("recommendations"):

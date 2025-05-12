@@ -111,83 +111,74 @@ def get_best_fare(results: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 
     try:
+        # Create a base result with query information
+        base_result = {
+            "currency": results.get("query", {}).get("currency", "USD"),
+            "departure_id": results.get("query", {}).get("departure_id", ""),
+            "arrival_id": results.get("query", {}).get("arrival_id", ""),
+            "outbound_date": results.get("query", {}).get("outbound_date", ""),
+            "return_date": results.get("query", {}).get("return_date", ""),
+            "success": True,
+        }
+
+        # Try best_flights first
         best_flights = results.get("best_flights", {})
-        if best_flights:
+        if best_flights and isinstance(best_flights, dict):
             return {
                 "price": best_flights.get("price", 0),
-                "currency": results.get("query", {}).get("currency", "USD"),
-                "departure_id": results.get("query", {}).get(
-                    "departure_id", ""
-                ),
-                "arrival_id": results.get("query", {}).get("arrival_id", ""),
-                "outbound_date": results.get("query", {}).get(
-                    "outbound_date", ""
-                ),
-                "return_date": results.get("query", {}).get("return_date", ""),
                 "airlines": best_flights.get("airlines", []),
                 "duration": best_flights.get("duration", ""),
-                "success": True,
+                **base_result,  # Merge with base result
             }
 
-        # If no best_flights, try other locations in the response
-        if "flights" in results and results["flights"]:
-            first_flight = results["flights"][0]
+        # Try flights data - handle different possible structures
+        if "flights" in results:
+            flights = results["flights"]
 
-            # Handle the case when first_flight is a list or dictionary
-            if isinstance(first_flight, dict):
+            # Case 1: flights is a dict
+            if isinstance(flights, dict):
+                return {
+                    "price": flights.get("price", 0),
+                    "airlines": flights.get("airlines", []),
+                    "duration": flights.get("duration", ""),
+                    **base_result,
+                }
+
+            # Case 2: flights is a list of dicts
+            elif (
+                isinstance(flights, list)
+                and flights
+                and isinstance(flights[0], dict)
+            ):
+                first_flight = flights[0]
                 return {
                     "price": first_flight.get("price", 0),
-                    "currency": results.get("query", {}).get(
-                        "currency", "USD"
-                    ),
-                    "departure_id": results.get("query", {}).get(
-                        "departure_id", ""
-                    ),
-                    "arrival_id": results.get("query", {}).get(
-                        "arrival_id", ""
-                    ),
-                    "outbound_date": results.get("query", {}).get(
-                        "outbound_date", ""
-                    ),
-                    "return_date": results.get("query", {}).get(
-                        "return_date", ""
-                    ),
                     "airlines": first_flight.get("airlines", []),
                     "duration": first_flight.get("duration", ""),
-                    "success": True,
+                    **base_result,
                 }
-            elif isinstance(first_flight, list) and first_flight:
-                # If first_flight is a list, try to use the first element
-                flight_data = (
-                    first_flight[0]
-                    if isinstance(first_flight[0], dict)
-                    else {}
-                )
-                return {
-                    "price": flight_data.get("price", 0),
-                    "currency": results.get("query", {}).get(
-                        "currency", "USD"
-                    ),
-                    "departure_id": results.get("query", {}).get(
-                        "departure_id", ""
-                    ),
-                    "arrival_id": results.get("query", {}).get(
-                        "arrival_id", ""
-                    ),
-                    "outbound_date": results.get("query", {}).get(
-                        "outbound_date", ""
-                    ),
-                    "return_date": results.get("query", {}).get(
-                        "return_date", ""
-                    ),
-                    "airlines": flight_data.get("airlines", []),
-                    "duration": flight_data.get("duration", ""),
-                    "success": True,
-                }
-            else:
-                return {}
 
-        return {}
+            # Case 3: flights is a list of lists
+            elif (
+                isinstance(flights, list)
+                and flights
+                and isinstance(flights[0], list)
+                and flights[0]
+            ):
+                # Try to extract data from the nested list
+                if len(flights[0]) > 0:
+                    if isinstance(flights[0][0], dict):
+                        flight_data = flights[0][0]
+                        return {
+                            "price": flight_data.get("price", 0),
+                            "airlines": flight_data.get("airlines", []),
+                            "duration": flight_data.get("duration", ""),
+                            **base_result,
+                        }
+
+        # If we couldn't extract fare data but the API call was successful,
+        # return a placeholder with default values
+        return {"price": 0, "airlines": [], "duration": "", **base_result}
 
     except Exception as e:
         logger.error(f"Error extracting best fare: {str(e)}")
