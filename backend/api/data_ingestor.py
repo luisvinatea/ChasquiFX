@@ -483,11 +483,11 @@ def fetch_forex_data_for_currencies(
         return pd.DataFrame()
 
 
-def fetch_forex_data_for_currencies(
+def fetch_quick_forex_data(
     base_currency: str, quote_currencies: List[str]
 ) -> pd.DataFrame:
     """
-    Fetch forex data for specific currency pairs.
+    Fetch forex data for specific currency pairs quickly with minimal pairs.
 
     Args:
         base_currency: Base currency code
@@ -505,14 +505,18 @@ def fetch_forex_data_for_currencies(
                 f"{quote_currency}{base_currency}=X"
             )  # Add reverse pair too
 
-    # Call the existing function with specific symbols
-    result = get_forex_data(symbols=symbols)
+    try:
+        # Call the existing function with specific symbols - it returns a DataFrame directly
+        result_df = get_forex_data(symbols=symbols)
 
-    # Return data from the result if successful
-    if result.get("success", False) and "data" in result:
-        return result["data"]
+        # Verify we have a valid DataFrame
+        if isinstance(result_df, pd.DataFrame) and not result_df.empty:
+            return result_df
+    except Exception as e:
+        logger.error(f"Error fetching quick forex data: {e}")
 
-    # If not successful, try to load existing data
+    # If we reach here, either there was an error or the result was empty
+    # Try to load existing data
     forex_file = os.path.join(PARQUET_DIR, "yahoo_finance_forex_data.parquet")
     if os.path.exists(forex_file):
         return pd.read_parquet(forex_file)

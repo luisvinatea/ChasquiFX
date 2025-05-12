@@ -25,6 +25,7 @@ from backend.api.data_ingestor import (
     get_forex_data,
     get_currency_pair,
     update_forex_data,  # noqa: F401
+    fetch_quick_forex_data,
 )
 from backend.api.forex_calculator import (
     get_exchange_rate_with_trend,
@@ -35,7 +36,6 @@ from backend.api.mapper import route_mapper, get_complete_route_info
 from backend.api.ticket_fare_fetcher import (
     fetch_flight_fare,
     fetch_multiple_fares,
-    get_best_fare,
 )
 
 # Initialize FastAPI
@@ -411,6 +411,42 @@ def fetch_fares_for_destinations(
     )
 
     return fares
+
+
+def fetch_realtime_forex_data(
+    base_currency: str,
+    destinations: List[Dict[str, Any]],
+    country_currency_map: Dict[str, str],
+) -> pd.DataFrame:
+    """
+    Fetch real-time forex data for a list of destination countries.
+
+    Args:
+        base_currency: The base currency code (e.g., USD)
+        destinations: List of destination dictionaries with country information
+        country_currency_map: Mapping of country codes to currency codes
+
+    Returns:
+        DataFrame containing forex data for the requested pairs
+    """
+    # Extract unique currencies from destinations
+    quote_currencies = set()
+    for dest in destinations:
+        country = dest["country"]
+        if country in country_currency_map:
+            currency = country_currency_map[country]
+            if currency != base_currency:  # Skip if same as base
+                quote_currencies.add(currency)
+
+    # Convert set to list
+    quote_currencies_list = list(quote_currencies)
+
+    print(
+        f"Fetching data for base={base_currency}, quotes={quote_currencies_list}"
+    )
+
+    # Use the fetch_quick_forex_data function from data_ingestor
+    return fetch_quick_forex_data(base_currency, quote_currencies_list)
 
 
 @app.get("/")
