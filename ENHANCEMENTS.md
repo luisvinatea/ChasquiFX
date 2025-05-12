@@ -29,9 +29,9 @@
 
 ### Launcher Scripts
 
-- Created `run_ChasquiFX.sh` - Main launcher script for API server and Streamlit app
-- Created `stop_ChasquiFX.sh` - Script to stop both services gracefully
-- Created `status_ChasquiFX.sh` - Script to check if services are running
+- Created `run_chasquifx.sh` - Main launcher script for API server and Streamlit app
+- Created `stop_chasquifx.sh` - Script to stop both services gracefully
+- Created `status_chasquifx.sh` - Script to check if services are running
 - Created `setup.sh` - Installation script for new users
 - Created desktop entry file for convenient launching
 - Made all scripts executable with proper permissions
