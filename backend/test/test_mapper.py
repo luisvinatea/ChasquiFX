@@ -8,9 +8,9 @@ import sys
 import json
 from typing import Optional, Dict
 
-# Add parent directory to path to import mapper
+# Add parent directory to path to import geo_service
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api.mapper import (
+from api.geo_service import (
     load_json_file,
     extract_data,
     build_airport_index,
@@ -181,7 +181,7 @@ class TestMapper(unittest.TestCase):
         result = load_json_file("nonexistent_file.json")
         self.assertIsNone(result)
 
-    @patch("api.mapper.load_json_file")
+    @patch("api.geo_service.load_json_file")
     def test_extract_data(self, mock_load):
         mock_load.side_effect = [
             self.routes_df,
@@ -266,9 +266,9 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(len(result["airports"]), 3)
         self.assertTrue(len(result["cities"]) > 0)
 
-    @patch("api.mapper.extract_data")
-    @patch("api.mapper.transform_data")
-    @patch("api.mapper.load_data")
+    @patch("api.geo_service.extract_data")
+    @patch("api.geo_service.transform_data")
+    @patch("api.geo_service.load_data")
     def test_route_mapper(self, mock_load, mock_transform, mock_extract):
         mock_extract.return_value = {
             "routes": self.routes_df,
@@ -318,8 +318,8 @@ class TestMapper(unittest.TestCase):
         test_file = "test_file"
         save_dataframe(df, test_file)
 
-        # Check files were created (need to use OUTPUT_DIR from mapper module)
-        from api.mapper import OUTPUT_DIR
+        # Check files were created (need to use OUTPUT_DIR from geo_service module)
+        from api.geo_service import OUTPUT_DIR
 
         self.assertTrue(
             os.path.exists(os.path.join(OUTPUT_DIR, f"{test_file}.parquet"))

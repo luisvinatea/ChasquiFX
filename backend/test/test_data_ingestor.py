@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Add parent directory to path to import data_ingestor
+# Add parent directory to path to import forex_service
 sys.path.append(str(Path(__file__).parent.parent))
-from api.data_ingestor import (
+from api.forex_service import (
     create_pairs,
     fetch_symbol_data,
     process_data,
@@ -61,7 +61,7 @@ class TestDataIngestor(unittest.TestCase):
         self.assertIn("USDJPY=X", pairs)
         self.assertIn("EURJPY=X", pairs)
 
-    @patch("api.data_ingestor.yf.download")
+    @patch("api.forex_service.yf.download")
     def test_fetch_symbol_data(self, mock_download: Any):
         # Mock yfinance download to return our sample data
         mock_download.return_value = self.sample_df
@@ -105,7 +105,7 @@ class TestDataIngestor(unittest.TestCase):
         self.assertEqual(mappings["USDEUR=X"]["base_currency"], "USD")
         self.assertEqual(mappings["USDEUR=X"]["quote_currency"], "EUR")
 
-    @patch("api.data_ingestor.fetch_data_parallel")
+    @patch("api.forex_service.fetch_data_parallel")
     def test_get_forex_data(self, mock_fetch_data: Any):
         # Mock fetch_data_parallel to return sample DataFrame
         mock_fetch_data.return_value = self.multi_df

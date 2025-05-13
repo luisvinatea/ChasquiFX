@@ -7,9 +7,9 @@ from unittest.mock import patch
 import sys
 import json
 
-# Add parent directory to path to import route_query
+# Add parent directory to path to import geo_service
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api.route_query import (
+from api.geo_service import (
     find_routes,
     extract_data,
     build_route_index,
@@ -173,7 +173,7 @@ class TestRouteQuery(unittest.TestCase):
         self.assertEqual(len(result), 6)
         self.assertIn("Airline-IATA", result.columns)
 
-    @patch("api.route_query.save_route_data")
+    @patch("api.geo_service.save_route_data")
     def test_load_data(self, mock_save):
         """Test loading data with mocked save function"""
         routes = {
@@ -185,9 +185,9 @@ class TestRouteQuery(unittest.TestCase):
         load_data(routes, self.temp_dir)
         self.assertEqual(mock_save.call_count, 3)
 
-    @patch("api.route_query.extract_data")
-    @patch("api.route_query.transform_data")
-    @patch("api.route_query.load_data")
+    @patch("api.geo_service.extract_data")
+    @patch("api.geo_service.transform_data")
+    @patch("api.geo_service.load_data")
     def test_find_routes_pipeline(
         self, mock_load, mock_transform, mock_extract
     ):

@@ -11,11 +11,11 @@ from fastapi.testclient import TestClient
 # Add parent directory to path to import main
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Mock api.data_ingestor for testing
+# Mock api.forex_service for testing
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "mocks")
 )
-sys.modules["api.data_ingestor"] = __import__("data_ingestor")
+sys.modules["api.forex_service"] = __import__("forex_service")
 
 # Import from main after mocking
 from api.main import (  # noqa: E402

@@ -52,7 +52,7 @@ trap stop_services SIGINT SIGTERM
 
 # Start the FastAPI server
 print_message "green" "Starting API server..."
-python backend/api/main.py >logs/api_server.log 2>&1 &
+python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
 API_PID=$!
 
 # Wait a moment to let the API server start

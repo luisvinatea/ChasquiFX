@@ -6,7 +6,7 @@ import pandas as pd
 # Add parent directory to path to enable imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api.forex_calculator import (
+from api.recommendation_service import (
     calculate_cross_rate,
     load_forex_data,
     get_latest_rate,
