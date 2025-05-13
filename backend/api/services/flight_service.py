@@ -4,8 +4,12 @@ Handles flight fare fetching and processing.
 """
 
 import logging
+import os
+import sys
 from typing import Dict, List, Optional
 
+# Set the path to the parent directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from backend.api.models.schemas import FlightFare
 
 # Set up logging

@@ -10,6 +10,11 @@ import json
 import logging
 import yfinance as yf
 from datetime import datetime, timedelta
+import sys
+
+# Set the path to the parent directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 from backend.api.config import (
     DEFAULT_FOREX_DATA_PATH,
     DEFAULT_FOREX_MAPPINGS_PATH,

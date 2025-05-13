@@ -4,6 +4,11 @@ Forex data API endpoints for ChasquiFX.
 
 from fastapi import APIRouter, Query, HTTPException
 from typing import List
+import sys
+import os
+
+# Set the path to the parent directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 
 from backend.api.services.forex_service import (

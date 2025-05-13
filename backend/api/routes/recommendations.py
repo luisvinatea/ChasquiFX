@@ -5,6 +5,11 @@ Main API endpoints for the ChasquiFX application.
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 from datetime import datetime
+import sys
+import os
+
+# Set the path to the parent directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from backend.api.models.schemas import RecommendationsResponse
 from backend.api.services.recommendation_service import get_recommendations

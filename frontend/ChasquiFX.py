@@ -124,13 +124,12 @@ def get_recommendations(
 
     Returns a dictionary containing recommendations or None if failed.
     """
-    url = f"{API_BASE_URL}/recommendations"
+    url = f"{API_BASE_URL}/api/recommendations"
     params = {
         "departure_airport": departure_airport,
-        "max_results": max_results,
-        "direct_only": str(direct_only).lower(),
-        "use_realtime_data": str(use_realtime_data).lower(),
+        "limit": max_results,
         "include_fares": str(include_fares).lower(),
+        "base_currency": "USD",  # Default currency
     }
 
     # Add optional date parameters if provided
@@ -138,7 +137,10 @@ def get_recommendations(
         params["outbound_date"] = outbound_date
     if return_date:
         params["return_date"] = return_date
-
+    
+    # Set minimum trend - this is used by the backend
+    params["min_trend"] = -1.0  # Include all trends by default
+    
     try:
         logger.info(
             f"Fetching recommendations for {departure_airport} with params: {params}"

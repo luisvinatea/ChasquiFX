@@ -52,7 +52,7 @@ trap stop_services SIGINT SIGTERM
 
 # Start the FastAPI server
 print_message "green" "Starting API server..."
-python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
+"$PROJECT_ROOT/.chasquifx/bin/python" -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
 API_PID=$!
 
 # Wait a moment to let the API server start
@@ -69,7 +69,7 @@ fi
 
 # Start the Streamlit app
 print_message "green" "Starting Streamlit app..."
-streamlit run frontend/ChasquiFX.py >logs/streamlit_app.log 2>&1 &
+"$PROJECT_ROOT/.chasquifx/bin/streamlit" run frontend/ChasquiFX.py >logs/streamlit_app.log 2>&1 &
 STREAMLIT_PID=$!
 
 # Wait a moment to let the Streamlit server start

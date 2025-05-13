@@ -6,6 +6,11 @@ Combines forex and flight data to provide destination recommendations.
 import logging
 from typing import Optional, Tuple
 import pandas as pd
+import os
+import sys
+
+# Set the path to the parent directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from backend.api.models.schemas import (
     DestinationRecommendation,
