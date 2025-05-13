@@ -1,15 +1,19 @@
 """
 Flight data service for ChasquiFX.
-Handles flight fare fetching and processing.
+Handles flight fare fetching and processing using SerpAPI.
 """
 
 import logging
 import os
 import sys
 from typing import Dict, List, Optional
+import requests
+from dotenv import load_dotenv
 
 # Set the path to the parent directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+)
 from backend.api.models.schemas import FlightFare
 
 # Set up logging
@@ -18,6 +22,21 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file in the parent directory
+env_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
+)
+load_dotenv(env_path)
+
+# Get API key from environment variables
+SERPAPI_KEY = os.getenv("SERPAPI_API_KEY")
+if not SERPAPI_KEY:
+    logger.warning(
+        "SERPAPI_API_KEY not found in environment variables. Flight fare queries will use simulated data."
+    )
+else:
+    logger.info("SERPAPI_API_KEY loaded successfully.")
 
 
 def fetch_flight_fare(
@@ -28,7 +47,7 @@ def fetch_flight_fare(
     currency: str = "USD",
 ) -> Optional[FlightFare]:
     """
-    Fetch flight fare data using an external API.
+    Fetch flight fare data using SerpAPI's Google Flights search.
 
     Args:
         departure_airport: IATA code of departure airport
@@ -45,9 +64,97 @@ def fetch_flight_fare(
         f"({outbound_date} to {return_date})"
     )
 
-    # For demo purposes, generate simulated fare data
-    # In a production environment, this would call an actual flight search API
+    # Use SerpAPI if API key is available
+    if SERPAPI_KEY:
+        try:
+            logger.info("Using SerpAPI to fetch flight data")
+
+            # Build the SerpAPI request URL
+            base_url = "https://serpapi.com/search"
+            params = {
+                "engine": "google_flights",
+                "departure_id": departure_airport,
+                "arrival_id": arrival_airport,
+                "outbound_date": outbound_date,
+                "return_date": return_date,
+                "currency": currency,
+                "hl": "en",
+                "api_key": SERPAPI_KEY,
+            }
+
+            response = requests.get(base_url, params=params)
+
+            if response.status_code == 200:
+                data = response.json()
+
+                # Process the SerpAPI response
+                if "best_flights" in data and data["best_flights"]:
+                    best_flight = data["best_flights"][0]
+
+                    price_value = best_flight.get("price", 0)
+                    # Handle different price formats from SerpAPI
+                    if isinstance(price_value, str):
+                        try:
+                            # Try to extract numeric value from string (e.g. "$123", "USD 123", "123 USD")
+                            price_str = (
+                                price_value.replace(currency, "")
+                                .replace("$", "")
+                                .replace(",", "")
+                                .strip()
+                            )
+                            price_value = float(price_str)
+                        except ValueError:
+                            logger.warning(
+                                f"Could not parse price string: {price_value}, using default"
+                            )
+                            price_value = 100.0
+
+                    # Extract airline info
+                    airlines = []
+                    if "airline" in best_flight:
+                        airlines.append(best_flight["airline"])
+                    elif "airlines" in best_flight:
+                        airlines = best_flight["airlines"]
+
+                    # Extract duration
+                    duration = best_flight.get("duration", "Unknown")
+
+                    logger.info(
+                        f"Successfully fetched flight data from SerpAPI: {price_value} {currency}"
+                    )
+
+                    return FlightFare(
+                        price=price_value,
+                        currency=currency,
+                        airlines=airlines,
+                        duration=duration,
+                        outbound_date=outbound_date,
+                        return_date=return_date,
+                    )
+                else:
+                    logger.warning(
+                        "No flight data found in SerpAPI response, falling back to simulated data"
+                    )
+            else:
+                error_message = f"SerpAPI request failed with status code {response.status_code}"
+                try:
+                    error_data = response.json()
+                    if "error" in error_data:
+                        error_message += f": {error_data['error']}"
+                except Exception as json_err:
+                    logger.debug(f"Could not parse error response: {json_err}")
+                logger.warning(
+                    f"{error_message}, falling back to simulated data"
+                )
+
+        except Exception as e:
+            logger.error(f"Error fetching flight fare from SerpAPI: {e}")
+            logger.info("Falling back to simulated data")
+
+    # For demo purposes or if API key is missing or API call fails, generate simulated fare data
     try:
+        logger.info("Generating simulated flight fare data")
+
         # Simulated fare data generation based on airport codes
         base_price = (
             ord(departure_airport[0]) + ord(arrival_airport[0])
@@ -81,7 +188,7 @@ def fetch_flight_fare(
         )
 
     except Exception as e:
-        logger.error(f"Error fetching flight fare: {e}")
+        logger.error(f"Error generating simulated flight fare: {e}")
         return None
 
 

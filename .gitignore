@@ -15,6 +15,10 @@ build/
 practice/
 *.egg
 
+# Ignore environment variables files containing secrets
+.env
+*.env
+
 # Ignore virtual environment directories
 .python-version
 

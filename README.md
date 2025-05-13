@@ -7,10 +7,26 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 ## Features
 
 - Find destinations with favorable exchange rates
-- View flight routes and fare information
+- View flight routes and fare information (via SerpAPI integration)
 - Compare destinations with interactive visualizations
 - Save favorite destinations
 - Export results to CSV
+
+## API Key Setup
+
+ChasquiFX uses SerpAPI to fetch real flight data. To enable this functionality:
+
+1. Sign up for a SerpAPI account at [https://serpapi.com/](https://serpapi.com/)
+2. Get your API key from your SerpAPI dashboard
+3. Create or edit the file `backend/.env` with the following content:
+
+   ```bash
+   SERPAPI_API_KEY=your_serpapi_key_here
+   ```
+
+4. Replace `your_serpapi_key_here` with your actual SerpAPI key
+
+> **Note:** Without a valid API key, the application will fall back to using simulated flight data.
 
 ## Quick Start
 
