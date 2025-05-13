@@ -4,11 +4,8 @@ Handles flight fare fetching and processing.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import requests
+from typing import Dict, List, Optional
 
-from backend.api.config import API_TIMEOUT_SECONDS
 from backend.api.models.schemas import FlightFare
 
 # Set up logging

@@ -3,8 +3,8 @@ Main API endpoints for the ChasquiFX application.
 """
 
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional, List
-from datetime import datetime, timedelta
+from typing import Optional
+from datetime import datetime
 
 from backend.api.models.schemas import RecommendationsResponse
 from backend.api.services.recommendation_service import get_recommendations

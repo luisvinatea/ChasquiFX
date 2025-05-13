@@ -3,14 +3,14 @@ Forex data API endpoints for ChasquiFX.
 """
 
 from fastapi import APIRouter, Query, HTTPException
-from typing import Dict, Optional, List
-import pandas as pd
+from typing import List
+
 
 from backend.api.services.forex_service import (
     load_forex_data,
     get_exchange_rate,
 )
-from backend.api.models.schemas import ExchangeRateResponse, ForexPairRequest
+from backend.api.models.schemas import ExchangeRateResponse
 
 router = APIRouter(prefix="/api/forex", tags=["forex"])
 
