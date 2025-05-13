@@ -5,11 +5,14 @@ Logging utility functions for ChasquiFX.
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from typing import Optional
 
 from backend.api.config import LOGS_DIR
 
 
-def setup_logger(name: str, log_file: str = None, level=logging.INFO):
+def setup_logger(
+    name: str, log_file: Optional[str] = None, level=logging.INFO
+):
     """
     Set up a logger with appropriate handlers and formatting.
 

@@ -4,13 +4,11 @@ Combines forex and flight data to provide destination recommendations.
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from typing import Optional, Tuple
 import pandas as pd
 
 from backend.api.models.schemas import (
     DestinationRecommendation,
-    FlightFare,
     RecommendationsResponse,
 )
 from backend.api.services.forex_service import get_exchange_rate
@@ -58,11 +56,14 @@ def calculate_trend(
 
         # Calculate trend using linear regression slope
         y = pair_data["Close"].values
-        x = range(len(y))
+        x = list(range(len(y)))  # Convert range to list
         n = len(y)
 
         # Calculate slope using simple linear regression formula
-        m = (n * sum(x * y) - sum(x) * sum(y)) / (n * sum(x * x) - sum(x) ** 2)
+        # Convert to lists for element-wise multiplication
+        m = (
+            n * sum(x_i * y_i for x_i, y_i in zip(x, y)) - sum(x) * sum(y)
+        ) / (n * sum(x_i * x_i for x_i in x) - sum(x) ** 2)
 
         # Normalize to range [-1, 1]
         avg_price = pair_data["Close"].mean()
@@ -99,16 +100,21 @@ def get_exchange_rate_with_trend(
     # Check if direct pair exists
     if currency_pair in forex_data.index:
         rate = forex_data.loc[currency_pair, "Close"]
+        # Ensure rate is a float
+        rate_float = float(str(rate))
         trend = calculate_trend(forex_data, currency_pair)
-        return (rate, trend)
+        return (rate_float, trend)
 
     # Check if inverse pair exists
     elif inverse_pair in forex_data.index:
-        rate = 1 / forex_data.loc[inverse_pair, "Close"]
+        inverse_value = forex_data.loc[inverse_pair, "Close"]
+        # Convert to float through string representation for safety
+        inverse_float = float(str(inverse_value))
+        rate_float = 1.0 / inverse_float
         trend = -calculate_trend(
             forex_data, inverse_pair
         )  # Negate trend for inverse
-        return (rate, trend)
+        return (rate_float, trend)
 
     # Try to calculate using USD as intermediate
     else:
