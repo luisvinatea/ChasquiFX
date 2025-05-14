@@ -7,12 +7,12 @@ plotly==5.21.0
 folium==0.15.0 
 streamlit==1.45.0
 streamlit-folium==0.15.0
-requests==2.31.0
+requests==2.32.2
 yfinance==0.2.36
 pydantic==2.6.0
 python-dateutil==2.9.0
 pytz==2024.1
-setuptools==68.2.2
+setuptools==70.0.0
 wheel==0.42.0
 pytest==8.0.0
 serpapi==0.1.5
