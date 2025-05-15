@@ -185,7 +185,7 @@ streamlit run frontend/ChasquiFX.py
 
    ```bash
    # Rebuild the React frontend
-   cd frontend-react
+   cd frontend
    npm run build
    ```
 

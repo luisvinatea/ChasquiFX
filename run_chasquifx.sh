@@ -69,7 +69,7 @@ fi
 
 # Start the React frontend
 print_message "green" "Starting React frontend..."
-cd "$PROJECT_ROOT/frontend-react" && npm start >../logs/react_app.log 2>&1 &
+cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
 REACT_PID=$!
 
 # Wait a moment to let the React server start
