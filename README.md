@@ -11,6 +11,21 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 - Compare destinations with interactive visualizations
 - Save favorite destinations
 - Export results to CSV
+- Modern React frontend for improved reliability and user experience
+- Locally stored API keys for secure access to external services
+
+## User Interface
+
+ChasquiFX offers two frontend options:
+
+1. **React Frontend** (Recommended): A modern, responsive UI built with React and Material-UI
+   - Enhanced performance and reliability
+   - Better handling of API requests
+   - Local storage for user preferences and API keys
+   - Responsive design for mobile and desktop
+
+2. **Legacy Streamlit Frontend**: The original Python-based Streamlit interface
+   - Available for backward compatibility
 
 ## API Key Setup
 
@@ -36,21 +51,21 @@ ChasquiFX comes with several convenience scripts to help you manage the applicat
 
 #### Start the application
 
-To start both the API server and the Streamlit frontend with a single command:
+To start both the API server and the React frontend with a single command:
 
 ```bash
-./run_ChasquiFX.sh
+./run_chasquifx.sh
 ```
 
 This will:
 
 1. Launch the FastAPI backend server on port 8000
-2. Launch the Streamlit frontend on port 8501
+2. Launch the React frontend on port 3000
 3. Monitor both services and log their output to `logs/` directory
 
 You can access:
 
-- Web application: <http://localhost:8501>
+- Web application: <http://localhost:3000>
 - API documentation: <http://localhost:8000/docs>
 
 #### Stop the application
@@ -159,15 +174,24 @@ streamlit run frontend/ChasquiFX.py
    ./status_ChasquiFX.sh
    ```
 
-3. **Manual cache clear**: Remove the Streamlit cache:
+3. **Clear React cache**: For the React frontend:
 
    ```bash
-   rm -rf ~/.streamlit/cache
+   # Clear React browser cache
+   # In Chrome, open Developer Tools (F12) > Application > Clear storage > Clear site data
    ```
 
 #### Visualization issues
 
 1. **Browser compatibility**: Try a different browser (Chrome or Firefox recommended)
+
+2. **React rendering issues**: If the React UI has display problems:
+
+   ```bash
+   # Rebuild the React frontend
+   cd frontend-react
+   npm run build
+   ```
 
 2. **Clear browser cache**: Press Ctrl+F5 to force refresh the page
 

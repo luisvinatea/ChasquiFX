@@ -86,6 +86,25 @@ fi
 print_message "yellow" "Creating necessary directories..."
 mkdir -p logs frontend/assets backend/assets/data/{forex,geo}/{json,parquet}
 
+# Install React dependencies if frontend-react exists
+if [ -d "$PROJECT_ROOT/frontend-react" ]; then
+    print_message "yellow" "Setting up React frontend..."
+    if command -v npm &>/dev/null; then
+        cd "$PROJECT_ROOT/frontend-react" || exit
+        npm install
+        if [ $? -eq 0 ]; then
+            print_message "green" "✓ React dependencies installed successfully."
+        else
+            print_message "red" "✗ Failed to install React dependencies."
+            print_message "yellow" "You can try running 'npm install' manually in the frontend-react directory."
+        fi
+        cd "$PROJECT_ROOT" || exit
+    else
+        print_message "red" "✗ npm not found. Please install Node.js and npm to use the React frontend."
+        print_message "yellow" "Visit https://nodejs.org for installation instructions."
+    fi
+fi
+
 # Make scripts executable
 print_message "yellow" "Making launcher scripts executable..."
 chmod +x run_chasquifx.sh stop_chasquifx.sh status_chasquifx.sh

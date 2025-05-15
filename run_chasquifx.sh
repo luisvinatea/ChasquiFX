@@ -67,21 +67,21 @@ else
     exit 1
 fi
 
-# Start the Streamlit app
-print_message "green" "Starting Streamlit app..."
-"$PROJECT_ROOT/.chasquifx/bin/streamlit" run frontend/ChasquiFX.py >logs/streamlit_app.log 2>&1 &
-STREAMLIT_PID=$!
+# Start the React frontend
+print_message "green" "Starting React frontend..."
+cd "$PROJECT_ROOT/frontend-react" && npm start >../logs/react_app.log 2>&1 &
+REACT_PID=$!
 
-# Wait a moment to let the Streamlit server start
-sleep 3
+# Wait a moment to let the React server start
+sleep 5
 
-# Check if Streamlit app started successfully
-if ps -p $STREAMLIT_PID >/dev/null; then
-    print_message "green" "✓ Streamlit app running with PID: $STREAMLIT_PID"
-    print_message "green" "Access the app at: http://localhost:8501"
-    print_message "yellow" "Streamlit logs: tail -f logs/streamlit_app.log"
+# Check if React app started successfully
+if ps -p $REACT_PID >/dev/null; then
+    print_message "green" "✓ React frontend running with PID: $REACT_PID"
+    print_message "green" "Access the app at: http://localhost:3000"
+    print_message "yellow" "React logs: tail -f logs/react_app.log"
 else
-    print_message "red" "✗ Failed to start Streamlit app. Check logs/streamlit_app.log for details."
+    print_message "red" "✗ Failed to start React frontend. Check logs/react_app.log for details."
     kill $API_PID
     exit 1
 fi
@@ -92,7 +92,7 @@ print_message "blue" "
 ║                                                  ║
 ║   API URL: http://localhost:8000                 ║
 ║   API Docs: http://localhost:8000/docs           ║
-║   App URL: http://localhost:8501                 ║
+║   React App URL: http://localhost:3000           ║
 ║                                                  ║
 ║   Press CTRL+C to stop all services              ║
 ╚══════════════════════════════════════════════════╝

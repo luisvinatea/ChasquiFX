@@ -38,17 +38,17 @@ else
     done
 fi
 
-# Find and stop Streamlit app
-STREAMLIT_PIDS=$(pgrep -f "streamlit.*ChasquiFX.py")
-if [ -z "$STREAMLIT_PIDS" ]; then
-    print_message "yellow" "No Streamlit processes found."
+# Find and stop React frontend app
+REACT_PIDS=$(pgrep -f "node.*react-scripts start")
+if [ -z "$REACT_PIDS" ]; then
+    print_message "yellow" "No React frontend processes found."
 else
-    for PID in $STREAMLIT_PIDS; do
+    for PID in $REACT_PIDS; do
         kill $PID 2>/dev/null
         if [ $? -eq 0 ]; then
-            print_message "green" "✓ Stopped Streamlit process with PID: $PID"
+            print_message "green" "✓ Stopped React frontend process with PID: $PID"
         else
-            print_message "red" "✗ Failed to stop Streamlit process with PID: $PID"
+            print_message "red" "✗ Failed to stop React frontend process with PID: $PID"
         fi
     done
 fi
