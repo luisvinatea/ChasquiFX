@@ -16,16 +16,12 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 
 ## User Interface
 
-ChasquiFX offers two frontend options:
+**React Frontend**: A modern, responsive UI built with React and Material-UI
 
-1. **React Frontend** (Recommended): A modern, responsive UI built with React and Material-UI
-   - Enhanced performance and reliability
-   - Better handling of API requests
-   - Local storage for user preferences and API keys
-   - Responsive design for mobile and desktop
-
-2. **Legacy Streamlit Frontend**: The original Python-based Streamlit interface
-   - Available for backward compatibility
+- Enhanced performance and reliability
+- Better handling of API requests
+- Local storage for user preferences and API keys
+- Responsive design for mobile and desktop
 
 ## API Key Setup
 
@@ -193,9 +189,9 @@ streamlit run frontend/ChasquiFX.py
    npm run build
    ```
 
-2. **Clear browser cache**: Press Ctrl+F5 to force refresh the page
+3. **Clear browser cache**: Press Ctrl+F5 to force refresh the page
 
-3. **Check console**: Open your browser's developer tools to check for JavaScript errors
+4. **Check console**: Open your browser's developer tools to check for JavaScript errors
 
 ### Support
 
