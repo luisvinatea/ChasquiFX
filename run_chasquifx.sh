@@ -8,6 +8,20 @@
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT" || exit
 
+# Process command line arguments
+DEBUG_MODE=false
+for arg in "$@"; do
+    case $arg in
+    --debug)
+        DEBUG_MODE=true
+        shift # Remove --debug from processing
+        ;;
+    *)
+        # Unknown option
+        ;;
+    esac
+done
+
 # Create log directory if it doesn't exist
 mkdir -p logs
 
@@ -96,12 +110,22 @@ check_environment() {
 }
 
 # Welcome message
-print_message "blue" "
+if [ "$DEBUG_MODE" = true ]; then
+    print_message "blue" "
+╔══════════════════════════════════════════════════╗
+║             ChasquiFX Launcher                   ║
+║        Start both API server and Frontend        ║
+║             [DEBUG MODE ENABLED]                 ║
+╚══════════════════════════════════════════════════╝
+"
+else
+    print_message "blue" "
 ╔══════════════════════════════════════════════════╗
 ║             ChasquiFX Launcher                   ║
 ║        Start both API server and Frontend        ║
 ╚══════════════════════════════════════════════════╝
 "
+fi
 
 # Check environment variables
 check_environment
@@ -126,7 +150,11 @@ trap stop_services SIGINT SIGTERM
 
 # Start the FastAPI server
 print_message "green" "Starting API server..."
-"$PROJECT_ROOT/.venv/bin/python" -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
+if [ "$DEBUG_MODE" = true ]; then
+    "$PROJECT_ROOT/.venv/bin/python" -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload >logs/api_server.log 2>&1 &
+else
+    "$PROJECT_ROOT/.venv/bin/python" -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
+fi
 API_PID=$!
 
 # Wait a moment to let the API server start
@@ -143,7 +171,12 @@ fi
 
 # Start the React frontend
 print_message "green" "Starting React frontend..."
-cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+if [ "$DEBUG_MODE" = true ]; then
+    print_message "yellow" "Running frontend in debug mode..."
+    cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+else
+    cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+fi
 REACT_PID=$!
 
 # Wait a moment to let the React server start
@@ -160,17 +193,34 @@ else
     exit 1
 fi
 
-print_message "blue" "
+if [ "$DEBUG_MODE" = true ]; then
+    print_message "blue" "
 ╔══════════════════════════════════════════════════╗
 ║           ChasquiFX is now running!              ║
+║              [DEBUG MODE ENABLED]                ║
 ║                                                  ║
 ║   API URL: http://localhost:8000                 ║
 ║   API Docs: http://localhost:8000/docs           ║
+║   Health Check: http://localhost:8000/health     ║
 ║   React App URL: http://localhost:3000           ║
 ║                                                  ║
 ║   Press CTRL+C to stop all services              ║
 ╚══════════════════════════════════════════════════╝
 "
+else
+    print_message "blue" "
+╔══════════════════════════════════════════════════╗
+║           ChasquiFX is now running!              ║
+║                                                  ║
+║   API URL: http://localhost:8000                 ║
+║   API Docs: http://localhost:8000/docs           ║
+║   Health Check: http://localhost:8000/health     ║
+║   React App URL: http://localhost:3000           ║
+║                                                  ║
+║   Press CTRL+C to stop all services              ║
+╚══════════════════════════════════════════════════╝
+"
+fi
 
 # Keep the script running to maintain control of the processes
 while true; do

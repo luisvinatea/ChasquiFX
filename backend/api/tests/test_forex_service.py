@@ -95,7 +95,8 @@ class TestForexService(unittest.TestCase):
 
         # Verify successful result
         self.assertEqual(
-            result["summary"]["extracted_price"], "0.92"  # type: ignore
+            result["summary"]["extracted_price"],  # type: ignore
+            "0.92",  # type: ignore
         )
         mock_google_search.assert_called_once()
 
@@ -148,6 +149,64 @@ class TestForexService(unittest.TestCase):
             },
         ]
 
+    @patch("backend.api.services.forex_service.GoogleSearch")
+    @patch("backend.api.services.forex_service.time.sleep")
+    def test_retry_mechanism(self, mock_sleep, mock_google_search):
+        """Test the retry mechanism for API rate limiting"""
+        # Set up mock for GoogleSearch
+        mock_instance = MagicMock()
+        mock_google_search.return_value = mock_instance
+
+        # Configure get_dict to fail with rate limit error twice then succeed
+        mock_instance.get_dict.side_effect = [
+            {"error": "Rate limit exceeded"},  # First call - rate limit
+            {"error": "Rate limit exceeded"},  # Second call - rate limit
+            self.mock_serp_response,  # Third call - success
+        ]
+
+        # Call the function with test parameters
+        params = {"engine": "google_finance", "q": "USD-EUR"}
+        result = execute_serpapi_request(
+            params, max_retries=3, initial_delay=1
+        )
+
+        # Verify the result is successful after retries
+        self.assertIn("summary", result)
+        self.assertEqual(
+            result["summary"]["extracted_price"], "0.92")  # type: ignore
+
+        # Verify the correct number of API calls were made
+        self.assertEqual(mock_instance.get_dict.call_count, 3)
+
+        # Verify sleep was called for backoff
+        self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("backend.api.services.forex_service.GoogleSearch")
+    @patch("backend.api.services.forex_service.time.sleep")
+    def test_retry_max_attempts(self, mock_sleep, mock_google_search):
+        """Test that retry stops after max attempts"""
+        # Set up mock for GoogleSearch
+        mock_instance = MagicMock()
+        mock_google_search.return_value = mock_instance
+
+        # Configure get_dict to always fail with rate limit error
+        mock_instance.get_dict.return_value = {"error": "Rate limit exceeded"}
+
+        # Call the function with test parameters
+        params = {"engine": "google_finance", "q": "USD-EUR"}
+        result = execute_serpapi_request(
+            params, max_retries=3, initial_delay=1
+        )
+
+        # Verify the error is returned after all retries
+        self.assertIn("error", result)
+
+        # Verify the correct number of API calls were made
+        self.assertEqual(mock_instance.get_dict.call_count, 3)
+
+        # Verify sleep was called for backoff
+        self.assertEqual(mock_sleep.call_count, 2)
+
         # Mock environment variable
         with patch.dict(os.environ, {"SERPAPI_API_KEY": "test_key"}):
             with patch(
@@ -160,6 +219,7 @@ class TestForexService(unittest.TestCase):
                 ):
                     # Use only 2 currencies to limit test pairs
                     from backend.api.services import forex_service
+
                     with patch.object(
                         forex_service,
                         "currencies",

@@ -145,13 +145,57 @@ streamlit run frontend/ChasquiFX.py
 
 - `/backend/api/`: API implementation
 - `/backend/assets/data/`: Data files including forex and geographic data
-- `/frontend/`: Streamlit frontend
+- `/frontend/`: React Frontend
 - `/test/`: Unit tests
 
 ### Requirements
 
 - Python 3.8+
 - Dependencies listed in requirements.txt
+
+## Testing
+
+ChasquiFX includes several test scripts to verify functionality:
+
+### Running the Forex Service Tests
+
+To test the forex data retrieval and processing functionality:
+
+```bash
+./test_forex.sh
+```
+
+This will run unit tests for the forex service, including tests for:
+
+- API request retry mechanism
+- Error handling logic
+- Data processing functions
+
+### Testing Environment Variables
+
+To verify environment variables are correctly loaded:
+
+```bash
+python backend/api/utils/test_env_variables.py
+```
+
+### Testing SerpAPI Integration
+
+To test the SerpAPI integration specifically:
+
+```bash
+python backend/api/utils/test_serpapi_forex.py
+```
+
+### Forex API Diagnostics
+
+If you experience issues with the forex data retrieval:
+
+```bash
+python backend/api/utils/diagnose_forex_api.py
+```
+
+This will run a series of diagnostic checks and output the results.
 
 ## Troubleshooting
 
@@ -225,6 +269,32 @@ streamlit run frontend/ChasquiFX.py
 3. **Clear browser cache**: Press Ctrl+F5 to force refresh the page
 
 4. **Check console**: Open your browser's developer tools to check for JavaScript errors
+
+### Missing Forex Data
+
+If you see warnings about missing forex data:
+
+1. Check that your `SERPAPI_API_KEY` is correctly set in the `.env` file
+2. Run `python backend/api/utils/diagnose_forex_api.py` to diagnose the issue
+3. If API access is unavailable, you can generate synthetic data:
+
+   ```bash
+   python backend/api/utils/generate_synthetic_forex.py
+   ```
+
+### API Connection Issues
+
+If you encounter API connection issues:
+
+1. Verify your internet connection
+2. Check that your API keys are valid
+3. Try running the application with the `--debug` flag:
+
+   ```bash
+   ./run_chasquifx.sh --debug
+   ```
+
+4. Check the logs in the `logs/` directory
 
 #### Forex Data Issues
 
