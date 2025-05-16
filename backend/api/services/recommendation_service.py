@@ -18,7 +18,10 @@ from backend.api.models.schemas import (  # noqa: E402
     DestinationRecommendation,
     RecommendationsResponse,
 )
-from backend.api.services.forex_service import get_exchange_rate  # noqa: E402
+from backend.api.services.forex_service import (  # noqa: E402
+    get_exchange_rate,
+    load_consolidated_forex_data,
+)  # noqa: E402
 from backend.api.services.geo_service import (  # noqa: E402
     get_airport_country_map,
     get_routes_for_airport,
@@ -185,9 +188,7 @@ def get_recommendations(
     airport_country_map = get_airport_country_map()
 
     # Get forex data
-    forex_data = (
-        pd.DataFrame()
-    )  # In real implementation, load the actual forex data
+    forex_data = load_consolidated_forex_data()
 
     recommendations = []
     for route in routes[:100]:  # Limit initial processing to 100 routes

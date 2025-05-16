@@ -53,6 +53,36 @@ def load_forex_data(file_path: str = DEFAULT_FOREX_DATA_PATH) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def load_consolidated_forex_data() -> pd.DataFrame:
+    """
+    Load consolidated forex data from parquet file.
+    This is the preferred method to load forex data as it contains all pairs
+    in one file.
+
+    Returns:
+        DataFrame containing all forex data indexed by currency pair
+    """
+    file_path = os.path.join(
+        os.path.dirname(DEFAULT_FOREX_DATA_PATH),
+        "consolidated_forex_data.parquet",
+    )
+
+    if not os.path.exists(file_path):
+        logger.warning(f"Consolidated forex data file not found: {file_path}")
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_parquet(file_path)
+        logger.info(
+            "Loaded consolidated forex data with "
+            f"{len(df.index.unique())} currency pairs"
+        )
+        return df
+    except Exception as e:
+        logger.error(f"Error loading consolidated forex data: {e}")
+        return pd.DataFrame()
+
+
 def load_forex_mappings(file_path: str = DEFAULT_FOREX_MAPPINGS_PATH) -> Dict:
     """
     Load forex mappings from JSON file.
