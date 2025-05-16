@@ -22,7 +22,6 @@ import FlightIcon from "@mui/icons-material/Flight";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
-import PublicIcon from "@mui/icons-material/Public";
 import CurrencyExchangeIcon from "@mui/icons-material/CurrencyExchange";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CloseIcon from "@mui/icons-material/Close";

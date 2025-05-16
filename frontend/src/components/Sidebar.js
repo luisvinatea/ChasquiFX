@@ -4,7 +4,6 @@ import {
   Typography,
   TextField,
   Button,
-  ButtonGroup,
   Slider,
   FormControlLabel,
   Checkbox,
