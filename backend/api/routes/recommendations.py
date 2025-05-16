@@ -13,8 +13,10 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 )
 
-from backend.api.models.schemas import RecommendationsResponse
-from backend.api.services.recommendation_service import get_recommendations
+from backend.api.models.schemas import RecommendationsResponse  # noqa: E402
+from backend.api.services.recommendation_service import (  # noqa: E402
+    get_recommendations,  # noqa: E402
+)
 
 router = APIRouter(prefix="/api", tags=["recommendations"])
 
@@ -46,14 +48,17 @@ async def get_destination_recommendations(
     """
     Get destination recommendations based on forex trends and available routes.
 
-    This endpoint combines forex data with flight route information to recommend
-    destinations where the exchange rate is favorable.
+    This endpoint combines forex data with flight route information to
+    recommend destinations where the exchange rate is favorable.
     """
     # Validate dates if provided
     if include_fares and (not outbound_date or not return_date):
         raise HTTPException(
             status_code=400,
-            detail="Both outbound_date and return_date must be provided when include_fares=True",
+            detail=(
+                "Both outbound_date and return_date must be provided "
+                "when include_fares=True"
+            ),
         )
 
     if outbound_date and return_date:

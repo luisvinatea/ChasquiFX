@@ -14,16 +14,18 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 )
 
-from backend.api.models.schemas import (
+from backend.api.models.schemas import (  # noqa: E402
     DestinationRecommendation,
     RecommendationsResponse,
 )
-from backend.api.services.forex_service import get_exchange_rate
-from backend.api.services.geo_service import (
+from backend.api.services.forex_service import get_exchange_rate  # noqa: E402
+from backend.api.services.geo_service import (  # noqa: E402
     get_airport_country_map,
     get_routes_for_airport,
 )
-from backend.api.services.flight_service import fetch_multiple_fares
+from backend.api.services.flight_service import (  # noqa: E402
+    fetch_multiple_fares,  # noqa: E402
+)
 
 # Set up logging
 logging.basicConfig(
@@ -164,7 +166,10 @@ def get_recommendations(
         RecommendationsResponse object
     """
     logger.info(
-        f"Generating recommendations for {departure_airport} in {base_currency}"
+        (
+            f"Generating recommendations for {departure_airport} "
+            f"in {base_currency}"
+        )
     )
 
     # Get available routes

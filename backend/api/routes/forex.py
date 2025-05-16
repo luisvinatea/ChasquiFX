@@ -13,11 +13,11 @@ sys.path.append(
 )
 
 
-from backend.api.services.forex_service import (
+from backend.api.services.forex_service import (  # noqa: E402
     load_forex_data,
     get_exchange_rate,
 )
-from backend.api.models.schemas import ExchangeRateResponse
+from backend.api.models.schemas import ExchangeRateResponse  # noqa: E402
 
 router = APIRouter(prefix="/api/forex", tags=["forex"])
 
@@ -40,7 +40,9 @@ async def get_exchange_rate_endpoint(
     if rate is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Exchange rate not found for {base_currency}/{quote_currency}",
+            detail=(
+                f"Exchange rate not found for {base_currency}/{quote_currency}"
+            ),
         )
 
     # Get trend (simplified implementation)

@@ -1,7 +1,6 @@
 """Mock data_ingestor module for testing"""
 
 import pandas as pd
-import os
 
 
 def get_forex_data(symbols=None, start_date=None, end_date=None):

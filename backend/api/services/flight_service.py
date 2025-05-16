@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 )
-from backend.api.models.schemas import FlightFare
+from backend.api.models.schemas import FlightFare  # noqa: E402
 
 # Set up logging
 logging.basicConfig(
@@ -33,7 +33,10 @@ load_dotenv(env_path)
 SERPAPI_KEY = os.getenv("SERPAPI_API_KEY")
 if not SERPAPI_KEY:
     logger.warning(
-        "SERPAPI_API_KEY not found in environment variables. Flight fare queries will use simulated data."
+        (
+            "SERPAPI_API_KEY not found in environment variables. "
+            "Flight fare queries will use simulated data."
+        )
     )
 else:
     logger.info("SERPAPI_API_KEY loaded successfully.")
@@ -95,7 +98,8 @@ def fetch_flight_fare(
                     # Handle different price formats from SerpAPI
                     if isinstance(price_value, str):
                         try:
-                            # Try to extract numeric value from string (e.g. "$123", "USD 123", "123 USD")
+                            # Try to extract numeric value from string
+                            # (e.g. "$123", "USD 123", "123 USD")
                             price_str = (
                                 price_value.replace(currency, "")
                                 .replace("$", "")
@@ -105,7 +109,12 @@ def fetch_flight_fare(
                             price_value = float(price_str)
                         except ValueError:
                             logger.warning(
-                                f"Could not parse price string: {price_value}, using default"
+                                (
+                                    f"Could not "
+                                    f"parse price string: "
+                                    f"{price_value}, "
+                                    f"using default"
+                                )
                             )
                             price_value = 100.0
 
@@ -120,7 +129,8 @@ def fetch_flight_fare(
                     duration = best_flight.get("duration", "Unknown")
 
                     logger.info(
-                        f"Successfully fetched flight data from SerpAPI: {price_value} {currency}"
+                        f"Successfully fetched flight data from SerpAPI: "
+                        f"{price_value} {currency}"
                     )
 
                     return FlightFare(
@@ -133,10 +143,14 @@ def fetch_flight_fare(
                     )
                 else:
                     logger.warning(
-                        "No flight data found in SerpAPI response, falling back to simulated data"
+                        "No flight data found in SerpAPI response, "
+                        "falling back to simulated data"
                     )
             else:
-                error_message = f"SerpAPI request failed with status code {response.status_code}"
+                error_message = (
+                    f"SerpAPI request failed with status code "
+                    f"{response.status_code}"
+                )
                 try:
                     error_data = response.json()
                     if "error" in error_data:
@@ -151,7 +165,8 @@ def fetch_flight_fare(
             logger.error(f"Error fetching flight fare from SerpAPI: {e}")
             logger.info("Falling back to simulated data")
 
-    # For demo purposes or if API key is missing or API call fails, generate simulated fare data
+    # For demo purposes or if API key is missing or API call fails,
+    # generate simulated fare data
     try:
         logger.info("Generating simulated flight fare data")
 

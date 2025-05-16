@@ -4,11 +4,11 @@ Main entry point for the ChasquiFX FastAPI application.
 """
 
 import os
-import sys
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+import sys
 
 # Add parent directory to path to enable imports
 sys.path.insert(
@@ -17,11 +17,9 @@ sys.path.insert(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ),
 )
-
-# Import from modular components
-from backend.api.config import API_HOST, API_PORT
-from backend.api.routes import router
-from backend.api.utils import get_api_logger
+from backend.api.config import API_HOST, API_PORT  # noqa: E402
+from backend.api.routes import router  # noqa: E402
+from backend.api.utils import get_api_logger  # noqa: E402
 
 # Set up logging
 logger = get_api_logger()

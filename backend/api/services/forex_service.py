@@ -17,7 +17,7 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 )
 
-from backend.api.config import (
+from backend.api.config import (  # noqa: E402
     DEFAULT_FOREX_DATA_PATH,
     DEFAULT_FOREX_MAPPINGS_PATH,
     DEFAULT_CURRENCY_CODES_PATH,
@@ -247,7 +247,8 @@ def update_forex_data(
     Update forex data by fetching from Yahoo Finance.
 
     Args:
-        currencies: List of currency codes to fetch (if None, uses default list)
+        currencies: List of currency codes to fetch
+            (if None, uses default list)
         days: Number of days of historical data to retrieve
 
     Returns:
