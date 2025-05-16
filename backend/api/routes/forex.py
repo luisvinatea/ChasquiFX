@@ -2,8 +2,8 @@
 Forex data API endpoints for ChasquiFX.
 """
 
-from fastapi import APIRouter, Query, HTTPException
-from typing import List
+from fastapi import APIRouter, Query, HTTPException, Header
+from typing import List, Dict, Optional
 import sys
 import os
 
@@ -16,10 +16,54 @@ sys.path.append(
 from backend.api.services.forex_service import (  # noqa: E402
     load_forex_data,
     get_exchange_rate,
+    update_forex_data,
 )
 from backend.api.models.schemas import ExchangeRateResponse  # noqa: E402
 
 router = APIRouter(prefix="/api/forex", tags=["forex"])
+
+
+@router.post("/refresh", status_code=200)
+async def refresh_forex_data(
+    x_serpapi_key: Optional[str] = Header(None, alias="X-Serpapi-Key"),
+) -> Dict[str, bool]:
+    """
+    Force refresh of forex data using the SerpAPI key provided in the header.
+
+    Args:
+        x_serpapi_key: SerpAPI key provided in the X-Serpapi-Key header
+
+    Returns:
+        Dictionary indicating success or failure
+    """
+    if x_serpapi_key:
+        # Set API key in environment
+        os.environ["SERPAPI_API_KEY"] = x_serpapi_key
+
+    # Try to update forex data
+    success = update_forex_data()
+
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update forex data. Check server logs for "
+            "details.",
+        )
+
+    return {"success": True}
+
+
+@router.get("/status")
+async def get_forex_status() -> Dict[str, bool]:
+    """
+    Check if we have valid forex data and SerpAPI key.
+
+    Returns:
+        Dictionary with status information
+    """
+    has_api_key = bool(os.getenv("SERPAPI_API_KEY"))
+
+    return {"has_api_key": has_api_key, "can_use_real_time_data": has_api_key}
 
 
 @router.get("/exchange_rate", response_model=ExchangeRateResponse)

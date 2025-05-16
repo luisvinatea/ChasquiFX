@@ -21,6 +21,7 @@ from backend.api.models.schemas import (  # noqa: E402
 from backend.api.services.forex_service import (  # noqa: E402
     get_exchange_rate,
     load_consolidated_forex_data,
+    ensure_fresh_forex_data,
 )  # noqa: E402
 from backend.api.services.geo_service import (  # noqa: E402
     get_airport_country_map,
@@ -323,7 +324,16 @@ def get_recommendations(
     # Get airport-country mapping
     airport_country_map = get_airport_country_map()
 
-    # Get forex data
+    # Ensure we have fresh forex data before generating recommendations
+    updated = ensure_fresh_forex_data()
+    if updated:
+        logger.info(
+            "Using freshly updated real-time forex data from Google Finance"
+        )
+    else:
+        logger.warning("Using existing forex data from filesystem")
+
+    # Get forex data (either updated or existing)
     forex_data = load_consolidated_forex_data()
 
     recommendations = []

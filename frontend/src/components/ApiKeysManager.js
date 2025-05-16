@@ -16,6 +16,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ApiIcon from "@mui/icons-material/Api";
+import ApiService from "../services/apiService";
 
 /**
  * Component to manage API keys for external services
@@ -33,6 +34,13 @@ const ApiKeysManager = ({ open, onClose }) => {
   });
 
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState({
+    show: false,
+    success: false,
+    message: "",
+  });
+  const [refreshing, setRefreshing] = useState(false);
+  const apiService = new ApiService();
 
   // Load saved API keys on component mount
   useEffect(() => {
@@ -76,6 +84,42 @@ const ApiKeysManager = ({ open, onClose }) => {
     setTimeout(() => {
       setSaveSuccess(false);
     }, 3000);
+  };
+
+  // Handle refreshing forex data
+  const handleRefreshForex = async () => {
+    if (!apiKeys.serpApi) {
+      setRefreshMessage({
+        show: true,
+        success: false,
+        message: "SerpAPI key is required to refresh forex data",
+      });
+      return;
+    }
+
+    setRefreshing(true);
+    setRefreshMessage({ show: false, success: false, message: "" });
+
+    try {
+      await apiService.refreshForexData();
+      setRefreshMessage({
+        show: true,
+        success: true,
+        message: "Forex data refreshed successfully with real-time rates!",
+      });
+    } catch (error) {
+      setRefreshMessage({
+        show: true,
+        success: false,
+        message: `Failed to refresh forex data: ${error.message}`,
+      });
+    } finally {
+      setRefreshing(false);
+      // Hide message after 5 seconds
+      setTimeout(() => {
+        setRefreshMessage({ show: false, success: false, message: "" });
+      }, 5000);
+    }
   };
 
   return (
@@ -195,9 +239,25 @@ const ApiKeysManager = ({ open, onClose }) => {
             transmitted to any server other than the respective API providers.
           </Alert>
         </Box>
+
+        {refreshMessage.show && (
+          <Alert
+            severity={refreshMessage.success ? "success" : "error"}
+            sx={{ mt: 2 }}
+          >
+            {refreshMessage.message}
+          </Alert>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          onClick={handleRefreshForex}
+          disabled={refreshing}
+          color="secondary"
+        >
+          {refreshing ? "Refreshing..." : "Refresh Forex Data"}
+        </Button>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" color="primary" onClick={handleSave}>
           Save Keys

@@ -429,8 +429,10 @@ def update_forex_data(
                     "summary" in results
                     and "extracted_price" in results["summary"]
                 ):
-                    current_rate = float(
-                        results["summary"]["extracted_price"])  # type: ignore
+                    extracted_price = (
+                        results["summary"]["extracted_price"]  # type: ignore
+                    )
+                    current_rate = float(extracted_price)
 
                 # Create a dataframe with today's rate
                 if current_rate:
@@ -493,6 +495,44 @@ def update_forex_data(
         return False
 
 
+def ensure_fresh_forex_data() -> bool:
+    """
+    Ensures forex data is up-to-date
+    by trying to update it from Google Finance.
+    This function should be called before generating recommendations
+    to make sure we're using real-time data.
+
+    Returns:
+        bool: True if data was successfully updated or is already fresh,
+              False if we're using stale data
+    """
+    try:
+        # Update forex data if API key is available
+        if SERPAPI_KEY:
+            logger.info(
+                "Attempting to update forex data with real-time data..."
+            )
+            success = update_forex_data()
+            if success:
+                logger.info(
+                    "Successfully updated forex data with real-time rates"
+                )
+                return True
+            else:
+                logger.warning(
+                    "Failed to update forex data, using existing data"
+                )
+                return False
+        else:
+            logger.warning(
+                "No SERPAPI key available, using existing forex data"
+            )
+            return False
+    except Exception as e:
+        logger.error(f"Error ensuring fresh forex data: {e}")
+        return False
+
+
 def fetch_quick_forex_data() -> Dict[str, float]:
     """
     Fetch current exchange rates for common currency pairs using
@@ -545,9 +585,8 @@ def fetch_quick_forex_data() -> Dict[str, float]:
                         and "extracted_price" in search_results["summary"]
                     ):
                         rate = float(
-                            search_results["summary"][
-                                "extracted_price"
-                            ]  # type: ignore
+                            search_results[
+                                "summary"]["extracted_price"]  # type: ignore
                         )
                         results[yahoo_pair] = rate
                         logger.info(f"Got rate for {yahoo_pair}: {rate}")

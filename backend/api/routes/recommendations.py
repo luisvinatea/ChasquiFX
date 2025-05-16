@@ -2,7 +2,7 @@
 Main API endpoints for the ChasquiFX application.
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Header
 from typing import Optional
 from datetime import datetime
 import sys
@@ -44,6 +44,7 @@ async def get_destination_recommendations(
     return_date: Optional[str] = Query(
         None, description="Return date (YYYY-MM-DD)"
     ),
+    x_serpapi_key: Optional[str] = Header(None, alias="X-Serpapi-Key"),
 ):
     """
     Get destination recommendations based on forex trends and available routes.
@@ -82,6 +83,10 @@ async def get_destination_recommendations(
                 status_code=400,
                 detail="Invalid date format. Use YYYY-MM-DD",
             )
+
+    # Set API key in environment if provided in header
+    if x_serpapi_key:
+        os.environ["SERPAPI_API_KEY"] = x_serpapi_key
 
     # Get recommendations
     recommendations = get_recommendations(

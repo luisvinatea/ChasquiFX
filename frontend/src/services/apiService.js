@@ -42,6 +42,8 @@ class ApiService {
       const enhancedParams = { ...params };
       if (apiKeys.serpApi) {
         enhancedParams.serp_api_key = apiKeys.serpApi;
+        // Set header with SerpAPI key for backend to use
+        axios.defaults.headers.common["X-Serpapi-Key"] = apiKeys.serpApi;
       }
       if (apiKeys.exchangeApi) {
         enhancedParams.exchange_api_key = apiKeys.exchangeApi;
@@ -83,6 +85,34 @@ class ApiService {
     } catch (error) {
       console.error("Failed to get routes:", error);
       return null;
+    }
+  }
+
+  // Refresh forex data
+  async refreshForexData() {
+    try {
+      const apiKeys = getApiKeys();
+      const headers = {};
+
+      if (apiKeys.serpApi) {
+        headers["X-Serpapi-Key"] = apiKeys.serpApi;
+      } else {
+        throw new Error("SerpAPI key is required to refresh forex data");
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/forex/refresh`,
+        {},
+        {
+          headers,
+          timeout: 30000, // 30 seconds timeout as this can take a while
+        }
+      );
+
+      return response.data.success;
+    } catch (error) {
+      console.error("Failed to refresh forex data:", error);
+      throw error;
     }
   }
 
