@@ -91,15 +91,21 @@ def fetch_flight_fare(
                 data = response.json()
 
                 # Process the SerpAPI response
+                flight_data = None
+                
+                # First check best_flights section
                 if "best_flights" in data and data["best_flights"]:
-                    best_flight = data["best_flights"][0]
-
-                    price_value = best_flight.get("price", 0)
-                    # Handle different price formats from SerpAPI
+                    flight_data = data["best_flights"][0]
+                # If no best_flights, check other_flights section
+                elif "other_flights" in data and data["other_flights"]:
+                    flight_data = data["other_flights"][0]
+                
+                if flight_data:
+                    # Extract price - SerpAPI returns this as a numeric value 
+                    price_value = flight_data.get("price", 0)
                     if isinstance(price_value, str):
                         try:
-                            # Try to extract numeric value from string
-                            # (e.g. "$123", "USD 123", "123 USD")
+                            # Handle string price format just in case
                             price_str = (
                                 price_value.replace(currency, "")
                                 .replace("$", "")
@@ -109,24 +115,35 @@ def fetch_flight_fare(
                             price_value = float(price_str)
                         except ValueError:
                             logger.warning(
-                                (
-                                    f"Could not "
-                                    f"parse price string: "
-                                    f"{price_value}, "
-                                    f"using default"
-                                )
+                                f"Could not parse price string: {price_value}, using default"
                             )
                             price_value = 100.0
 
-                    # Extract airline info
+                    # Extract airline information - SerpAPI may provide this in different formats
                     airlines = []
-                    if "airline" in best_flight:
-                        airlines.append(best_flight["airline"])
-                    elif "airlines" in best_flight:
-                        airlines = best_flight["airlines"]
-
-                    # Extract duration
-                    duration = best_flight.get("duration", "Unknown")
+                    
+                    # Check if there are multiple flights in the itinerary
+                    if "flights" in flight_data and flight_data["flights"]:
+                        # Collect airlines from all flight segments
+                        for flight in flight_data["flights"]:
+                            if "airline" in flight and flight["airline"] not in airlines:
+                                airlines.append(flight["airline"])
+                    # Single airline for the entire itinerary
+                    elif "airline" in flight_data:
+                        airlines.append(flight_data["airline"])
+                    # Explicit airlines list
+                    elif "airlines" in flight_data:
+                        airlines = flight_data["airlines"]
+                    
+                    # Extract duration - SerpAPI provides total_duration in minutes
+                    if "total_duration" in flight_data:
+                        # Convert minutes to hours and minutes format
+                        total_minutes = flight_data["total_duration"]
+                        hours = total_minutes // 60
+                        minutes = total_minutes % 60
+                        duration = f"{hours}h {minutes}m"
+                    else:
+                        duration = "Unknown"
 
                     logger.info(
                         f"Successfully fetched flight data from SerpAPI: "
