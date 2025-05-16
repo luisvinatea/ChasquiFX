@@ -60,7 +60,9 @@ const StatsCards = ({ recommendations }) => {
     <Box mb={4}>
       <Grid container spacing={3}>
         {/* Best Exchange Rate */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          sx={{ gridColumn: { xs: "span 12", sm: "span 6", md: "span 3" } }}
+        >
           <Paper
             elevation={2}
             sx={{
@@ -87,7 +89,9 @@ const StatsCards = ({ recommendations }) => {
         </Grid>
 
         {/* Lowest Exchange Rate */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          sx={{ gridColumn: { xs: "span 12", sm: "span 6", md: "span 3" } }}
+        >
           <Paper
             elevation={2}
             sx={{
@@ -114,7 +118,9 @@ const StatsCards = ({ recommendations }) => {
         </Grid>
 
         {/* Average Trend */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          sx={{ gridColumn: { xs: "span 12", sm: "span 6", md: "span 3" } }}
+        >
           <Paper
             elevation={2}
             sx={{
@@ -156,7 +162,9 @@ const StatsCards = ({ recommendations }) => {
         </Grid>
 
         {/* Total Destinations */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          sx={{ gridColumn: { xs: "span 12", sm: "span 6", md: "span 3" } }}
+        >
           <Paper
             elevation={2}
             sx={{

@@ -87,7 +87,7 @@ const DetailView = ({ open, onClose, destination }) => {
       <DialogContent dividers>
         <Grid container spacing={3}>
           {/* Exchange Rate Information */}
-          <Grid item xs={12} md={6}>
+          <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
             <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
               <Box display="flex" alignItems="center" mb={1}>
                 <CurrencyExchangeIcon color="primary" sx={{ mr: 1 }} />
@@ -125,7 +125,7 @@ const DetailView = ({ open, onClose, destination }) => {
           </Grid>
 
           {/* Flight Information */}
-          <Grid item xs={12} md={6}>
+          <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
             <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
               <Box display="flex" alignItems="center" mb={1}>
                 <FlightIcon color="primary" sx={{ mr: 1 }} />
@@ -149,7 +149,7 @@ const DetailView = ({ open, onClose, destination }) => {
                   </Typography>
                   <Box bgcolor="background.paper" p={1} borderRadius={1} mb={2}>
                     <Grid container spacing={2}>
-                      <Grid item xs={6}>
+                      <Grid sx={{ gridColumn: "span 6" }}>
                         <Typography variant="body2" color="textSecondary">
                           Distance
                         </Typography>
@@ -157,7 +157,7 @@ const DetailView = ({ open, onClose, destination }) => {
                           {destination.distance?.toLocaleString() || "N/A"} km
                         </Typography>
                       </Grid>
-                      <Grid item xs={6}>
+                      <Grid sx={{ gridColumn: "span 6" }}>
                         <Typography variant="body2" color="textSecondary">
                           Duration
                         </Typography>
@@ -193,7 +193,7 @@ const DetailView = ({ open, onClose, destination }) => {
           </Grid>
 
           {/* Cost Comparison */}
-          <Grid item xs={12}>
+          <Grid sx={{ gridColumn: "span 12" }}>
             <Paper elevation={2} sx={{ p: 2 }}>
               <Box display="flex" alignItems="center" mb={1}>
                 <AttachMoneyIcon color="primary" sx={{ mr: 1 }} />
