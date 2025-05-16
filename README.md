@@ -13,6 +13,7 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 - Export results to CSV
 - Modern React frontend for improved reliability and user experience
 - Locally stored API keys for secure access to external services
+- Robust API error handling with retry mechanisms
 
 ## User Interface
 
@@ -25,7 +26,11 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 
 ## API Key Setup
 
-ChasquiFX uses SerpAPI to fetch real flight data. To enable this functionality:
+ChasquiFX uses several external APIs:
+
+### SerpAPI for Google Finance Data (Forex)
+
+ChasquiFX now uses Google Finance via SerpAPI to fetch currency exchange rates, which provides more reliable data compared to the previous Yahoo Finance implementation.
 
 1. Sign up for a SerpAPI account at [https://serpapi.com/](https://serpapi.com/)
 2. Get your API key from your SerpAPI dashboard
@@ -35,9 +40,27 @@ ChasquiFX uses SerpAPI to fetch real flight data. To enable this functionality:
    SERPAPI_API_KEY=your_serpapi_key_here
    ```
 
-4. Replace `your_serpapi_key_here` with your actual SerpAPI key
+### Amadeus API for Flight Data
 
-> **Note:** Without a valid API key, the application will fall back to using simulated flight data.
+For flight data, ChasquiFX uses the Amadeus API:
+
+1. Register for an Amadeus API key at [https://developers.amadeus.com/](https://developers.amadeus.com/)
+2. Add your key and secret to the `backend/.env` file:
+
+   ```bash
+   AMADEUS_API_KEY=your_amadeus_key_here
+   AMADEUS_API_SECRET=your_amadeus_secret_here
+   ```
+
+> **Note:** Without valid API keys, the application will fall back to using simulated data with a warning message.
+
+## Recent Improvements
+
+1. **Forex Data Provider**: Switched from Yahoo Finance to Google Finance via SerpAPI for more reliable forex data
+2. **Robust API Handling**: Implemented retry mechanism with exponential backoff for handling API rate limiting
+3. **Improved Error Handling**: Better error reporting and fallback mechanisms
+4. **Environment Management**: Enhanced environment variable handling with validation and guided setup
+5. **Automated Testing**: Added unit tests for key functionality
 
 ## Quick Start
 
@@ -80,7 +103,7 @@ To stop the application, you can either:
 To check if the services are running:
 
 ```bash
-./status_ChasquiFX.sh
+./status_chasquifx.sh
 ```
 
 This will display the status of both the API server and Streamlit app.
@@ -233,36 +256,38 @@ If you continue to experience issues:
 2. Create a new issue with detailed information about the problem
 3. Include log files and your system information
 
-### Forex Data API Troubleshooting
+### Forex Data API
 
-If you encounter errors related to Yahoo Finance API with messages like "No timezone found, symbol may be delisted" or "Expecting value: line 1 column 1 (char 0)":
+ChasquiFX now uses Google Finance via SerpAPI to fetch currency exchange rates, which provides more reliable data compared to the previous Yahoo Finance implementation.
 
-1. **API Status Check**: Yahoo Finance may have changed their API or experiencing issues:
-
-   ```bash
-   # Test Yahoo Finance API connection
-   curl -s "https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X" | head
-   ```
-
-2. **Update Tickers Format**: Currency pair formats may have changed. Check in `forex_service.py`:
-
-   ```python
-   # Example: Instead of "USDJPY=X", try "JPY=X" or other formats
-   ```
-
-3. **Alternative Data Provider**: Consider implementing an alternative forex data provider:
+1. **API Configuration**: The system uses the same SERPAPI_API_KEY as the flight data:
 
    ```bash
-   # Popular alternatives include:
-   # - Alpha Vantage (https://www.alphavantage.co/)
-   # - ExchangeRate-API (https://www.exchangerate-api.com/)
-   # - Open Exchange Rates (https://openexchangerates.org/)
+   # Make sure your SERPAPI_API_KEY is set in backend/.env
+   SERPAPI_API_KEY=your_serpapi_key_here
    ```
 
-4. **Use Synthetic Data**: The application automatically falls back to synthetic data generation when API fails:
+2. **Testing the Forex API**: You can test the forex data retrieval with:
 
    ```bash
-   # You can force synthetic data mode by setting in backend/.env:
+   # Run the test script to verify SerpAPI forex integration
+   python backend/api/utils/test_serpapi_forex.py
+   ```
+
+3. **Diagnosing Issues**: If you encounter problems with forex data:
+
+   ```bash
+   # Run the diagnostic tool
+   python backend/api/utils/diagnose_forex_api.py
+   ```
+
+4. **Fallback Options**: The application can use synthetic data if API access fails:
+
+   ```bash
+   # Generate synthetic forex data
+   python backend/api/utils/generate_synthetic_forex.py
+   
+   # Or force synthetic data mode by setting in backend/.env:
    USE_SYNTHETIC_DATA=true
    ```
 

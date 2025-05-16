@@ -21,7 +21,7 @@ sys.path.append(
 
 # Import our forex service module
 try:
-    from backend.api.services.forex_service import (
+    from services.forex_service import (
         update_forex_data,
         fetch_quick_forex_data,
     )

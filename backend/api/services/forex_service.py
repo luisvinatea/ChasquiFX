@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import sys
 import time
 from serpapi import GoogleSearch
+from dotenv import load_dotenv
 
 # Set the path to the parent directory
 sys.path.append(
@@ -30,6 +31,12 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file in the parent directory
+env_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
+)
+load_dotenv(env_path)
 
 # Get API key from environment variables
 SERPAPI_KEY = os.getenv("SERPAPI_API_KEY")
@@ -283,6 +290,71 @@ def get_currency_pair(
     return pd.DataFrame()
 
 
+def execute_serpapi_request(params, max_retries=3, initial_delay=2):
+    """
+    Execute a SerpAPI request with retry mechanism and exponential backoff
+
+    Args:
+        params: Parameters for the GoogleSearch request
+        max_retries: Maximum number of retries
+        initial_delay: Initial delay in seconds between retries
+
+    Returns:
+        Dictionary with API results or error information
+    """
+    delay = initial_delay
+
+    for attempt in range(max_retries):
+        try:
+            search = GoogleSearch(params)
+            results = search.get_dict()
+
+            # Check for API rate limiting errors
+            if "error" in results:
+                error_msg = results["error"].lower()
+
+                # If rate limited and not the last attempt, retry
+                if (
+                    "rate" in error_msg
+                    and "limit" in error_msg
+                    and attempt < max_retries - 1
+                ):
+                    # Log the rate limiting
+                    retry_msg = (
+                        f"Rate limit exceeded. "
+                        f"Retry {attempt + 1}/{max_retries} in {delay}s"
+                    )
+                    logger.warning(retry_msg)
+
+                    # Wait with exponential backoff before retrying
+                    time.sleep(delay)
+                    delay = min(delay * 2, 60)  # Cap at 60 seconds
+                    continue
+
+            # Success or non-rate-limit error
+            return results
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                # Log the error and retry
+                logger.warning(
+                    f"API error (attempt {attempt + 1}/{max_retries}): "
+                    f"{str(e)[:50]}..."
+                )
+                time.sleep(delay)
+                delay = min(delay * 2, 60)  # Cap at 60 seconds
+            else:
+                # Final attempt failed
+                logger.error(
+                    f"API failed after {max_retries} attempts: "
+                    f"{str(e)[:50]}..."
+                )
+                return {"error": str(e)}
+
+    # If we reach here, all retries failed
+    return {"error": "Max retries exceeded"}
+
+
 def update_forex_data(
     currencies: Optional[List[str]] = None, days: int = 30
 ) -> bool:
@@ -335,15 +407,14 @@ def update_forex_data(
             )
 
             try:
-                # Query Google Finance via SerpAPI
+                # Query Google Finance via SerpAPI with robust retry mechanism
                 params = {
                     "engine": "google_finance",
                     "q": current_pair,
                     "api_key": SERPAPI_KEY,
                 }
 
-                search = GoogleSearch(params)
-                results = search.get_dict()
+                results = execute_serpapi_request(params)
 
                 # Check if we got valid results
                 if "error" in results:
@@ -358,7 +429,8 @@ def update_forex_data(
                     "summary" in results
                     and "extracted_price" in results["summary"]
                 ):
-                    current_rate = float(results["summary"]["extracted_price"])
+                    current_rate = float(
+                        results["summary"]["extracted_price"])  # type: ignore
 
                 # Create a dataframe with today's rate
                 if current_rate:
@@ -457,15 +529,15 @@ def fetch_quick_forex_data() -> Dict[str, float]:
 
             for google_pair, yahoo_pair in batch:
                 try:
-                    # Query Google Finance via SerpAPI
+                    # Query Google Finance via SerpAPI with retry mechanism
                     params = {
                         "engine": "google_finance",
                         "q": google_pair,
                         "api_key": SERPAPI_KEY,
                     }
 
-                    search = GoogleSearch(params)
-                    search_results = search.get_dict()
+                    # Use our helper function for robust API calls
+                    search_results = execute_serpapi_request(params)
 
                     # Check if we got valid results and extract rate
                     if (
@@ -473,7 +545,9 @@ def fetch_quick_forex_data() -> Dict[str, float]:
                         and "extracted_price" in search_results["summary"]
                     ):
                         rate = float(
-                            search_results["summary"]["extracted_price"]
+                            search_results["summary"][
+                                "extracted_price"
+                            ]  # type: ignore
                         )
                         results[yahoo_pair] = rate
                         logger.info(f"Got rate for {yahoo_pair}: {rate}")
