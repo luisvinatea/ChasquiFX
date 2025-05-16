@@ -133,14 +133,17 @@ const DetailView = ({ open, onClose, destination }) => {
               </Box>
               <Divider sx={{ mb: 2 }} />
 
-              {destination.fare !== undefined ? (
+              {destination.fare ? (
                 <>
                   <Box mb={2}>
                     <Typography variant="body2" color="textSecondary">
-                      Average Flight Cost
+                      Flight Cost
                     </Typography>
                     <Typography variant="h5">
-                      {formatCurrency(destination.fare)}
+                      {formatCurrency(
+                        destination.fare.price,
+                        destination.fare.currency
+                      )}
                     </Typography>
                   </Box>
 
@@ -151,10 +154,21 @@ const DetailView = ({ open, onClose, destination }) => {
                     <Grid container spacing={2}>
                       <Grid sx={{ gridColumn: "span 6" }}>
                         <Typography variant="body2" color="textSecondary">
+                          Route
+                        </Typography>
+                        <Typography variant="body1">
+                          {destination.departure_airport} →{" "}
+                          {destination.arrival_airport}
+                        </Typography>
+                      </Grid>
+                      <Grid sx={{ gridColumn: "span 6" }}>
+                        <Typography variant="body2" color="textSecondary">
                           Distance
                         </Typography>
                         <Typography variant="body1">
-                          {destination.distance?.toLocaleString() || "N/A"} km
+                          {destination.flight_route?.distance?.toLocaleString() ||
+                            "N/A"}{" "}
+                          km
                         </Typography>
                       </Grid>
                       <Grid sx={{ gridColumn: "span 6" }}>
@@ -162,11 +176,25 @@ const DetailView = ({ open, onClose, destination }) => {
                           Duration
                         </Typography>
                         <Typography variant="body1">
-                          {/* Calculate estimated duration based on distance */}
-                          {Math.floor(destination.distance / 800) +
-                            "h " +
-                            Math.floor((destination.distance % 800) / 13.3) +
-                            "m"}
+                          {destination.fare.duration || "N/A"}
+                        </Typography>
+                      </Grid>
+                      <Grid sx={{ gridColumn: "span 6" }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Airlines
+                        </Typography>
+                        <Typography variant="body1">
+                          {destination.fare.airlines?.join(", ") ||
+                            "Multiple Airlines"}
+                        </Typography>
+                      </Grid>
+                      <Grid sx={{ gridColumn: "span 12" }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Dates
+                        </Typography>
+                        <Typography variant="body1">
+                          {destination.fare.outbound_date} to{" "}
+                          {destination.fare.return_date}
                         </Typography>
                       </Grid>
                     </Grid>

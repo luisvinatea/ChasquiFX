@@ -108,7 +108,8 @@ const ApiKeysManager = ({ open, onClose }) => {
             SerpAPI Key
           </Typography>
           <Typography variant="body2" color="textSecondary" paragraph>
-            Used for fetching flight fare information. Get a key at{" "}
+            Used for fetching forex data from Google Finance and flight
+            information. Get a key at{" "}
             <a
               href="https://serpapi.com/"
               target="_blank"
@@ -116,6 +117,10 @@ const ApiKeysManager = ({ open, onClose }) => {
             >
               serpapi.com
             </a>
+          </Typography>
+          <Typography variant="body2" color="info.main" paragraph>
+            <strong>Important:</strong> This key is required for real-time
+            exchange rates and flight costs.
           </Typography>
           <TextField
             fullWidth
@@ -148,11 +153,14 @@ const ApiKeysManager = ({ open, onClose }) => {
 
         <Box>
           <Typography variant="subtitle1" gutterBottom>
-            Exchange Rate API Key (Optional)
+            Exchange Rate API Key (Legacy/Optional)
           </Typography>
           <Typography variant="body2" color="textSecondary" paragraph>
-            For more accurate exchange rates. Currently, the app uses free API
-            data.
+            Deprecated - Keep empty as the app now uses SerpAPI (Google Finance)
+            for forex data.
+          </Typography>
+          <Typography variant="body2" color="info.main">
+            Note: This field is maintained for backward compatibility only.
           </Typography>
           <TextField
             fullWidth

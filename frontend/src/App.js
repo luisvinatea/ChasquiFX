@@ -78,6 +78,24 @@ function App() {
 
   // Handle search submissions
   const handleSearch = async (searchParams) => {
+    // Check if SerpAPI key is available when fare data is requested
+    if (searchParams.includeFares) {
+      const apiKeys = JSON.parse(
+        localStorage.getItem("chasquiFxApiKeys") || "{}"
+      );
+
+      if (!apiKeys.serpApi) {
+        setNotification({
+          open: true,
+          message:
+            "SerpAPI key is required for flight fare data. Please set your API key.",
+          severity: "warning",
+        });
+        setApiKeysDialogOpen(true);
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
 

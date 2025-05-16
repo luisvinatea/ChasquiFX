@@ -204,17 +204,36 @@ const RecommendationsList = ({
                   </Box>
                 </Box>
 
-                {rec.fare !== undefined && (
+                {rec.fare && (
                   <Box>
                     <Typography
                       variant="body2"
                       color="textSecondary"
                       gutterBottom
                     >
-                      Average Flight Cost
+                      Flight Cost
                     </Typography>
-                    <Typography variant="h6">
-                      {formatCurrency(rec.fare)} USD
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="h6">
+                        {formatCurrency(rec.fare.price, rec.fare.currency)}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={rec.fare.duration}
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      display="block"
+                    >
+                      {rec.fare.airlines.join(", ")}
                     </Typography>
                   </Box>
                 )}
