@@ -12,6 +12,7 @@ import {
   Tab,
   Tabs,
   Button,
+  Chip,
 } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import FlightIcon from "@mui/icons-material/Flight";
@@ -179,6 +180,27 @@ function App() {
     setNotification({ ...notification, open: false });
   };
 
+  // Check if we're using real-time forex data
+  const checkForexDataStatus = () => {
+    const apiKeys = JSON.parse(
+      localStorage.getItem("chasquiFxApiKeys") || "{}"
+    );
+    if (apiKeys.serpApi) {
+      return {
+        isRealTime: true,
+        message: "Using real-time forex data from Google Finance",
+      };
+    } else {
+      return {
+        isRealTime: false,
+        message:
+          "Using synthetic forex data. Add SerpAPI key for real-time rates.",
+      };
+    }
+  };
+
+  const forexStatus = checkForexDataStatus();
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -188,13 +210,21 @@ function App() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             ChasquiFX Explorer
           </Typography>
-          <Button
-            color="inherit"
-            startIcon={<ApiIcon />}
-            onClick={() => setApiKeysDialogOpen(true)}
-          >
-            API Keys
-          </Button>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Chip
+              label={forexStatus.isRealTime ? "Real-time rates" : "Demo rates"}
+              color={forexStatus.isRealTime ? "success" : "warning"}
+              size="small"
+              sx={{ mr: 2 }}
+            />
+            <Button
+              color="inherit"
+              startIcon={<ApiIcon />}
+              onClick={() => setApiKeysDialogOpen(true)}
+            >
+              API Keys
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
 

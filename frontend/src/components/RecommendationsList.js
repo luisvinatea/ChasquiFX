@@ -109,12 +109,54 @@ const RecommendationsList = ({
     );
   }
 
+  // Check if we're using real-time forex data
+  const checkForexDataStatus = () => {
+    const apiKeys = JSON.parse(localStorage.getItem("chasquiFxApiKeys") || "{}");
+    if (apiKeys.serpApi) {
+      return {
+        isRealTime: true,
+        message: "Using real-time forex data from Google Finance"
+      };
+    } else {
+      return {
+        isRealTime: false,
+        message: "Using synthetic forex data. Add SerpAPI key for real-time rates."
+      };
+    }
+  };
+  
+  const forexStatus = checkForexDataStatus();
+  
   return (
     <>
+      <Box 
+        sx={{ 
+          p: 1, 
+          mb: 2, 
+          borderRadius: 1,
+          backgroundColor: forexStatus.isRealTime ? "rgba(76, 175, 80, 0.1)" : "rgba(255, 152, 0, 0.1)",
+          border: `1px solid ${forexStatus.isRealTime ? "#4caf50" : "#ff9800"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+        <Typography
+          variant="body2"
+          color={forexStatus.isRealTime ? "success.main" : "warning.main"}
+          align="center"
+        >
+          {forexStatus.message}
+        </Typography>
+      </Box>
+      
       <Grid container spacing={3}>
         {recommendations.map((rec, index) => (
           <Grid
-            sx={{ gridColumn: { xs: "span 12", sm: "span 6", md: "span 4" } }}
+            item
+            xs={12}
+            sm={6}
+            md={4}
             key={index}
           >
             <Card

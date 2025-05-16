@@ -12,10 +12,12 @@ import {
   IconButton,
   InputAdornment,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ApiIcon from "@mui/icons-material/Api";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import ApiService from "../services/apiService";
 
 /**
@@ -166,6 +168,32 @@ const ApiKeysManager = ({ open, onClose }) => {
             <strong>Important:</strong> This key is required for real-time
             exchange rates and flight costs.
           </Typography>
+
+          {apiKeys.serpApi && (
+            <Box sx={{ display: "flex", alignItems: "center", mt: 1, mb: 2 }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={
+                  refreshing ? <CircularProgress size={20} /> : <RefreshIcon />
+                }
+                onClick={handleRefreshForex}
+                disabled={refreshing}
+                size="small"
+              >
+                {refreshing ? "Refreshing..." : "Refresh Forex Data"}
+              </Button>
+            </Box>
+          )}
+
+          {refreshMessage.show && (
+            <Alert
+              severity={refreshMessage.success ? "success" : "error"}
+              sx={{ mb: 2 }}
+            >
+              {refreshMessage.message}
+            </Alert>
+          )}
           <TextField
             fullWidth
             variant="outlined"

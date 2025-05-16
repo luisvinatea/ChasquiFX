@@ -400,7 +400,7 @@ def update_forex_data(
         )
 
         for i in range(0, len(pairs), batch_size):
-            batch_pairs = pairs[i: i + batch_size]
+            batch_pairs = pairs[i:i + batch_size]
             current_pair = batch_pairs[0]
             logger.info(
                 f"Processing forex pair {i + 1}/{len(pairs)}: {current_pair}"
@@ -507,8 +507,38 @@ def ensure_fresh_forex_data() -> bool:
               False if we're using stale data
     """
     try:
-        # Update forex data if API key is available
-        if SERPAPI_KEY:
+        # Check if we need to update forex data based on freshness
+        need_update = True
+
+        # See if we have existing data and check its timestamp
+        forex_path = os.path.join(
+            os.path.dirname(DEFAULT_FOREX_DATA_PATH),
+            "consolidated_forex_data.parquet",
+        )
+
+        if os.path.exists(forex_path):
+            try:
+                # Check file modification time
+                mod_time = os.path.getmtime(forex_path)
+                now = time.time()
+                hours_old = (now - mod_time) / 3600  # Convert seconds to hours
+
+                # If data is less than 3 hours old, we don't need to update
+                if hours_old < 3:
+                    logger.info(
+                        f"Forex data is {hours_old:.1f} hours old, still fresh"
+                    )
+                    need_update = False
+                else:
+                    logger.info(
+                        f"Forex data is {hours_old:.1f} hours old, "
+                        f"needs refresh"
+                    )
+            except Exception as e:
+                logger.warning(f"Error checking forex data age: {e}")
+
+        # Update forex data if API key is available and update is needed
+        if SERPAPI_KEY and need_update:
             logger.info(
                 "Attempting to update forex data with real-time data..."
             )
@@ -523,6 +553,9 @@ def ensure_fresh_forex_data() -> bool:
                     "Failed to update forex data, using existing data"
                 )
                 return False
+        elif SERPAPI_KEY and not need_update:
+            # We have fresh data and an API key
+            return True
         else:
             logger.warning(
                 "No SERPAPI key available, using existing forex data"
@@ -565,7 +598,7 @@ def fetch_quick_forex_data() -> Dict[str, float]:
         # Process 5 pairs at a time to avoid excessive API calls
         batch_size = 5
         for i in range(0, len(pairs), batch_size):
-            batch = pairs[i: i + batch_size]
+            batch = pairs[i:i + batch_size]
 
             for google_pair, yahoo_pair in batch:
                 try:
@@ -582,12 +615,11 @@ def fetch_quick_forex_data() -> Dict[str, float]:
                     # Check if we got valid results and extract rate
                     if (
                         "summary" in search_results
+                        and isinstance(search_results["summary"], dict)
                         and "extracted_price" in search_results["summary"]
                     ):
-                        rate = float(
-                            search_results[
-                                "summary"]["extracted_price"]  # type: ignore
-                        )
+                        summary_dict = search_results["summary"]
+                        rate = float(summary_dict["extracted_price"])
                         results[yahoo_pair] = rate
                         logger.info(f"Got rate for {yahoo_pair}: {rate}")
 
