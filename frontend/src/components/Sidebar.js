@@ -141,7 +141,7 @@ const Sidebar = ({
         Popular Airports
       </Typography>
       <Grid container spacing={1} sx={{ mb: 2 }}>
-        <Grid sx={{ gridColumn: 'span 4' }}>
+        <Grid sx={{ gridColumn: "span 4" }}>
           <Button
             fullWidth
             size="small"
@@ -151,7 +151,7 @@ const Sidebar = ({
             🇺🇸 JFK
           </Button>
         </Grid>
-        <Grid sx={{ gridColumn: 'span 4' }}>
+        <Grid sx={{ gridColumn: "span 4" }}>
           <Button
             fullWidth
             size="small"
@@ -161,7 +161,7 @@ const Sidebar = ({
             🇬🇧 LHR
           </Button>
         </Grid>
-        <Grid sx={{ gridColumn: 'span 4' }}>
+        <Grid sx={{ gridColumn: "span 4" }}>
           <Button
             fullWidth
             size="small"
@@ -171,7 +171,7 @@ const Sidebar = ({
             🇫🇷 CDG
           </Button>
         </Grid>
-        <Grid sx={{ gridColumn: 'span 4' }}>
+        <Grid sx={{ gridColumn: "span 4" }}>
           <Button
             fullWidth
             size="small"
@@ -181,7 +181,7 @@ const Sidebar = ({
             🇺🇸 SFO
           </Button>
         </Grid>
-        <Grid sx={{ gridColumn: 'span 4' }}>
+        <Grid sx={{ gridColumn: "span 4" }}>
           <Button
             fullWidth
             size="small"
@@ -191,7 +191,7 @@ const Sidebar = ({
             🇯🇵 NRT
           </Button>
         </Grid>
-        <Grid sx={{ gridColumn: 'span 4' }}>
+        <Grid sx={{ gridColumn: "span 4" }}>
           <Button
             fullWidth
             size="small"
