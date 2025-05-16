@@ -197,7 +197,7 @@ function App() {
           </Typography>
 
           <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={3}>
+            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 3' } }}>
               <Sidebar
                 apiStatus={apiStatus}
                 departureAirport={departureAirport}
@@ -207,7 +207,7 @@ function App() {
               />
             </Grid>
 
-            <Grid item xs={12} md={9}>
+            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 9' } }}>
               <Box sx={{ width: "100%", bgcolor: "background.paper", mb: 2 }}>
                 <Tabs
                   value={currentTab}

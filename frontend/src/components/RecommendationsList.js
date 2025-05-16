@@ -113,7 +113,7 @@ const RecommendationsList = ({
     <>
       <Grid container spacing={3}>
         {recommendations.map((rec, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 4' } }} key={index}>
             <Card
               elevation={3}
               sx={{
