@@ -17,6 +17,7 @@ class FlightFare(BaseModel):
     duration: str = ""
     outbound_date: str
     return_date: str
+    carbon_emissions: Optional[int] = None
 
 
 class DestinationRecommendation(BaseModel):

@@ -300,16 +300,51 @@ def update_forex_data(
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
 
-        # Fetch data from Yahoo Finance
+        # Fetch data from Yahoo Finance with retry mechanism
         logger.info(f"Fetching forex data for {len(pairs)} currency pairs...")
-        data = yf.download(
-            pairs,
-            start=start_date,
-            end=end_date,
-            group_by="ticker",
-            auto_adjust=True,
-            progress=False,
-        )
+
+        # Split into smaller batches to avoid rate limiting
+        batch_size = 5
+        all_data = []
+
+        for i in range(0, len(pairs), batch_size):
+            batch_pairs = pairs[i: i + batch_size]
+            logger.info(
+                (
+                    f"Processing batch {i // batch_size + 1}/"
+                    f"{(len(pairs) - 1) // batch_size + 1}"
+                )
+            )
+
+            try:
+                batch_data = yf.download(
+                    batch_pairs,
+                    start=start_date,
+                    end=end_date,
+                    group_by="ticker",
+                    auto_adjust=True,
+                    progress=False,
+                )
+
+                if not batch_data.empty:
+                    all_data.append(batch_data)
+
+                # Sleep to avoid rate limiting
+                import time
+
+                time.sleep(1)
+            except Exception as batch_err:
+                logger.warning(
+                    f"Error in batch {i // batch_size + 1}: {batch_err}"
+                )
+                continue
+
+        # Combine all batches
+        if not all_data:
+            logger.warning("No forex data retrieved from any batch")
+            return False
+
+        data = pd.concat(all_data, axis=1)
 
         # Process and save data
         if data.empty:
@@ -321,8 +356,10 @@ def update_forex_data(
         processed_data = pd.DataFrame()
 
         for pair in pairs:
-            if pair in data.columns.levels[0]:
+            if pair in data.columns.get_level_values(0):
                 pair_data = data[pair].copy()
+                # Convert Close price to ExchangeRate for consistency
+                pair_data["ExchangeRate"] = pair_data["Close"]
                 pair_data["Symbol"] = pair
                 processed_data = pd.concat([processed_data, pair_data])
 
@@ -337,6 +374,15 @@ def update_forex_data(
                 os.path.dirname(DEFAULT_FOREX_DATA_PATH), exist_ok=True
             )
             processed_data.to_parquet(DEFAULT_FOREX_DATA_PATH)
+
+            # Create consolidated format
+            output_path = os.path.join(
+                os.path.dirname(DEFAULT_FOREX_DATA_PATH),
+                "consolidated_forex_data.parquet",
+            )
+            processed_data.to_parquet(output_path)
+            logger.info(f"Saved consolidated forex data to {output_path}")
+
             return True
         else:
             logger.warning("No data to save after processing")

@@ -92,16 +92,16 @@ def fetch_flight_fare(
 
                 # Process the SerpAPI response
                 flight_data = None
-                
+
                 # First check best_flights section
                 if "best_flights" in data and data["best_flights"]:
                     flight_data = data["best_flights"][0]
                 # If no best_flights, check other_flights section
                 elif "other_flights" in data and data["other_flights"]:
                     flight_data = data["other_flights"][0]
-                
+
                 if flight_data:
-                    # Extract price - SerpAPI returns this as a numeric value 
+                    # Extract price - SerpAPI returns this as a numeric value
                     price_value = flight_data.get("price", 0)
                     if isinstance(price_value, str):
                         try:
@@ -115,18 +115,26 @@ def fetch_flight_fare(
                             price_value = float(price_str)
                         except ValueError:
                             logger.warning(
-                                f"Could not parse price string: {price_value}, using default"
+                                (
+                                    f"Could not parse "
+                                    f"price string: {price_value}, "
+                                    f"using default"
+                                )
                             )
                             price_value = 100.0
 
-                    # Extract airline information - SerpAPI may provide this in different formats
+                    # Extract airline information - SerpAPI may provide this in
+                    # different formats
                     airlines = []
-                    
+
                     # Check if there are multiple flights in the itinerary
                     if "flights" in flight_data and flight_data["flights"]:
                         # Collect airlines from all flight segments
                         for flight in flight_data["flights"]:
-                            if "airline" in flight and flight["airline"] not in airlines:
+                            if (
+                                "airline" in flight
+                                and flight["airline"] not in airlines
+                            ):
                                 airlines.append(flight["airline"])
                     # Single airline for the entire itinerary
                     elif "airline" in flight_data:
@@ -134,8 +142,9 @@ def fetch_flight_fare(
                     # Explicit airlines list
                     elif "airlines" in flight_data:
                         airlines = flight_data["airlines"]
-                    
-                    # Extract duration - SerpAPI provides total_duration in minutes
+
+                    # Extract duration - SerpAPI provides total_duration in
+                    # minutes
                     if "total_duration" in flight_data:
                         # Convert minutes to hours and minutes format
                         total_minutes = flight_data["total_duration"]
@@ -145,9 +154,15 @@ def fetch_flight_fare(
                     else:
                         duration = "Unknown"
 
+                    # Extract any additional useful information
+                    carbon_emissions = None
+                    if "carbon_emissions" in flight_data:
+                        carbon_info = flight_data["carbon_emissions"]
+                        carbon_emissions = carbon_info.get("this_flight")
+
                     logger.info(
                         f"Successfully fetched flight data from SerpAPI: "
-                        f"{price_value} {currency}"
+                        f"{price_value} {currency}, duration: {duration}"
                     )
 
                     return FlightFare(
@@ -157,6 +172,7 @@ def fetch_flight_fare(
                         duration=duration,
                         outbound_date=outbound_date,
                         return_date=return_date,
+                        carbon_emissions=carbon_emissions,
                     )
                 else:
                     logger.warning(

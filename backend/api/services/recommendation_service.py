@@ -52,16 +52,34 @@ def calculate_trend(
     Returns:
         Trend value between -1 and 1 (-1 being downward, 1 being upward)
     """
-    if forex_data.empty or currency_pair not in forex_data.index:
+    if forex_data.empty:
         return 0.0
 
     try:
+        # Check if the currency pair exists in the data
+        if currency_pair not in forex_data.index.unique(level=0):
+            logger.warning(
+                f"Currency pair {currency_pair} not found in forex data"
+            )
+            return 0.0
+
         # Get the data for this pair
         pair_data = forex_data.loc[currency_pair]
 
-        # Handle both Series and DataFrame
+        # Handle both Series and DataFrame cases
         if isinstance(pair_data, pd.Series):
             # If we only have one data point, can't calculate trend
+            return 0.0
+
+        # Make sure we have ExchangeRate column, if not try Close
+        rate_column = (
+            "ExchangeRate" if "ExchangeRate" in pair_data.columns else "Close"
+        )
+
+        if rate_column not in pair_data.columns:
+            logger.warning(
+                "Neither 'ExchangeRate' nor 'Close' column found in data"
+            )
             return 0.0
 
         # Sort by date in ascending order
@@ -74,7 +92,7 @@ def calculate_trend(
             return 0.0
 
         # Calculate trend using linear regression slope
-        y = pair_data["ExchangeRate"].values
+        y = pair_data[rate_column].values
         x = list(range(len(y)))  # Convert range to list
         n = len(y)
 
@@ -85,13 +103,13 @@ def calculate_trend(
         ) / (n * sum(x_i * x_i for x_i in x) - sum(x) ** 2)
 
         # Normalize to range [-1, 1]
-        avg_price = pair_data["ExchangeRate"].mean()
+        avg_price = pair_data[rate_column].mean()
         normalized_slope = m * days / avg_price
 
         # Clamp to range [-1, 1]
         return max(min(normalized_slope, 1.0), -1.0)
     except Exception as e:
-        logger.error(f"Error calculating trend: {e}")
+        logger.error(f"Error calculating trend for {currency_pair}: {e}")
         return 0.0
 
 
@@ -117,80 +135,149 @@ def get_exchange_rate_with_trend(
         return (1.0, 0.0)
 
     try:
-        # Check if direct pair exists
-        if currency_pair in forex_data.index:
-            # Get the most recent exchange rate data
+        # Check if direct pair exists in the data
+        pair_exists = currency_pair in forex_data.index.unique(level=0)
+        inverse_exists = inverse_pair in forex_data.index.unique(level=0)
+
+        # Direct pair found
+        if pair_exists:
+            # Get the data for this pair
             pair_data = forex_data.loc[currency_pair]
+
+            # Determine which column contains the exchange rate
+            rate_column = (
+                "ExchangeRate"
+                if "ExchangeRate" in pair_data.columns
+                else "Close"
+            )
+
+            if rate_column not in pair_data.columns:
+                logger.warning(f"No rate column found for {currency_pair}")
+                return (1.0, 0.0)
 
             # Handle both single row and multiple row results
             if isinstance(pair_data, pd.Series):
-                rate = pair_data["ExchangeRate"]
+                rate = pair_data[rate_column]
             else:  # DataFrame
                 # Sort by date (descending) and take the most recent
                 pair_data = pair_data.sort_values("Date", ascending=False)
-                rate = pair_data["ExchangeRate"].iloc[0]
+                rate = pair_data[rate_column].iloc[0]
 
             # Ensure rate is a float
             rate_float = float(str(rate))
 
-            # For now, using a fixed trend since we don't have enough
-            # historical data in the right format
-            trend = 0.1  # Slight positive trend as a placeholder
+            # Calculate trend using our trend function
+            trend = calculate_trend(forex_data, currency_pair)
+
             return (rate_float, trend)
 
         # Check if inverse pair exists
-        elif inverse_pair in forex_data.index:
-            # Get the most recent exchange rate data
+        elif inverse_exists:
+            # Get the data for inverse pair
             pair_data = forex_data.loc[inverse_pair]
+
+            # Determine which column contains the exchange rate
+            rate_column = (
+                "ExchangeRate"
+                if "ExchangeRate" in pair_data.columns
+                else "Close"
+            )
+
+            if rate_column not in pair_data.columns:
+                logger.warning(f"No rate column found for {inverse_pair}")
+                return (1.0, 0.0)
 
             # Handle both single row and multiple row results
             if isinstance(pair_data, pd.Series):
-                inverse_value = pair_data["ExchangeRate"]
+                inverse_value = pair_data[rate_column]
             else:  # DataFrame
                 # Sort by date (descending) and take the most recent
                 pair_data = pair_data.sort_values("Date", ascending=False)
-                inverse_value = pair_data["ExchangeRate"].iloc[0]
+                inverse_value = pair_data[rate_column].iloc[0]
 
             # Convert to float through string representation for safety
             inverse_float = float(str(inverse_value))
-            rate_float = 1.0 / inverse_float
 
-            # For now, using a fixed trend
-            trend = -0.1  # Slight negative trend as placeholder for inverse
+            # Invert the rate
+            if inverse_float != 0:
+                rate_float = 1.0 / inverse_float
+            else:
+                logger.warning(f"Zero exchange rate found for {inverse_pair}")
+                rate_float = 1.0
+
+            # Calculate trend of inverse pair and negate it for our pair
+            inverse_trend = calculate_trend(forex_data, inverse_pair)
+            trend = -inverse_trend  # Invert the trend
+
             return (rate_float, trend)
 
         # Try to calculate using USD as intermediate
         else:
-            base_usd = get_exchange_rate(base_currency, "USD")
-            usd_quote = get_exchange_rate("USD", quote_currency)
+            base_usd_pair = f"{base_currency}USD=X"
+            usd_quote_pair = f"USD{quote_currency}=X"
+
+            base_usd = None
+            usd_quote = None
+
+            # Try to get base/USD pair data
+            if base_usd_pair in forex_data.index.unique(level=0):
+                base_usd_data = forex_data.loc[base_usd_pair]
+                rate_column = (
+                    "ExchangeRate"
+                    if "ExchangeRate" in base_usd_data.columns
+                    else "Close"
+                )
+                if isinstance(base_usd_data, pd.Series):
+                    base_usd = base_usd_data[rate_column]
+                else:
+                    base_usd_data = base_usd_data.sort_values(
+                        "Date", ascending=False
+                    )
+                    base_usd = base_usd_data[rate_column].iloc[0]
+                base_usd = float(str(base_usd))
+
+            # Try to get USD/quote pair data
+            if usd_quote_pair in forex_data.index.unique(level=0):
+                usd_quote_data = forex_data.loc[usd_quote_pair]
+                rate_column = (
+                    "ExchangeRate"
+                    if "ExchangeRate" in usd_quote_data.columns
+                    else "Close"
+                )
+                if isinstance(usd_quote_data, pd.Series):
+                    usd_quote = usd_quote_data[rate_column]
+                else:
+                    usd_quote_data = usd_quote_data.sort_values(
+                        "Date", ascending=False
+                    )
+                    usd_quote = usd_quote_data[rate_column].iloc[0]
+                usd_quote = float(str(usd_quote))
+
+            # If direct pairs not found, try the API
+            if base_usd is None:
+                base_usd = get_exchange_rate(base_currency, "USD")
+
+            if usd_quote is None:
+                usd_quote = get_exchange_rate("USD", quote_currency)
 
             if base_usd and usd_quote:
                 rate = base_usd * usd_quote
-                # We can't calculate trend in this case
+                # We can't calculate accurate trend in this case
                 return (rate, 0.0)
 
             logger.warning(
                 f"Exchange rate not found for {base_currency}/{quote_currency}"
             )
             return (1.0, 0.0)
+
     except Exception as e:
-        logger.error(f"Error getting exchange rate: {e}")
+        logger.error(
+            (
+                f"Error getting exchange rate for {base_currency}/"
+                f"{quote_currency}: {e}"
+            )
+        )
         return (1.0, 0.0)
-
-    # Try to calculate using USD as intermediate
-    else:
-        base_usd = get_exchange_rate(base_currency, "USD")
-        usd_quote = get_exchange_rate("USD", quote_currency)
-
-        if base_usd and usd_quote:
-            rate = base_usd * usd_quote
-            # We can't calculate trend in this case
-            return (rate, 0.0)
-
-    logger.warning(
-        f"Exchange rate not found for {base_currency}/{quote_currency}"
-    )
-    return (1.0, 0.0)
 
 
 def get_recommendations(
