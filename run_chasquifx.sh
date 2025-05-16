@@ -39,8 +39,8 @@ stop_services() {
         kill $API_PID
         print_message "yellow" "API server stopped."
     fi
-    if [ ! -z "$STREAMLIT_PID" ] && ps -p $STREAMLIT_PID >/dev/null; then
-        kill $STREAMLIT_PID
+    if [ ! -z "$STREAMLIT_PID" ] && ps -p "$STREAMLIT_PID" >/dev/null; then
+        kill "$STREAMLIT_PID"
         print_message "yellow" "Streamlit app stopped."
     fi
     print_message "green" "ChasquiFX shutdown complete."
@@ -52,7 +52,7 @@ trap stop_services SIGINT SIGTERM
 
 # Start the FastAPI server
 print_message "green" "Starting API server..."
-"$PROJECT_ROOT/.chasquifx/bin/python" -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
+"$PROJECT_ROOT/.venv/bin/python" -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 >logs/api_server.log 2>&1 &
 API_PID=$!
 
 # Wait a moment to let the API server start
@@ -107,7 +107,7 @@ while true; do
     fi
 
     # Check if Streamlit app is still running
-    if ! ps -p $STREAMLIT_PID >/dev/null; then
+    if ! ps -p "$STREAMLIT_PID" >/dev/null; then
         print_message "red" "Streamlit app has stopped unexpectedly!"
         stop_services
     fi
