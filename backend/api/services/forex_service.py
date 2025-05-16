@@ -8,9 +8,10 @@ from typing import Dict, Optional, List, Union
 import pandas as pd
 import json
 import logging
-import yfinance as yf
 from datetime import datetime, timedelta
 import sys
+import time
+from serpapi import GoogleSearch
 
 # Set the path to the parent directory
 sys.path.append(
@@ -29,6 +30,18 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Get API key from environment variables
+SERPAPI_KEY = os.getenv("SERPAPI_API_KEY")
+if not SERPAPI_KEY:
+    logger.warning(
+        (
+            "SERPAPI_API_KEY not found in environment variables. "
+            "Forex data queries will use synthetic data."
+        )
+    )
+else:
+    logger.info("SERPAPI_API_KEY loaded successfully for forex data.")
 
 
 def load_forex_data(file_path: str = DEFAULT_FOREX_DATA_PATH) -> pd.DataFrame:
@@ -274,7 +287,7 @@ def update_forex_data(
     currencies: Optional[List[str]] = None, days: int = 30
 ) -> bool:
     """
-    Update forex data by fetching from Yahoo Finance.
+    Update forex data by fetching from Google Finance via SerpAPI.
 
     Args:
         currencies: List of currency codes to fetch
@@ -285,87 +298,102 @@ def update_forex_data(
         True if update was successful, False otherwise
     """
     try:
+        # Check if SERPAPI_KEY is available
+        if not SERPAPI_KEY:
+            logger.warning(
+                "No SERPAPI_API_KEY found. Cannot fetch forex data."
+            )
+            return False
+
         # Use a default list of major currencies if none provided
         if not currencies:
             currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF"]
 
-        # Generate all currency pairs
+        logger.info("Fetching forex data using Google Finance via SerpAPI...")
+
+        # Generate all currency pairs in Google Finance format
+        # (currency1-currency2)
         pairs = []
         for base in currencies:
             for quote in currencies:
                 if base != quote:
-                    pairs.append(f"{base}{quote}=X")
+                    pairs.append(f"{base}-{quote}")
 
-        # Set date range
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
-
-        # Fetch data from Yahoo Finance with retry mechanism
-        logger.info(f"Fetching forex data for {len(pairs)} currency pairs...")
+        # Prepare data structure for results
+        processed_data = pd.DataFrame()
 
         # Split into smaller batches to avoid rate limiting
-        batch_size = 5
-        all_data = []
+        batch_size = (
+            1  # SerpAPI has stricter limits, process one pair at a time
+        )
 
         for i in range(0, len(pairs), batch_size):
             batch_pairs = pairs[i: i + batch_size]
+            current_pair = batch_pairs[0]
             logger.info(
-                (
-                    f"Processing batch {i // batch_size + 1}/"
-                    f"{(len(pairs) - 1) // batch_size + 1}"
-                )
+                f"Processing forex pair {i + 1}/{len(pairs)}: {current_pair}"
             )
 
             try:
-                batch_data = yf.download(
-                    batch_pairs,
-                    start=start_date,
-                    end=end_date,
-                    group_by="ticker",
-                    auto_adjust=True,
-                    progress=False,
-                )
+                # Query Google Finance via SerpAPI
+                params = {
+                    "engine": "google_finance",
+                    "q": current_pair,
+                    "api_key": SERPAPI_KEY,
+                }
 
-                if not batch_data.empty:
-                    all_data.append(batch_data)
+                search = GoogleSearch(params)
+                results = search.get_dict()
+
+                # Check if we got valid results
+                if "error" in results:
+                    logger.warning(
+                        f"SerpAPI error for {current_pair}: {results['error']}"
+                    )
+                    continue
+
+                # Extract current exchange rate from summary
+                current_rate = None
+                if (
+                    "summary" in results
+                    and "extracted_price" in results["summary"]
+                ):
+                    current_rate = float(results["summary"]["extracted_price"])
+
+                # Create a dataframe with today's rate
+                if current_rate:
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    # Format symbol like Yahoo Finance for compatibility
+                    symbol = f"{current_pair.replace('-', '')}=X"
+
+                    df = pd.DataFrame(
+                        {
+                            "Date": [today],
+                            "Open": [current_rate],
+                            "High": [current_rate * 1.005],  # Estimate
+                            "Low": [current_rate * 0.995],  # Estimate
+                            "Close": [current_rate],
+                            "Volume": [0],  # Not available
+                            "Symbol": [symbol],
+                            "ExchangeRate": [current_rate],
+                        }
+                    )
+
+                    processed_data = pd.concat(
+                        [processed_data, df], ignore_index=True
+                    )
+                    logger.info(
+                        f"Got exchange rate for {symbol}: {current_rate}"
+                    )
 
                 # Sleep to avoid rate limiting
-                import time
-
-                time.sleep(1)
+                time.sleep(2)
             except Exception as batch_err:
-                logger.warning(
-                    f"Error in batch {i // batch_size + 1}: {batch_err}"
-                )
+                logger.warning(f"Error processing {current_pair}: {batch_err}")
                 continue
-
-        # Combine all batches
-        if not all_data:
-            logger.warning("No forex data retrieved from any batch")
-            return False
-
-        data = pd.concat(all_data, axis=1)
-
-        # Process and save data
-        if data.empty:
-            logger.warning("No forex data retrieved")
-            return False
-
-        # Restructure data
-        logger.info("Processing forex data...")
-        processed_data = pd.DataFrame()
-
-        for pair in pairs:
-            if pair in data.columns.get_level_values(0):
-                pair_data = data[pair].copy()
-                # Convert Close price to ExchangeRate for consistency
-                pair_data["ExchangeRate"] = pair_data["Close"]
-                pair_data["Symbol"] = pair
-                processed_data = pd.concat([processed_data, pair_data])
 
         # Set index for efficient lookups
         if not processed_data.empty:
-            processed_data = processed_data.reset_index()
             processed_data = processed_data.set_index(["Symbol", "Date"])
 
             # Save to parquet
@@ -395,39 +423,68 @@ def update_forex_data(
 
 def fetch_quick_forex_data() -> Dict[str, float]:
     """
-    Fetch current exchange rates for common currency pairs.
+    Fetch current exchange rates for common currency pairs using
+    Google Finance.
 
     Returns:
         Dictionary mapping currency pairs to rates
     """
     try:
-        # Get list of major currencies
+        # Check if SERPAPI_KEY is available
+        if not SERPAPI_KEY:
+            logger.warning(
+                "No SERPAPI_API_KEY found. Cannot fetch forex data."
+            )
+            return {}
+
+        # Use a list of major currencies
         currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF"]
 
-        # Generate all currency pairs
+        # Generate all currency pairs in Google Finance format
         pairs = []
         for base in currencies:
             for quote in currencies:
                 if base != quote:
-                    pairs.append(f"{base}{quote}=X")
+                    pairs.append((f"{base}-{quote}", f"{base}{quote}"))
 
-        # Fetch current data
-        tickers = yf.Tickers(" ".join(pairs))
-
-        # Extract latest prices
+        # Fetch exchange rates
         results = {}
-        for pair, ticker in tickers.tickers.items():
-            try:
-                info = ticker.info
-                if (
-                    "regularMarketPrice" in info
-                    and info["regularMarketPrice"] is not None
-                ):
-                    results[pair.replace("=X", "")] = info[
-                        "regularMarketPrice"
-                    ]
-            except Exception as e:
-                logger.warning(f"Could not get data for {pair}: {e}")
+
+        # Process 5 pairs at a time to avoid excessive API calls
+        batch_size = 5
+        for i in range(0, len(pairs), batch_size):
+            batch = pairs[i: i + batch_size]
+
+            for google_pair, yahoo_pair in batch:
+                try:
+                    # Query Google Finance via SerpAPI
+                    params = {
+                        "engine": "google_finance",
+                        "q": google_pair,
+                        "api_key": SERPAPI_KEY,
+                    }
+
+                    search = GoogleSearch(params)
+                    search_results = search.get_dict()
+
+                    # Check if we got valid results and extract rate
+                    if (
+                        "summary" in search_results
+                        and "extracted_price" in search_results["summary"]
+                    ):
+                        rate = float(
+                            search_results["summary"]["extracted_price"]
+                        )
+                        results[yahoo_pair] = rate
+                        logger.info(f"Got rate for {yahoo_pair}: {rate}")
+
+                    # Sleep to avoid rate limiting
+                    time.sleep(1)
+                except Exception as e:
+                    logger.warning(
+                        f"Could not get data for {google_pair}: {e}"
+                    )
+                    continue
 
         return results
 

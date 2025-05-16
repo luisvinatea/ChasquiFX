@@ -167,7 +167,7 @@ streamlit run frontend/ChasquiFX.py
 2. **Check API status**: Use the status indicator in the app or run:
 
    ```bash
-   ./status_ChasquiFX.sh
+   ./status_chasquifx.sh
    ```
 
 3. **Clear React cache**: For the React frontend:
@@ -175,6 +175,16 @@ streamlit run frontend/ChasquiFX.py
    ```bash
    # Clear React browser cache
    # In Chrome, open Developer Tools (F12) > Application > Clear storage > Clear site data
+   ```
+
+4. **Forex data API issues**: If you see yfinance errors like "No timezone found, symbol may be delisted":
+
+   ```bash
+   # Check if Yahoo Finance API is accessible
+   curl -s "https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X"
+   
+   # You may need to use an alternative data provider by updating the forex_service.py
+   # The application will fall back to synthetic data if real data can't be fetched
    ```
 
 #### Visualization issues
@@ -193,6 +203,28 @@ streamlit run frontend/ChasquiFX.py
 
 4. **Check console**: Open your browser's developer tools to check for JavaScript errors
 
+#### Forex Data Issues
+
+If you encounter errors with forex data retrieval:
+
+1. **Run diagnostics** to check the Yahoo Finance API connection:
+
+   ```bash
+   python backend/api/utils/diagnose_forex_api.py
+   ```
+
+2. **Generate synthetic data** as a fallback solution:
+
+   ```bash
+   python backend/api/utils/generate_synthetic_forex.py
+   ```
+
+3. **Update settings**: Add a setting to your `backend/.env` file to use synthetic data:
+
+   ```bash
+   USE_SYNTHETIC_DATA=true
+   ```
+
 ### Support
 
 If you continue to experience issues:
@@ -200,6 +232,39 @@ If you continue to experience issues:
 1. Check the GitHub Issues page for similar problems
 2. Create a new issue with detailed information about the problem
 3. Include log files and your system information
+
+### Forex Data API Troubleshooting
+
+If you encounter errors related to Yahoo Finance API with messages like "No timezone found, symbol may be delisted" or "Expecting value: line 1 column 1 (char 0)":
+
+1. **API Status Check**: Yahoo Finance may have changed their API or experiencing issues:
+
+   ```bash
+   # Test Yahoo Finance API connection
+   curl -s "https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X" | head
+   ```
+
+2. **Update Tickers Format**: Currency pair formats may have changed. Check in `forex_service.py`:
+
+   ```python
+   # Example: Instead of "USDJPY=X", try "JPY=X" or other formats
+   ```
+
+3. **Alternative Data Provider**: Consider implementing an alternative forex data provider:
+
+   ```bash
+   # Popular alternatives include:
+   # - Alpha Vantage (https://www.alphavantage.co/)
+   # - ExchangeRate-API (https://www.exchangerate-api.com/)
+   # - Open Exchange Rates (https://openexchangerates.org/)
+   ```
+
+4. **Use Synthetic Data**: The application automatically falls back to synthetic data generation when API fails:
+
+   ```bash
+   # You can force synthetic data mode by setting in backend/.env:
+   USE_SYNTHETIC_DATA=true
+   ```
 
 ## License
 
