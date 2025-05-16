@@ -77,11 +77,13 @@ async def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
 
+
 # Root endpoint for basic connectivity check
 @app.get("/", tags=["root"])
 async def root():
     """Root endpoint for basic connectivity checks."""
     return {"status": "ok", "message": "ChasquiFX API is running"}
+
 
 # Run the application when this file is executed directly
 if __name__ == "__main__":

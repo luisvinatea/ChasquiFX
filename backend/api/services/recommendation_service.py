@@ -10,7 +10,9 @@ import os
 import sys
 
 # Set the path to the parent directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+)
 
 from backend.api.models.schemas import (
     DestinationRecommendation,

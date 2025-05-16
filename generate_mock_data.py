@@ -241,7 +241,9 @@ for currency in currencies:
 
     # Generate random exchange rates with a trend
     base_rate = np.random.uniform(0.5, 150)
-    if currency == "JPY" or currency == "THB":  # Higher values for these currencies
+    if (
+        currency == "JPY" or currency == "THB"
+    ):  # Higher values for these currencies
         base_rate = np.random.uniform(80, 150)
     elif currency == "AED" or currency == "MXN":
         base_rate = np.random.uniform(10, 30)
@@ -249,7 +251,9 @@ for currency in currencies:
     # Add some randomness and trend
     trend = np.random.uniform(-0.1, 0.1)
     noise = np.random.normal(0, 0.02, size=len(dates))
-    rates = [base_rate * (1 + trend * i / 90 + noise[i]) for i in range(len(dates))]
+    rates = [
+        base_rate * (1 + trend * i / 90 + noise[i]) for i in range(len(dates))
+    ]
 
     # Create DataFrame for this currency pair
     forex_data = pd.DataFrame(

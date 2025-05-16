@@ -11,7 +11,9 @@ from backend.api.config import ENRICHED_DIR
 import sys
 
 # Set the path to the parent directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+)
 
 # Set up logging
 logging.basicConfig(

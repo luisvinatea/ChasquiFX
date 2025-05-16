@@ -13,7 +13,9 @@ from datetime import datetime, timedelta
 import sys
 
 # Set the path to the parent directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+)
 
 from backend.api.config import (
     DEFAULT_FOREX_DATA_PATH,
