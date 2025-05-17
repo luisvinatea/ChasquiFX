@@ -1,0 +1,3 @@
+"""
+Authentication middleware for ChasquiFX.
+"""

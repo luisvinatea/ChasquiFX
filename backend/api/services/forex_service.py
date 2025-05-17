@@ -25,6 +25,12 @@ from backend.api.config import (  # noqa: E402
     DEFAULT_CURRENCY_CODES_PATH,
 )
 
+from backend.api.db.operations import (  # noqa: E402
+    get_cached_forex_data,
+    cache_forex_data,
+    log_api_call,
+)
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -400,7 +406,7 @@ def update_forex_data(
         )
 
         for i in range(0, len(pairs), batch_size):
-            batch_pairs = pairs[i:i + batch_size]
+            batch_pairs = pairs[i: i + batch_size]
             current_pair = batch_pairs[0]
             logger.info(
                 f"Processing forex pair {i + 1}/{len(pairs)}: {current_pair}"
@@ -566,10 +572,13 @@ def ensure_fresh_forex_data() -> bool:
         return False
 
 
-def fetch_quick_forex_data() -> Dict[str, float]:
+async def fetch_quick_forex_data() -> Dict[str, float]:
     """
     Fetch current exchange rates for common currency pairs using
     Google Finance.
+
+    Checks database cache first before making API calls.
+    Logs API usage for analytics.
 
     Returns:
         Dictionary mapping currency pairs to rates
@@ -595,41 +604,61 @@ def fetch_quick_forex_data() -> Dict[str, float]:
         # Fetch exchange rates
         results = {}
 
-        # Process 5 pairs at a time to avoid excessive API calls
-        batch_size = 5
-        for i in range(0, len(pairs), batch_size):
-            batch = pairs[i:i + batch_size]
-
-            for google_pair, yahoo_pair in batch:
-                try:
-                    # Query Google Finance via SerpAPI with retry mechanism
-                    params = {
-                        "engine": "google_finance",
-                        "q": google_pair,
-                        "api_key": SERPAPI_KEY,
-                    }
-
-                    # Use our helper function for robust API calls
-                    search_results = execute_serpapi_request(params)
-
-                    # Check if we got valid results and extract rate
-                    if (
-                        "summary" in search_results
-                        and isinstance(search_results["summary"], dict)
-                        and "extracted_price" in search_results["summary"]
-                    ):
-                        summary_dict = search_results["summary"]
-                        rate = float(summary_dict["extracted_price"])
-                        results[yahoo_pair] = rate
-                        logger.info(f"Got rate for {yahoo_pair}: {rate}")
-
-                    # Sleep to avoid rate limiting
-                    time.sleep(1)
-                except Exception as e:
-                    logger.warning(
-                        f"Could not get data for {google_pair}: {e}"
-                    )
+        # Process each pair with cache awareness
+        for google_pair, yahoo_pair in pairs:
+            try:
+                # First check cache
+                cached_data = await get_cached_forex_data(yahoo_pair)
+                if cached_data:
+                    # Use cached data
+                    rate = float(cached_data.get("rate", 0))
+                    results[yahoo_pair] = rate
+                    logger.info(f"Using cached rate for {yahoo_pair}: {rate}")
                     continue
+
+                # Not in cache, query Google Finance via SerpAPI
+                params = {
+                    "engine": "google_finance",
+                    "q": google_pair,
+                    "api_key": SERPAPI_KEY,
+                }
+
+                # Log API call
+                await log_api_call(
+                    endpoint="serpapi/google_finance",
+                    request_data={"query": google_pair},
+                    response_status=200,
+                )
+
+                # Use our helper function for robust API calls
+                search_results = execute_serpapi_request(params)
+
+                # Check if we got valid results and extract rate
+                if (
+                    "summary" in search_results
+                    and isinstance(search_results["summary"], dict)
+                    and "extracted_price" in search_results["summary"]
+                ):
+                    summary_dict = search_results["summary"]
+                    rate = float(summary_dict["extracted_price"])
+                    results[yahoo_pair] = rate
+                    logger.info(f"Got rate for {yahoo_pair}: {rate}")
+
+                    # Cache the result
+                    await cache_forex_data(
+                        yahoo_pair,
+                        {
+                            "rate": rate,
+                            "timestamp": datetime.utcnow().isoformat(),
+                        },
+                        expiry_hours=3,  # Cache for 3 hours
+                    )
+
+                # Sleep to avoid rate limiting
+                time.sleep(1)
+            except Exception as e:
+                logger.warning(f"Could not get data for {google_pair}: {e}")
+                continue
 
         return results
 
