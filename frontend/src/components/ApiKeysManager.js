@@ -18,7 +18,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ApiIcon from "@mui/icons-material/Api";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import ApiService from "../services/apiService";
+import { apiService } from "../services/apiService";
 
 /**
  * Component to manage API keys for external services
@@ -42,7 +42,6 @@ const ApiKeysManager = ({ open, onClose }) => {
     message: "",
   });
   const [refreshing, setRefreshing] = useState(false);
-  const apiService = new ApiService();
 
   // Load saved API keys on component mount
   useEffect(() => {
