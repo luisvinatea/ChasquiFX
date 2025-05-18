@@ -6,6 +6,8 @@ This module provides functions for database CRUD operations.
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import json
+import os
+import tempfile
 
 from ..utils.logging_utils import setup_logger
 from .supabase_client import supabase
@@ -398,3 +400,229 @@ async def get_user_recommendations(
     except Exception as e:
         logger.error(f"Error retrieving user recommendations: {str(e)}")
         return []
+
+
+# Parquet Storage Functions - Supabase Storage for Parquet Files
+
+
+def upload_parquet_to_supabase(
+    local_file_path: str,
+    storage_bucket: str = "parquet",
+    file_key: Optional[str] = None,
+) -> Optional[Dict]:
+    """
+    Upload a Parquet file to Supabase storage.
+
+    Args:
+        local_file_path: Path to the local Parquet file
+        storage_bucket: Supabase storage bucket name (default: "parquet")
+        file_key: Optional custom key for the file
+            (default: derived from filename)
+
+    Returns:
+        Dict with storage metadata if successful, None otherwise
+    """
+    if not supabase:
+        logger.warning(
+            "Supabase client not available. Cannot upload Parquet file."
+        )
+        return None
+
+    if not os.path.exists(local_file_path):
+        logger.error(f"Parquet file not found: {local_file_path}")
+        return None
+
+    try:
+        # Generate file key if not provided
+        if not file_key:
+            # Extract category from path (e.g., 'flights', 'forex', 'geo')
+            path_parts = local_file_path.split(os.sep)
+            if "flights" in path_parts:
+                category = "flights"
+            elif "forex" in path_parts:
+                category = "forex"
+            elif "geo" in path_parts:
+                category = "geo"
+            else:
+                category = "other"
+
+            # Use filename without extension as key
+            filename = os.path.basename(local_file_path)
+            base_filename = os.path.splitext(filename)[0]
+            file_key = f"{category}/{base_filename}"
+
+        # Storage path within the bucket
+        storage_path = f"{file_key}.parquet"
+
+        # Get file size
+        file_size = os.path.getsize(local_file_path)
+
+        # Read file contents
+        with open(local_file_path, "rb") as f:
+            file_contents = f.read()
+
+        # Upload to Supabase storage
+        try:
+            # Upload file to storage
+            supabase.storage.from_(storage_bucket).upload(
+                path=storage_path,
+                file=file_contents,
+                file_options={"content-type": "application/octet-stream"},
+            )
+
+            # Get file metadata and public URL
+            file_info = supabase.storage.from_(storage_bucket).get_public_url(
+                path=storage_path
+            )
+
+            # Create database record
+            parquet_entry = {
+                "file_key": file_key,
+                "file_path": storage_path,
+                "original_path": local_file_path,
+                "file_size": file_size,
+                "etag": str(hash(file_contents)),  # Simple hash as etag
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+                "is_active": True,
+                "metadata": json.dumps(
+                    {
+                        "content_type": "application/octet-stream",
+                        "storage_bucket": storage_bucket,
+                        "public_url": file_info,
+                    }
+                ),
+            }
+
+            # Mark any previous versions as inactive
+            supabase.table("parquet_storage").update({"is_active": False}).eq(
+                "file_key", file_key
+            ).neq("file_path", storage_path).execute()
+
+            # Insert new record
+            db_result = (
+                supabase.table("parquet_storage")
+                .insert(parquet_entry)
+                .execute()
+            )
+
+            if db_result.data:
+                logger.info(
+                    f"Successfully uploaded Parquet file {file_key} "
+                    f"to Supabase storage"
+                )
+                return db_result.data[0]
+            else:
+                logger.error(
+                    "Failed to create database record for Parquet file"
+                )
+                return None
+        except Exception as se:
+            logger.error(
+                f"Failed to upload Parquet file to Supabase storage: {str(se)}"
+            )
+            return None
+
+    except Exception as e:
+        logger.error(f"Error uploading Parquet file to Supabase: {str(e)}")
+        return None
+
+
+async def download_parquet_from_supabase(
+    file_key: str,
+    local_path: Optional[str] = None,
+    storage_bucket: str = "parquet",
+) -> Optional[str]:
+    """
+    Download a Parquet file from Supabase storage.
+
+    Args:
+        file_key: Unique identifier for the file
+        local_path: Optional path to save the file locally
+        storage_bucket: Supabase storage bucket name (default: "parquet")
+
+    Returns:
+        Path to the downloaded file if successful, None otherwise
+    """
+    if not supabase:
+        logger.warning(
+            "Supabase client not available. Cannot download Parquet file."
+        )
+        return None
+
+    try:
+        # Get the storage record for the file
+        result = (
+            supabase.table("parquet_storage")
+            .select("*")
+            .eq("file_key", file_key)
+            .eq("is_active", True)
+            .execute()
+        )
+
+        if not result.data or len(result.data) == 0:
+            logger.error(f"No active Parquet file found for key: {file_key}")
+            return None
+
+        storage_record = result.data[0]
+        storage_path = storage_record["file_path"]
+
+        # If local path not provided, use temp directory
+        if not local_path:
+            temp_dir = os.path.join(
+                tempfile.gettempdir(), "chasquifx_parquet_cache"
+            )
+            os.makedirs(temp_dir, exist_ok=True)
+            local_path = os.path.join(temp_dir, os.path.basename(storage_path))
+
+        # Download the file
+        data = supabase.storage.from_(storage_bucket).download(storage_path)
+
+        # Save to local path
+        with open(local_path, "wb") as f:
+            f.write(data)
+
+        logger.info(
+            f"Successfully downloaded Parquet file {file_key} to {local_path}"
+        )
+        return local_path
+
+    except Exception as e:
+        logger.error(f"Error downloading Parquet file from Supabase: {str(e)}")
+        return None
+
+
+async def get_parquet_file_info(file_key: str) -> Optional[Dict]:
+    """
+    Get information about a Parquet file in Supabase storage.
+
+    Args:
+        file_key: Unique identifier for the file
+
+    Returns:
+        Dict with file information if found, None otherwise
+    """
+    if not supabase:
+        logger.warning(
+            "Supabase client not available. Cannot get Parquet file info."
+        )
+        return None
+
+    try:
+        result = (
+            supabase.table("parquet_storage")
+            .select("*")
+            .eq("file_key", file_key)
+            .eq("is_active", True)
+            .execute()
+        )
+
+        if result.data and len(result.data) > 0:
+            return result.data[0]
+        return None
+
+    except Exception as e:
+        logger.error(
+            f"Error retrieving Parquet file info from Supabase: {str(e)}"
+        )
+        return None

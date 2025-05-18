@@ -57,6 +57,22 @@ class UserApiKey(BaseModel):
         orm_mode = True
 
 
+# Model for Parquet file storage in Supabase
+class ParquetFileStorage(BaseModel):
+    id: Optional[int] = None
+    file_key: str  # Unique identifier for the file
+    file_path: str  # Path in Supabase Storage
+    original_path: str  # Original local file path
+    file_size: int  # Size in bytes
+    etag: Optional[str] = None  # For versioning
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = True  # Flag for current active version
+
+    class Config:
+        orm_mode = True
+
+
 # Model for user activity/recommendations
 class UserRecommendation(BaseModel):
     id: Optional[int] = None
