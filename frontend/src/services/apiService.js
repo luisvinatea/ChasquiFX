@@ -32,6 +32,19 @@ class ApiService {
     }
   }
 
+  // Get API server status
+  async getStatus() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/forex/status`, {
+        timeout: 2000,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("API Status error:", error);
+      return { status: "error" };
+    }
+  }
+
   // Get recommendations from API
   async getRecommendations(params) {
     try {

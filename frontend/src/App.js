@@ -309,9 +309,27 @@ function App() {
             {/* Sidebar */}
             <Grid item xs={12} md={3}>
               <Sidebar
-                onSubmit={handleFormSubmit}
+                apiStatus={apiStatus}
+                onSearch={handleFormSubmit}
                 departureAirport={departureAirport}
                 setDepartureAirport={setDepartureAirport}
+                refreshData={() => {
+                  // This function will be called when the refresh button is clicked
+                  apiService
+                    .refreshForexData()
+                    .then(() => {
+                      setNotification({
+                        message: "Forex data refreshed successfully",
+                        severity: "success",
+                      });
+                    })
+                    .catch((error) => {
+                      setNotification({
+                        message: `Failed to refresh forex data: ${error.message}`,
+                        severity: "error",
+                      });
+                    });
+                }}
               />
             </Grid>
 
