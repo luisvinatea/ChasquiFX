@@ -5,6 +5,7 @@ This module contains utilities for processing data files, including:
 - JSON to Parquet conversion
 - Data file renaming tools
 - Data structure mirroring utilities
+- Data retrieval from Supabase storage
 
 Import main functions directly from this module for easy access.
 """
@@ -24,6 +25,12 @@ from .file_renamer import (
     extract_json_metadata,
 )
 from .mirror_utility import mirror_directory, process_standard_data_directories
+from .retrieval import (
+    retrieve_data_frame,
+    query_data,
+    retrieve_data_by_type,
+    get_metadata,
+)
 
 # Define public API
 __all__ = [
@@ -41,4 +48,9 @@ __all__ = [
     # Directory mirroring
     "mirror_directory",
     "process_standard_data_directories",
+    # Data retrieval
+    "retrieve_data_frame",
+    "query_data",
+    "retrieve_data_by_type",
+    "get_metadata",
 ]

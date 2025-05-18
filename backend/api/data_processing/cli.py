@@ -6,6 +6,7 @@ A command-line interface for ChasquiFX data processing operations:
 - Rename JSON files to standardized formats
 - Convert JSON files to Parquet format
 - Mirror directory structures with file conversions
+- Retrieve data from Supabase storage
 
 Usage examples:
   # Rename flight JSON files
@@ -24,12 +25,18 @@ Usage examples:
 
   # Mirror a specific data directory
   python -m backend.api.data_processing.cli mirror --dir path/to/json/dir
+
+  # Retrieve data from Supabase
+  python -m backend.api.data_processing.cli retrieve --file-key forex/EURUSD
 """
 
 import os
 import sys
 import argparse
 import logging
+import asyncio
+
+import pandas as pd
 
 from .file_renamer import (
     rename_directory_files,
@@ -38,6 +45,7 @@ from .file_renamer import (
 )
 from .json_parquet_converter import json_to_parquet, batch_convert_directory
 from .mirror_utility import process_standard_data_directories
+from . import retrieval
 
 
 # Set up logging
@@ -268,6 +276,176 @@ def mirror_all_command(args) -> None:
         sys.exit(1)
 
 
+async def _retrieve_data(args):
+    """
+    Async worker for retrieving data.
+
+    Args:
+        args: Command line arguments
+
+    Returns:
+        Tuple[bool, Optional[pd.DataFrame], Optional[dict]]:
+            Success flag, data, and metadata
+    """
+    try:
+        from .data_retriever import (
+            retrieve_data_frame,
+            retrieve_data_by_type,
+            query_data,
+            get_metadata,
+        )
+
+        # Get metadata if requested
+        if args.info and args.file_key:
+            metadata = await get_metadata(args.file_key)
+            return True, None, metadata
+
+        # Handle file key retrieval
+        if args.file_key:
+            # Process filters if specified
+            filters = {}
+            if args.filter:
+                for f in args.filter:
+                    if "=" in f:
+                        key, value = f.split("=", 1)
+                        # Try to convert to numeric if possible
+                        try:
+                            if "." in value:
+                                value = float(value)
+                            else:
+                                value = int(value)
+                        except ValueError:
+                            # Keep as string if not numeric
+                            pass
+                        filters[key] = value
+
+            # Process columns if specified
+            columns = None
+            if args.columns:
+                columns = [c.strip() for c in args.columns.split(",")]
+
+            # Query the data
+            if filters or columns:
+                df = await query_data(args.file_key, filters, columns)
+            else:
+                df = await retrieve_data_frame(args.file_key)
+
+            if df is not None:
+                return True, df, None
+            else:
+                logger.error(f"Failed to retrieve data for {args.file_key}")
+                return False, None, None
+
+        # Handle data type retrieval
+        elif args.data_type:
+            data_dict = await retrieve_data_by_type(args.data_type)
+            if data_dict:
+                logger.info(
+                    f"Retrieved {len(data_dict)} {args.data_type} files"
+                )
+
+                # If there's only one file, return that
+                if len(data_dict) == 1:
+                    return (
+                        True,
+                        list(data_dict.values())[0],
+                        {"file_key": list(data_dict.keys())[0]},
+                    )
+
+                # Otherwise, combine all dataframes if they have compatible
+                # schemas
+                try:
+                    combined_df = pd.concat(list(data_dict.values()))
+                    return True, combined_df, {"files": list(data_dict.keys())}
+                except Exception as e:
+                    logger.warning(f"Couldn't combine dataframes: {e}")
+                    # Return the first one as a fallback
+                    first_key = list(data_dict.keys())[0]
+                    return (
+                        True,
+                        data_dict[first_key],
+                        {
+                            "file_key": first_key,
+                            "note": "Returned first file only",
+                        },
+                    )
+            else:
+                logger.error(f"No data found for type: {args.data_type}")
+                return False, None, None
+
+        else:
+            logger.error("Either --file-key or --data-type must be specified")
+            return False, None, None
+
+    except Exception as e:
+        logger.error(f"Error retrieving data: {e}")
+        return False, None, None
+
+
+def retrieve_command(args) -> None:
+    """
+    Command handler for retrieving data from Supabase.
+
+    Args:
+        args: Command line arguments
+    """
+    import json
+
+    # Run the async retrieval
+    success, df, metadata = asyncio.run(_retrieve_data(args))
+
+    if not success:
+        sys.exit(1)
+
+    # Handle metadata-only request
+    if args.info and metadata:
+        if isinstance(metadata, dict):
+            print(json.dumps(metadata, indent=2))
+        return
+
+    # Handle DataFrame output
+    if df is not None:
+        # Print data summary
+        print(f"\nDataFrame Info:\n{'-' * 40}")
+        print(f"Rows: {len(df)}")
+        print(f"Columns: {', '.join(df.columns)}\n")
+
+        # Print sample data
+        print(f"Sample Data:\n{'-' * 40}")
+        if len(df) > 10:
+            print(df.head(10))
+            print(f"\n[{len(df) - 10} more rows...]")
+        else:
+            print(df)
+
+        # Save to file if requested
+        if args.output:
+            output_path = args.output
+
+            # Determine file format based on extension
+            if output_path.endswith(".csv"):
+                df.to_csv(output_path, index=False)
+                logger.info(f"Data saved to CSV: {output_path}")
+            elif output_path.endswith(".xlsx"):
+                df.to_excel(output_path, index=False)
+                logger.info(f"Data saved to Excel: {output_path}")
+            elif output_path.endswith(".json"):
+                df.to_json(output_path, orient="records")
+                logger.info(f"Data saved to JSON: {output_path}")
+            elif output_path.endswith(".parquet"):
+                df.to_parquet(output_path, index=False)
+                logger.info(f"Data saved to Parquet: {output_path}")
+            else:
+                # Default to CSV if no recognized extension
+                if not output_path.endswith(".csv"):
+                    output_path += ".csv"
+                df.to_csv(output_path, index=False)
+                logger.info(f"Data saved to CSV: {output_path}")
+    else:
+        logger.error("No data returned")
+        sys.exit(1)
+
+
 def setup_parser() -> argparse.ArgumentParser:
     """
     Set up the command line argument parser.
@@ -348,6 +526,41 @@ def setup_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Force upload even if files haven't changed",
+    )
+
+    # Retrieve command for loading data from Supabase
+    retrieve_parser = subparsers.add_parser(
+        "retrieve", help="Retrieve Parquet data from Supabase"
+    )
+    retrieve_parser.add_argument(
+        "--file-key",
+        help="Specific file key to retrieve",
+    )
+    retrieve_parser.add_argument(
+        "--data-type",
+        choices=["flights", "forex", "geo"],
+        help="Data type to retrieve",
+    )
+    retrieve_parser.add_argument(
+        "--output",
+        help="Path to save retrieved data (optional)",
+    )
+    retrieve_parser.add_argument(
+        "--info",
+        action="store_true",
+        help="Show schema and metadata information only",
+    )
+    retrieve_parser.add_argument(
+        "--columns",
+        help="Comma-separated list of columns to retrieve",
+    )
+    retrieve_parser.add_argument(
+        "--filter",
+        help="Filter in format column=value (can be used multiple times)",
+        action="append",
+    )
+    retrieve_parser.set_defaults(
+        func=lambda args: retrieval.retrieve_command(args)
     )
     mirror_parser.set_defaults(func=mirror_command)
 

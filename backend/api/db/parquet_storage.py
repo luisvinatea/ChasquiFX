@@ -9,7 +9,7 @@ import os
 import io
 import hashlib
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional, Any
 import pyarrow.parquet as pq
 import pandas as pd
 
@@ -25,6 +25,19 @@ PARQUET_BUCKET_NAME = "parquet-files"
 
 # Max file size for Supabase storage (10MB)
 MAX_FILE_SIZE = 10 * 1024 * 1024
+
+# Cache for loaded data frames to reduce repeated downloads
+_dataframe_cache = {}
+_cache_metadata = {}  # Stores etags and last access time
+
+# Constants for cache management
+MAX_CACHE_SIZE = 20  # Maximum number of dataframes in cache
+CACHE_TTL = 3600  # Default TTL in seconds (1 hour)
+
+# Data type constants
+DATA_TYPE_FLIGHT = "flight"
+DATA_TYPE_FOREX = "forex"
+DATA_TYPE_GEO = "geo"
 
 
 def get_file_key(file_path: str) -> str:
@@ -155,7 +168,7 @@ async def upload_parquet_file(file_path: str) -> Optional[ParquetFileStorage]:
             supabase.storage.from_(PARQUET_BUCKET_NAME).upload(
                 path=storage_path,
                 file=f.read(),
-                file_options={"upsert": True}  # type: ignore
+                file_options={"upsert": True},  # type: ignore
             )
         # Create metadata record
         metadata = {
@@ -334,16 +347,31 @@ async def list_parquet_files(
         return []
 
 
-async def load_parquet_to_dataframe(file_key: str) -> Optional[pd.DataFrame]:
+async def load_parquet_to_dataframe(
+    file_key: str, use_cache: bool = True, cache_ttl: int = CACHE_TTL
+) -> Optional[pd.DataFrame]:
     """
     Load a Parquet file from Supabase Storage into a pandas DataFrame.
 
     Args:
         file_key: Unique identifier for the file
+        use_cache: Whether to use cached data if available
+        cache_ttl: Time-to-live for cached data in seconds
 
     Returns:
         Optional[pd.DataFrame]: DataFrame or None if loading failed
     """
+    now = datetime.utcnow().timestamp()
+
+    # Check cache first if enabled
+    if use_cache and file_key in _dataframe_cache:
+        cache_data = _cache_metadata.get(file_key)
+        if cache_data and (now - cache_data["accessed_at"] < cache_ttl):
+            # Update last access time
+            _cache_metadata[file_key]["accessed_at"] = now
+            logger.info(f"Using cached DataFrame for {file_key}")
+            return _dataframe_cache[file_key]
+
     try:
         # Get file content
         content = await download_parquet_file(file_key)
@@ -355,12 +383,204 @@ async def load_parquet_to_dataframe(file_key: str) -> Optional[pd.DataFrame]:
         table = pq.read_table(file_like)
         df = table.to_pandas()
 
+        # Store in cache if enabled
+        if use_cache:
+            # If cache is full, remove least recently used item
+            if len(_dataframe_cache) >= MAX_CACHE_SIZE:
+                _clean_cache()
+
+            _dataframe_cache[file_key] = df
+            _cache_metadata[file_key] = {"accessed_at": now, "created_at": now}
+
+            logger.info(f"Added DataFrame to cache: {file_key}")
+
         return df
 
     except Exception as e:
         logger.error(
             f"Error loading Parquet file to DataFrame {file_key}: {e}"
         )
+        return None
+
+
+def _clean_cache() -> None:
+    """
+    Clean the DataFrame cache by removing least recently used items.
+    """
+    if not _cache_metadata:
+        return
+
+    # Find the least recently accessed item
+    oldest_key = min(
+        _cache_metadata.items(), key=lambda x: x[1]["accessed_at"]
+    )[0]
+
+    # Remove it from cache
+    if oldest_key in _dataframe_cache:
+        del _dataframe_cache[oldest_key]
+        del _cache_metadata[oldest_key]
+        logger.debug(f"Removed item from cache: {oldest_key}")
+
+
+async def clear_cache(file_key: Optional[str] = None) -> None:
+    """
+    Clear the DataFrame cache.
+
+    Args:
+        file_key: If provided, clear only this specific item from cache
+    """
+    if file_key:
+        if file_key in _dataframe_cache:
+            del _dataframe_cache[file_key]
+        if file_key in _cache_metadata:
+            del _cache_metadata[file_key]
+        logger.debug(f"Cleared cache for: {file_key}")
+    else:
+        _dataframe_cache.clear()
+        _cache_metadata.clear()
+        logger.debug("Cleared entire DataFrame cache")
+
+
+async def load_data_by_type(
+    data_type: str, use_cache: bool = True, cache_ttl: int = CACHE_TTL
+) -> Dict[str, pd.DataFrame]:
+    """
+    Load all Parquet files of a specific data type into DataFrames.
+
+    Args:
+        data_type: Type of data to load ('flight', 'forex', 'geo')
+        use_cache: Whether to use cached data if available
+        cache_ttl: Time-to-live for cached data in seconds
+
+    Returns:
+        Dict[str, pd.DataFrame]: Dictionary of file keys to DataFrames
+    """
+    result = {}
+
+    # Normalize data type
+    if data_type == "flights":
+        data_type = "flight"
+
+    # List all files of this type
+    files = await list_parquet_files(data_type)
+
+    if not files:
+        logger.warning(f"No {data_type} files found in Supabase storage")
+        return {}
+
+    # Load each file
+    for file in files:
+        df = await load_parquet_to_dataframe(
+            file.file_key, use_cache, cache_ttl
+        )
+        if df is not None:
+            result[file.file_key] = df
+
+    logger.info(
+        f"Loaded {len(result)} {data_type} files from Supabase storage"
+    )
+    return result
+
+
+async def query_parquet_data(
+    file_key: str,
+    filters: Optional[Dict[str, Any]] = None,
+    columns: Optional[List[str]] = None
+) -> Optional[pd.DataFrame]:
+    """
+    Query a Parquet file with optional filters and column selection.
+
+    Args:
+        file_key: Unique identifier for the file
+        filters: Dictionary of column names to values to filter by
+        columns: List of column names to select (returns all if None)
+
+    Returns:
+        Optional[pd.DataFrame]: Filtered DataFrame or None if loading failed
+    """
+    df = await load_parquet_to_dataframe(file_key)
+
+    if df is None:
+        return None
+
+    # Apply column selection if specified
+    if columns:
+        # Filter to only include columns that exist in the dataframe
+        valid_columns = [col for col in columns if col in df.columns]
+        if not valid_columns:
+            logger.warning(
+                f"None of the requested columns exist in {file_key}"
+            )
+            return df  # Return unfiltered dataframe
+        df = df[valid_columns]
+
+    # Apply filters if specified
+    if filters:
+        for column, value in filters.items():
+            if column in df.columns:
+                if isinstance(value, list):
+                    df = df[df[column].isin(value)]
+                else:
+                    df = df[df[column] == value]
+            else:
+                logger.warning(f"Column {column} not found in {file_key}")
+
+    return df
+
+
+async def get_data_schema(file_key: str) -> Optional[Dict[str, str]]:
+    """
+    Get the schema (column names and types) of a Parquet file.
+
+    Args:
+        file_key: Unique identifier for the file
+
+    Returns:
+        Optional[Dict[str, str]]: Dictionary mapping column names to data types
+    """
+    try:
+        # Get file content
+        content = await download_parquet_file(file_key)
+        if not content:
+            return None
+
+        # Read schema without loading all data
+        file_like = io.BytesIO(content)
+        parquet_file = pq.ParquetFile(file_like)
+        schema = parquet_file.schema_arrow
+
+        # Convert schema to dictionary
+        schema_dict = {field.name: str(field.type) for field in schema}
+        return schema_dict
+
+    except Exception as e:
+        logger.error(f"Error getting schema for {file_key}: {e}")
+        return None
+
+
+async def get_row_count(file_key: str) -> Optional[int]:
+    """
+    Get the number of rows in a Parquet file.
+
+    Args:
+        file_key: Unique identifier for the file
+
+    Returns:
+        Optional[int]: Number of rows or None if loading failed
+    """
+    try:
+        # Get file content
+        content = await download_parquet_file(file_key)
+        if not content:
+            return None
+
+        # Get row count without loading all data
+        file_like = io.BytesIO(content)
+        parquet_file = pq.ParquetFile(file_like)
+        return parquet_file.metadata.num_rows
+
+    except Exception as e:
+        logger.error(f"Error getting row count for {file_key}: {e}")
         return None
 
 

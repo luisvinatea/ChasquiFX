@@ -8,6 +8,8 @@ This module contains utilities for processing data files used throughout the Cha
 - Conversion of JSON files to Parquet format
 - Directory structure mirroring with file format conversion
 - Command-line interface for data processing operations
+- Supabase storage integration for Parquet files
+- Data retrieval and caching from Supabase storage
 
 ## Components
 
@@ -15,6 +17,9 @@ This module contains utilities for processing data files used throughout the Cha
 - `json_parquet_converter.py`: Utilities for converting JSON files to Parquet format
 - `file_renamer.py`: Tools for standardizing and renaming data files
 - `mirror_utility.py`: Utilities for mirroring directory structures
+- `supabase_integration.py`: Integration with Supabase storage
+- `retrieval.py`: Data retrieval functions for Parquet files from Supabase
+- `docs/`: Additional documentation for each component
 
 ## Command Line Usage
 
@@ -38,6 +43,15 @@ The module provides a unified command-line interface through the `chasquifx_data
 
 # Mirror a specific data directory
 ./scripts/chasquifx_data.sh mirror --dir path/to/json/dir
+
+# Retrieve data from Supabase
+./scripts/chasquifx_data.sh retrieve --file-key forex/EURUSD
+
+# Get metadata about a file
+./scripts/chasquifx_data.sh retrieve --file-key forex/EURUSD --info
+
+# Query data with filters and save to a file
+./scripts/chasquifx_data.sh retrieve --file-key flights/JFK-LHR --filter "price>500" --output data.csv
 ```
 
 ## Library Usage
@@ -50,7 +64,9 @@ The module is designed for easy import of commonly used functions:
 from backend.api.data_processing import (
     json_to_parquet,
     rename_directory_files,
-    process_standard_data_directories
+    process_standard_data_directories,
+    retrieve_data_frame,
+    query_data
 )
 
 # Convert a single file
@@ -100,6 +116,48 @@ rename_directory_files(
 For handling complex nested JSON structures:
 
 ```python
+from backend.api.data_processing import json_to_parquet, flatten_json
+
+# Convert nested JSON with custom flattening
+with open('input.json', 'r') as f:
+    data = json.load(f)
+
+# Flatten the nested structure
+flat_data = flatten_json(data, separator='.')
+
+# Convert to Parquet
+json_to_parquet('input.json', 'output.parquet')
+```
+
+### Supabase Data Retrieval
+
+For retrieving Parquet data from Supabase storage:
+
+```python
+import asyncio
+from backend.api.data_processing import (
+    retrieve_data_frame,
+    query_data,
+    retrieve_data_by_type,
+    get_metadata
+)
+
+# Retrieve a complete dataset
+df = asyncio.run(retrieve_data_frame("forex/EURUSD"))
+
+# Query with filters
+df = asyncio.run(query_data(
+    file_key="flights/JFK-LHR",
+    filters={"price": 500},
+    columns=["flight_number", "departure", "price"]
+))
+
+# See full documentation in docs/supabase_retrieval.md
+```
+
+For more detailed information about Supabase retrieval, see [Supabase Retrieval](docs/supabase_retrieval.md).
+
+```python
 from backend.api.data_processing import (
     json_to_parquet,
     flatten_json,
@@ -143,7 +201,7 @@ The module follows these design principles:
 ```python
 from backend.api.data_processing.mirror_utility import mirror_directory
 mirror_directory('path/to/source', 'path/to/destination', converter_func)
-````
+```
 
 ## Command Line Tools
 
