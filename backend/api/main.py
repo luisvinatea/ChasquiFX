@@ -22,6 +22,8 @@ sys.path.insert(
 from backend.api.config import API_HOST, API_PORT  # noqa: E402
 from backend.api.routes import router  # noqa: E402
 from backend.api.utils import get_api_logger  # noqa: E402
+from backend.api.db.supabase_client import supabase  # noqa: E402
+from backend.api.db.operations import log_api_call  # noqa: E402
 
 # Set up logging
 logger = get_api_logger()
@@ -82,6 +84,8 @@ async def health_check() -> Dict[str, Any]:
     # Check environment variables without exposing actual values
     env_status = {
         "SERPAPI_API_KEY": bool(os.environ.get("SERPAPI_API_KEY")),
+        "SUPABASE_URL": bool(os.environ.get("SUPABASE_URL")),
+        "SUPABASE_KEY": bool(os.environ.get("SUPABASE_KEY")),
         "AMADEUS_API_KEY": bool(os.environ.get("AMADEUS_API_KEY")),
         "AMADEUS_API_SECRET": bool(os.environ.get("AMADEUS_API_SECRET")),
     }
@@ -92,11 +96,24 @@ async def health_check() -> Dict[str, Any]:
         for key, value in env_status.items()
     }
 
+    # Check Supabase connection
+    db_status = "connected" if supabase else "disconnected"
+
+    # Log this health check (if Supabase is available)
+    try:
+        await log_api_call(
+            endpoint="/health", request_data={}, response_status=200
+        )
+    except Exception as e:
+        logger.warning(f"Could not log health check: {e}")
+
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0",
+        # Updated version number to reflect Supabase integration
+        "version": "1.1.0",
         "environment": env_formatted,
+        "database": db_status,
     }
 
 

@@ -19,12 +19,13 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ApiIcon from "@mui/icons-material/Api";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { apiService } from "../services/apiService";
+import { storeUserApiKey, getUserApiKey } from "../services/supabaseClient";
 
 /**
  * Component to manage API keys for external services
- * Stores keys in localStorage for persistence between sessions
+ * Stores keys securely in Supabase database with user account
  */
-const ApiKeysManager = ({ open, onClose }) => {
+const ApiKeysManager = ({ open, onClose, user }) => {
   const [apiKeys, setApiKeys] = useState({
     serpApi: "",
     exchangeApi: "",
@@ -42,20 +43,29 @@ const ApiKeysManager = ({ open, onClose }) => {
     message: "",
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Load saved API keys on component mount
   useEffect(() => {
-    if (open) {
-      const savedKeys = localStorage.getItem("chasquiFxApiKeys");
-      if (savedKeys) {
-        try {
-          setApiKeys(JSON.parse(savedKeys));
-        } catch (error) {
-          console.error("Failed to parse saved API keys", error);
-        }
-      }
+    if (open && user) {
+      setLoading(true);
+
+      // Fetch API key from Supabase
+      getUserApiKey(user.id)
+        .then((apiKey) => {
+          if (apiKey) {
+            setApiKeys({
+              serpApi: apiKey,
+            });
+          }
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error("Failed to load API key:", error);
+          setLoading(false);
+        });
     }
-  }, [open]);
+  }, [open, user]);
 
   // Handle input change
   const handleChange = (key) => (e) => {
@@ -76,9 +86,19 @@ const ApiKeysManager = ({ open, onClose }) => {
   };
 
   // Handle save
-  const handleSave = () => {
+  const handleSave = async () => {
     // Save to localStorage
     localStorage.setItem("chasquiFxApiKeys", JSON.stringify(apiKeys));
+
+    // Save to Supabase
+    if (user) {
+      try {
+        await storeUserApiKey(user.id, apiKeys.serpApi);
+      } catch (error) {
+        console.error("Failed to store API key:", error);
+      }
+    }
+
     setSaveSuccess(true);
 
     // Hide success message after 3 seconds
@@ -137,6 +157,12 @@ const ApiKeysManager = ({ open, onClose }) => {
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3 }}>
+        {loading && (
+          <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
         {saveSuccess && (
           <Alert severity="success" sx={{ mb: 2 }}>
             API keys saved successfully!
@@ -286,7 +312,7 @@ const ApiKeysManager = ({ open, onClose }) => {
           {refreshing ? "Refreshing..." : "Refresh Forex Data"}
         </Button>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" color="primary" onClick={handleSave}>
+        <Button onClick={handleSave} color="primary" variant="contained">
           Save Keys
         </Button>
       </DialogActions>

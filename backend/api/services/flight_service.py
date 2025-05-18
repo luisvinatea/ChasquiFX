@@ -15,6 +15,10 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 )
 from backend.api.models.schemas import FlightFare  # noqa: E402
+from backend.api.db.operations import (  # noqa: E402
+    get_cached_flight_data,
+    log_api_call,
+)
 
 # Set up logging
 logging.basicConfig(
@@ -42,15 +46,18 @@ else:
     logger.info("SERPAPI_API_KEY loaded successfully.")
 
 
-def fetch_flight_fare(
+async def fetch_flight_fare(
     departure_airport: str,
     arrival_airport: str,
     outbound_date: str,
     return_date: str,
     currency: str = "USD",
+    user_id: Optional[str] = None,
 ) -> Optional[FlightFare]:
     """
     Fetch flight fare data using SerpAPI's Google Flights search.
+    First checks the database cache before making an API call.
+    Logs API usage for analytics.
 
     Args:
         departure_airport: IATA code of departure airport
@@ -58,6 +65,7 @@ def fetch_flight_fare(
         outbound_date: Departure date in YYYY-MM-DD format
         return_date: Return date in YYYY-MM-DD format
         currency: Currency code for fare prices
+        user_id: Optional user ID for logging
 
     Returns:
         FlightFare object or None if not available
@@ -66,6 +74,36 @@ def fetch_flight_fare(
         f"Fetching fare for {departure_airport}-{arrival_airport} "
         f"({outbound_date} to {return_date})"
     )
+
+    # Check cache first
+    cached_data = await get_cached_flight_data(
+        departure_airport, arrival_airport
+    )
+    if cached_data:
+        logger.info(
+            f"Using cached flight data for "
+            f"{departure_airport}-{arrival_airport}"
+        )
+        # Convert cached data back to FlightFare object
+        try:
+            # Convert possibly single airline string to list for consistency
+            airlines = cached_data.get("airlines", [])
+            if isinstance(airlines, str):
+                airlines = [airlines]
+            elif not airlines and "airline" in cached_data:
+                airlines = [cached_data.get("airline", "Unknown")]
+
+            return FlightFare(
+                price=cached_data.get("price", 0.0),
+                currency=cached_data.get("currency", "USD"),
+                airlines=airlines,
+                duration=cached_data.get("duration", ""),
+                outbound_date=outbound_date,
+                return_date=return_date,
+                carbon_emissions=cached_data.get("carbon_emissions"),
+            )
+        except Exception as e:
+            logger.error(f"Error parsing cached flight data: {e}")
 
     # Use SerpAPI if API key is available
     if SERPAPI_KEY:
@@ -84,6 +122,22 @@ def fetch_flight_fare(
                 "hl": "en",
                 "api_key": SERPAPI_KEY,
             }
+
+            # Log API call (without exposing API key)
+            request_log = {
+                "endpoint": "google_flights",
+                "origin": departure_airport,
+                "destination": arrival_airport,
+                "dates": f"{outbound_date} to {return_date}",
+            }
+
+            # Log the API call to Supabase
+            await log_api_call(
+                endpoint="serpapi/google_flights",
+                request_data=request_log,
+                response_status=200,
+                user_id=user_id,
+            )
 
             response = requests.get(base_url, params=params)
 
