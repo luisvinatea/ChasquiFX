@@ -225,7 +225,10 @@ class TestForexService(unittest.TestCase):
                         "currencies",
                         ["USD", "EUR", "JPY"],
                     ):
-                        results = fetch_quick_forex_data()
+                        # Import asyncio to handle the coroutine
+                        import asyncio
+                        # Execute the coroutine and get the results
+                        results = asyncio.run(fetch_quick_forex_data())
 
         # Verify results
         self.assertIn("USDEUR", results)
