@@ -41,9 +41,6 @@ if [ ! -f "$ENV_FILE" ]; then
 # SerpAPI Key for Google Finance data (required for forex)
 SERPAPI_API_KEY=your_serpapi_key_here
 
-# Amadeus API Keys (required for flight data)
-AMADEUS_API_KEY=your_amadeus_key_here
-AMADEUS_API_SECRET=your_amadeus_secret_here
 EOF
         echo "Default .env file created at $ENV_FILE"
         echo "Please edit the file and add your API keys before running the application."
@@ -82,23 +79,6 @@ check_environment() {
         all_keys_present=false
     else
         print_message "green" "✓ SERPAPI_API_KEY is configured."
-    fi
-
-    # Check Amadeus keys
-    if [ -z "$AMADEUS_API_KEY" ] || [ "$AMADEUS_API_KEY" = "your_amadeus_key_here" ]; then
-        print_message "red" "⚠️ AMADEUS_API_KEY is missing or using default value!"
-        print_message "yellow" "   Flight data may be unavailable."
-        all_keys_present=false
-    else
-        print_message "green" "✓ AMADEUS_API_KEY is configured."
-    fi
-
-    if [ -z "$AMADEUS_API_SECRET" ] || [ "$AMADEUS_API_SECRET" = "your_amadeus_secret_here" ]; then
-        print_message "red" "⚠️ AMADEUS_API_SECRET is missing or using default value!"
-        print_message "yellow" "   Flight data may be unavailable."
-        all_keys_present=false
-    else
-        print_message "green" "✓ AMADEUS_API_SECRET is configured."
     fi
 
     # Return overall status
@@ -169,21 +149,68 @@ else
     exit 1
 fi
 
-# Start the React frontend
-print_message "green" "Starting React frontend..."
-if [ "$DEBUG_MODE" = true ]; then
-    print_message "yellow" "Running frontend in debug mode..."
-    cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+# Check if port 3000 is already in use
+if lsof -i :3000 >/dev/null 2>&1; then
+    print_message "yellow" "⚠️ Port 3000 is already in use!"
+    print_message "yellow" "Would you like to: "
+    print_message "yellow" "1. Kill the process using port 3000 and start a new React frontend"
+    print_message "yellow" "2. Serve the existing build using the 'serve' package instead"
+    print_message "yellow" "3. Cancel"
+    read -r -p "Please choose an option [1-3]: " port_option
+
+    case $port_option in
+    1)
+        print_message "yellow" "Stopping process on port 3000..."
+        fuser -k 3000/tcp >/dev/null 2>&1
+        # Start the React frontend
+        print_message "green" "Starting React frontend..."
+        if [ "$DEBUG_MODE" = true ]; then
+            print_message "yellow" "Running frontend in debug mode..."
+            cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+        else
+            cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+        fi
+        REACT_PID=$!
+        ;;
+    2)
+        print_message "green" "Serving existing build using 'serve'..."
+        # Check if serve is installed
+        if ! command -v npx >/dev/null 2>&1; then
+            print_message "red" "Error: npx is not installed. Please install Node.js first."
+            exit 1
+        fi
+
+        cd "$PROJECT_ROOT/frontend" && npx serve -s build >../logs/react_app.log 2>&1 &
+        REACT_PID=$!
+        ;;
+    3)
+        print_message "yellow" "Skipping React frontend launch."
+        REACT_PID=0
+        ;;
+    *)
+        print_message "red" "Invalid option. Skipping React frontend launch."
+        REACT_PID=0
+        ;;
+    esac
 else
-    cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+    # Start the React frontend
+    print_message "green" "Starting React frontend..."
+    if [ "$DEBUG_MODE" = true ]; then
+        print_message "yellow" "Running frontend in debug mode..."
+        cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+    else
+        cd "$PROJECT_ROOT/frontend" && npm start >../logs/react_app.log 2>&1 &
+    fi
+    REACT_PID=$!
 fi
-REACT_PID=$!
 
 # Wait a moment to let the React server start
 sleep 5
 
 # Check if React app started successfully
-if ps -p $REACT_PID >/dev/null; then
+if [ "$REACT_PID" -eq 0 ]; then
+    print_message "yellow" "React frontend start was skipped."
+elif ps -p $REACT_PID >/dev/null; then
     print_message "green" "✓ React frontend running with PID: $REACT_PID"
     print_message "green" "Access the app at: http://localhost:3000"
     print_message "yellow" "React logs: tail -f logs/react_app.log"

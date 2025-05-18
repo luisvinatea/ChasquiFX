@@ -19,7 +19,7 @@ print_message() {
 
 print_message "blue" "
 ╔══════════════════════════════════════════════════╗
-║           Stopping ChasquiFX Services         ║
+║           Stopping ChasquiFX Services            ║
 ╚══════════════════════════════════════════════════╝
 "
 
@@ -38,11 +38,14 @@ else
     done
 fi
 
-# Find and stop React frontend app
+# Find and stop React frontend app (both via react-scripts and serve)
 REACT_PIDS=$(pgrep -f "node.*react-scripts start")
-if [ -z "$REACT_PIDS" ]; then
+SERVE_PIDS=$(pgrep -f "node.*serve -s build")
+
+if [ -z "$REACT_PIDS" ] && [ -z "$SERVE_PIDS" ]; then
     print_message "yellow" "No React frontend processes found."
 else
+    # Stop react-scripts processes
     for PID in $REACT_PIDS; do
         kill $PID 2>/dev/null
         if [ $? -eq 0 ]; then
@@ -51,10 +54,31 @@ else
             print_message "red" "✗ Failed to stop React frontend process with PID: $PID"
         fi
     done
+
+    # Stop serve processes
+    for PID in $SERVE_PIDS; do
+        kill $PID 2>/dev/null
+        if [ $? -eq 0 ]; then
+            print_message "green" "✓ Stopped 'serve' frontend process with PID: $PID"
+        else
+            print_message "red" "✗ Failed to stop 'serve' frontend process with PID: $PID"
+        fi
+    done
+fi
+
+# Also kill any processes on port 3000
+if lsof -i :3000 >/dev/null 2>&1; then
+    print_message "yellow" "Killing processes on port 3000..."
+    fuser -k 3000/tcp >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        print_message "green" "✓ Killed processes on port 3000"
+    else
+        print_message "red" "✗ Failed to kill processes on port 3000"
+    fi
 fi
 
 print_message "blue" "
 ╔══════════════════════════════════════════════════╗
-║       ChasquiFX Services Stopped              ║
+║       ChasquiFX Services Stopped                 ║
 ╚══════════════════════════════════════════════════╝
 "
