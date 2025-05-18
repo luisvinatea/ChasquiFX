@@ -315,15 +315,39 @@ def execute_serpapi_request(params, max_retries=3, initial_delay=2):
         Dictionary with API results or error information
     """
     delay = initial_delay
+    quota_limit_reached = False
 
     for attempt in range(max_retries):
         try:
             search = GoogleSearch(params)
             results = search.get_dict()
 
-            # Check for API rate limiting errors
+            # Check for API rate limiting errors or quota limits
             if "error" in results:
                 error_msg = results["error"].lower()
+
+                # Check for quota limit messages
+                if (
+                    "quota" in error_msg
+                    or "limit exceeded" in error_msg
+                    or "credits" in error_msg
+                ):
+                    logger.error(
+                        f"SerpAPI quota limit reached: {results['error']}"
+                    )
+                    quota_limit_reached = True
+                    # Return error with specific flag for quota limits
+                    return {
+                        "error": results["error"],
+                        "quota_exceeded": True,
+                        "message": (
+                            (
+                                "API quota limit has been reached. "
+                                "Please check your SerpAPI credits "
+                                "or try again later."
+                            )
+                        ),
+                    }
 
                 # If rate limited and not the last attempt, retry
                 if (
@@ -347,24 +371,37 @@ def execute_serpapi_request(params, max_retries=3, initial_delay=2):
             return results
 
         except Exception as e:
+            if "quota" in str(e).lower() or "limit exceeded" in str(e).lower():
+                logger.error(f"SerpAPI quota limit exception: {e}")
+                return {
+                    "error": str(e),
+                    "quota_exceeded": True,
+                    "message": (
+                        "API quota limit has been reached. Please check your "
+                        "SerpAPI credits or try again later."
+                    ),
+                }
+
             if attempt < max_retries - 1:
                 # Log the error and retry
                 logger.warning(
-                    f"API error (attempt {attempt + 1}/{max_retries}): "
-                    f"{str(e)[:50]}..."
+                    f"API request error: {e}. "
+                    f"Retry {attempt + 1}/{max_retries} in {delay}s"
                 )
                 time.sleep(delay)
                 delay = min(delay * 2, 60)  # Cap at 60 seconds
             else:
-                # Final attempt failed
+                # Final failure
                 logger.error(
-                    f"API failed after {max_retries} attempts: "
-                    f"{str(e)[:50]}..."
+                    f"API request failed after {max_retries} attempts: {e}"
                 )
                 return {"error": str(e)}
 
-    # If we reach here, all retries failed
-    return {"error": "Max retries exceeded"}
+    # This should never happen but just in case
+    return {
+        "error": "Maximum retries reached with no successful response",
+        "quota_exceeded": quota_limit_reached,
+    }
 
 
 def update_forex_data(
