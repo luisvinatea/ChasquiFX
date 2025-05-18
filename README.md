@@ -17,6 +17,8 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 - Export results to CSV
 - Modern React frontend for improved reliability and user experience
 - Robust API error handling with retry mechanisms
+- Standardized data file naming and organization
+- Automated JSON to Parquet format conversion
 
 ## User Interface
 
@@ -27,6 +29,29 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 - User authentication with Supabase
 - Responsive design for mobile and desktop
 - Cached API results for better performance
+
+## Data Processing
+
+ChasquiFX includes a comprehensive data processing module that handles:
+
+- **Standardized file naming**: Automatic renaming of data files based on their content
+
+  - Flight data: `(departure_id)_(arrival_id)_(outbound_date)_(return_date).json`
+  - Forex data: `(q)_(created_at).json`
+
+- **Format conversion**: JSON to Parquet conversion for efficient analytics
+
+  - Handles complex nested JSON structures
+  - Preserves data types (string, numeric)
+  - Maintains directory structure when mirroring
+
+- **Command-line utilities**: Easy-to-use CLI for all data operations
+
+  ```bash
+  ./scripts/chasquifx_data.sh [command] [options]
+  ```
+
+For details, see the [Data Processing documentation](backend/api/data_processing/README.md).
 
 ## Architecture
 
