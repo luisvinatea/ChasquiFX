@@ -7,7 +7,7 @@ backend to call Python data processing functions.
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, cast
 
 from backend.api.services import (
     forex_service,
@@ -141,18 +141,60 @@ def get_recommendations(
             result, "recommendations"
         ):
             # Return list of dictionaries that can be JSON serialized
-            return [
-                {
-                    "destination": rec.destination,
-                    "country": rec.country,
-                    "trend": rec.trend,
-                    "currency": rec.currency,
-                    "base_currency": rec.base_currency,
-                    "exchange_rate": rec.exchange_rate,
-                    "fare": rec.fare if hasattr(rec, "fare") else None,
+            recommendations = []
+            for rec in result.recommendations:
+                rec_dict = {
+                    "destination": "Unknown",
+                    "country": "Unknown",
+                    "trend": 0.0,
+                    "currency": "Unknown",
+                    "base_currency": base_currency,
+                    "exchange_rate": 1.0,
+                    "fare": None,
                 }
-                for rec in result.recommendations
-            ]
+
+                # Safely get attributes using getattr with default values
+                for attr_name in [
+                    "destination",
+                    "destination_code",
+                    "country",
+                    "country_code",
+                    "trend",
+                    "exchange_trend",
+                    "currency",
+                    "currency_code",
+                    "base_currency",
+                    "base_currency_code",
+                    "exchange_rate",
+                    "current_rate",
+                    "fare",
+                    "fare_amount",
+                ]:
+                    if hasattr(rec, attr_name):
+                        value = getattr(rec, attr_name)
+
+                        # Map attribute names to our standardized keys
+                        if attr_name in ["destination", "destination_code"]:
+                            rec_dict["destination"] = value
+                        elif attr_name in ["country", "country_code"]:
+                            rec_dict["country"] = value
+                        elif attr_name in ["trend", "exchange_trend"]:
+                            rec_dict["trend"] = value
+                        elif attr_name in ["currency", "currency_code"]:
+                            rec_dict["currency"] = value
+                        elif attr_name in [
+                            "base_currency",
+                            "base_currency_code",
+                        ]:
+                            rec_dict["base_currency"] = value
+                        elif attr_name in ["exchange_rate", "current_rate"]:
+                            rec_dict["exchange_rate"] = value
+                        elif attr_name in ["fare", "fare_amount"]:
+                            rec_dict["fare"] = value
+
+                recommendations.append(rec_dict)
+
+            return recommendations
 
         # Return empty list if no recommendations
         return []
@@ -186,7 +228,9 @@ def retrieve_parquet_data(
                         df = df[df[column] == value]
 
             # Convert to list of dictionaries
-            return df.to_dict(orient="records")
+            records = df.to_dict(orient="records")
+            # Cast to the expected return type
+            return cast(List[Dict[str, Any]], records)
 
         # Return error if retrieval failed
         return {

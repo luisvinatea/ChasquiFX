@@ -11,7 +11,7 @@ The project currently has a dual backend setup:
 
 ### 1. Streamline API Structure
 
-#### Python Side:
+#### Python Side
 
 - Remove direct API endpoints from Python that duplicate Node.js functionality
 - Consolidate all Python endpoints under the `/node_bridge` route
@@ -22,7 +22,7 @@ The project currently has a dual backend setup:
 - `/backend/api/main.py`: Remove duplicate routes that are now handled by Node.js
 - `/backend/api/routes/`: Simplify route structure to only include data processing endpoints
 
-#### Node.js Side:
+#### Node.js Side
 
 - Ensure all public API endpoints are properly documented with JSDoc
 - Implement consistent error handling across all controllers
@@ -35,13 +35,13 @@ The project currently has a dual backend setup:
 
 ### 3. Clarify Responsibility Boundaries
 
-#### Python Responsibilities (Keep):
+#### Python Responsibilities (Keep)
 
 - Complex data processing algorithms (forex analysis, recommendations)
 - Parquet data operations and conversions
 - Statistical analysis and data science operations
 
-#### Node.js Responsibilities (Keep):
+#### Node.js Responsibilities (Keep)
 
 - API routing and endpoint handling
 - Authentication and authorization
@@ -126,7 +126,7 @@ The following issues were identified in the node_adapter.py file:
 
 ## Final Architecture Goal
 
-```
+```text
 Client Request
     │
     ▼

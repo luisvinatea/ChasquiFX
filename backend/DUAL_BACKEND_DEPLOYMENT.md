@@ -12,26 +12,32 @@ Use this checklist when deploying the ChasquiFX dual backend system.
 ## Python Backend Deployment
 
 - [ ] Install Python dependencies:
-  ```
+
+  ```bash
   pip install -r requirements.txt
   ```
+
 - [ ] Configure Python environment variables
 - [ ] Start the Python API service:
-  ```
+
+  ```bash
   uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
   ```
 
 ## Node.js Backend Deployment
 
 - [ ] Install Node.js dependencies:
-  ```
+
+  ```bash
   cd backend/node && npm install
   ```
+
 - [ ] Configure Node.js environment variables:
   - PYTHON_PATH: Path to Python executable
   - PORT: Port for Node.js API (default: 3001)
 - [ ] Start the Node.js API service:
-  ```
+
+  ```bash
   cd backend/node && npm run start
   ```
 

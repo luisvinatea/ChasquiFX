@@ -31,6 +31,7 @@ Fetches exchange rates for a currency pair.
 **Returns:**
 
 - Dictionary containing exchange rate data:
+
   ```json
   {
     "from": "USD",
@@ -50,6 +51,7 @@ Gets the status of the forex service.
 **Returns:**
 
 - Dictionary containing service status:
+
   ```json
   {
     "status": "operational",
@@ -69,6 +71,7 @@ Resets the quota status for SerpAPI.
 **Returns:**
 
 - Dictionary containing status message:
+
   ```json
   {
     "status": "success",
@@ -97,6 +100,7 @@ Gets travel recommendations based on forex trends and available routes.
 **Returns:**
 
 - List of recommendation dictionaries:
+
   ```json
   [
     {
@@ -157,6 +161,7 @@ Converts JSON data to Parquet format.
 **Returns:**
 
 - Dictionary containing status message:
+
   ```json
   {
     "success": true,
