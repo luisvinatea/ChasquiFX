@@ -50,31 +50,43 @@ The project currently has a dual backend setup:
 - User session management
 - Frontend communication
 
-### 4. Code Duplication to Remove
+### 4. Fix Interface Inconsistencies
 
-- Remove duplicate utility functions across both backends:
-  - Logging utilities
-  - Date/time handling functions
-  - Config management
-  - Error handling boilerplate
+#### Python-Node.js Bridge Issues
 
-### 5. Refactor Python Components
+The following issues were identified in the node_adapter.py file:
 
-- Convert Python modules to focus solely on data processing
-- Move any API/web functionality to Node.js
-- Simplify Python package structure to reflect its new role
+- Missing function implementations in forex_service referenced in node_adapter.py:
+  - `get_exchange_rates`
+  - `get_service_status`
+  - `reset_quota_status`
+- Parameter type inconsistencies in `get_recommendations`:
+  - String vs. int/float/bool parameters need proper conversion
+  - Results need to be properly JSON-serializable
+- Parquet data conversion issues:
+  - The adapter attempts to call a non-existent `convert_json_to_parquet` instead of `json_to_parquet`
+  - JSON data type handling needs to be made more robust
+- Return type inconsistencies:
+  - Several functions return mixed types (lists vs dictionaries)
+  - Functions should have consistent error handling
 
-### 6. Consolidate Configuration
+### 5. Clean Up Unused Imports
 
-- Create a shared configuration system accessible to both Node.js and Python
-- Use environment variables as the single source of truth for configuration
-- Document configuration parameters in a single location
+- Remove unused imports from Python files, especially:
+  - Unused JSON imports
+  - Type hint imports that are not used in the code
 
-### 7. Improve Error Handling
+### 6. Documentation Improvements
 
-- Implement consistent error codes and messages across both backends
-- Create a centralized error registry
-- Ensure Python errors are properly translated to meaningful API responses
+- Update function docstrings to match actual return types and parameters
+- Clearly indicate which functions are meant to be called from Node.js
+- Add examples of proper usage in both Python and JavaScript
+
+### 7. Standardize Error Handling
+
+- Use consistent patterns for error handling on both sides
+- Replace generic Exception handling with specific error types
+- Return structured error objects with consistent format
 
 ### 8. Optimize Bridge Performance
 

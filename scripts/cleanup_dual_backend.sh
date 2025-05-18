@@ -26,13 +26,13 @@ cp -r "$PYTHON_DIR/node_bridge.py" "$BACKUP_DIR/"
 cp -r "$NODE_DIR/src/services/pythonBridge.js" "$BACKUP_DIR/"
 
 echo "2. Checking Python dependencies..."
-python -m pip install pandas pyarrow fastapi uvicorn python-dotenv > "$LOG_DIR/pip_install.log" 2>&1 || {
+python -m pip install pandas pyarrow fastapi uvicorn python-dotenv >"$LOG_DIR/pip_install.log" 2>&1 || {
     echo "Error installing Python dependencies. See $LOG_DIR/pip_install.log for details."
     exit 1
 }
 
 echo "3. Checking Node.js dependencies..."
-cd "$NODE_DIR" && npm install axios python-bridge express > "$LOG_DIR/npm_install.log" 2>&1 || {
+(cd "$NODE_DIR" && npm install axios python-bridge express >"$LOG_DIR/npm_install.log" 2>&1) || {
     echo "Error installing Node.js dependencies. See $LOG_DIR/npm_install.log for details."
     cd "$PROJECT_ROOT"
     exit 1
@@ -108,7 +108,7 @@ else:
 " || echo "Error checking for duplicate routes."
 
 echo "6. Creating cleanup recommendations file..."
-cat > "$BACKEND_DIR/CLEANUP_TODO.md" << EOL
+cat >"$BACKEND_DIR/CLEANUP_TODO.md" <<EOL
 # ChasquiFX Dual Backend Cleanup TODO
 
 Based on the analysis of the codebase, here are the specific tasks that need to be addressed:
@@ -186,7 +186,7 @@ EOL
 echo "7. Creating a sample fixed node adapter function..."
 NODE_ADAPTER_SAMPLE="$BACKEND_DIR/node_adapter_example.py"
 
-cat > "$NODE_ADAPTER_SAMPLE" << EOL
+cat >"$NODE_ADAPTER_SAMPLE" <<EOL
 """
 Example of a fixed node_adapter.py function.
 This demonstrates the proper way to implement adapter functions.
@@ -232,7 +232,7 @@ EOL
 echo "8. Creating a test script for the Node.js to Python bridge..."
 TEST_SCRIPT="$BACKEND_DIR/test_bridge.js"
 
-cat > "$TEST_SCRIPT" << EOL
+cat >"$TEST_SCRIPT" <<'EOL'
 /**
  * Test script for the Node.js to Python bridge
  * 
@@ -248,8 +248,8 @@ const pythonPath = process.env.PYTHON_PATH || 'python';
 const scriptDir = path.join(__dirname, 'api');
 
 // Test function
-function testPythonFunction(modulePath, functionName, args = []) {
-    console.log(`Testing ${modulePath}.${functionName}...`);
+function testPythonFunction(module, functionName, args = []) {
+    console.log(`Testing "${module}.${functionName}"...`);
     
     // Create a Python script that imports and calls the function
     const pythonCode = `
@@ -259,8 +259,8 @@ import importlib
 
 try:
     # Import the module dynamically
-    module = importlib.import_module("${modulePath}")
-    
+    module=importlib.import_module("${module}")
+
     # Get the function
     func = getattr(module, "${functionName}")
     
@@ -279,7 +279,6 @@ except Exception as e:
     print(json.dumps({"error": str(e), "type": str(type(e).__name__)}))
     sys.exit(1)
 `;
-
     // Run the Python script
     const result = spawnSync(pythonPath, ['-c', pythonCode], {
         cwd: scriptDir,
@@ -287,15 +286,15 @@ except Exception as e:
     });
     
     if (result.status !== 0) {
-        console.error(`Error: ${result.stderr}`);
+        console.error(`Error: "${result.stderr}"`);
         return null;
     }
     
     try {
         return JSON.parse(result.stdout.trim());
     } catch (e) {
-        console.error(`Error parsing Python output: ${e.message}`);
-        console.error(`Output was: ${result.stdout}`);
+        console.error(`Error parsing Python output: "${e.message}"`);
+        console.error(`Output was: "${result.stdout}"`);
         return null;
     }
 }
@@ -327,24 +326,24 @@ tests.forEach(test => {
     const result = testPythonFunction(test.module, test.function, test.args);
     
     if (result && !result.error) {
-        console.log(`✓ ${test.module}.${test.function} passed`);
-        console.log(`  Result: ${JSON.stringify(result).substring(0, 100)}...`);
+        console.log(`✓ "${test.module}".${test.function} passed`);
+        console.log(`  Result: "${JSON.stringify(result).substring(0, 100)}"...`);
         passCount++;
     } else {
-        console.log(`✗ ${test.module}.${test.function} failed`);
-        console.log(`  Error: ${result ? result.error : 'Unknown error'}`);
+        console.log(`✗ "${test.module}"."${test.function}" failed`);
+        console.log(`  Error: "${result ? result.error : 'Unknown error'}"`);
         failCount++;
     }
     console.log('');
 });
 
-console.log(`Tests complete: ${passCount} passed, ${failCount} failed`);
+console.log(`Tests complete: "${passCount}" passed, "${failCount}" failed`);
 EOL
 
 echo "9. Creating a deployment checklist..."
 DEPLOYMENT_CHECKLIST="$BACKEND_DIR/DUAL_BACKEND_DEPLOYMENT.md"
 
-cat > "$DEPLOYMENT_CHECKLIST" << EOL
+cat >"$DEPLOYMENT_CHECKLIST" <<EOL
 # Dual Backend Deployment Checklist
 
 Use this checklist when deploying the ChasquiFX dual backend system.
@@ -403,7 +402,7 @@ echo "10. Cleaning up error messages in the Python code..."
 # Find Python files with error messages that don't follow the standard format
 find "$PYTHON_DIR" -name "*.py" -exec grep -l "except Exception as e:" {} \; | while read -r file; do
     echo "Checking error handling in $file..."
-    
+
     # Count if there are error messages not following the standard format
     non_standard_errors=$(grep -c "except Exception as e:" "$file")
     if [ "$non_standard_errors" -gt 0 ]; then

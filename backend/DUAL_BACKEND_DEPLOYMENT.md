@@ -47,5 +47,5 @@ Use this checklist when deploying the ChasquiFX dual backend system.
 If deployment fails:
 
 1. Stop both services
-2. Restore backups from `/home/luisvinatea/DEVinatea/Repos/chasquifx/backend/backup_20250518_173910`
+2. Restore backups from `/home/luisvinatea/DEVinatea/Repos/chasquifx/backend/backup_20250518_182457`
 3. Redeploy the previous version

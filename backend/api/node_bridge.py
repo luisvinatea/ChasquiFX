@@ -59,11 +59,10 @@ async def call_adapter(
             logger.error(
                 f"Failed to import {module_name}.{function_name}: {e}"
             )
+            error_msg = f"Function {module_name}.{function_name} not found"
             return JSONResponse(
                 status_code=404,
-                content={
-                    "error": f"Function {module_name}.{function_name} not found"
-                },
+                content={"error": error_msg},
             )
 
         # Call the function

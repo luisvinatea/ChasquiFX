@@ -6,7 +6,6 @@ entry points for the Node.js
 backend to call Python data processing functions.
 """
 
-import json
 import logging
 from typing import Dict, List, Any, Optional, Union
 
@@ -14,7 +13,11 @@ from backend.api.services import (
     forex_service,
     recommendation_service,
 )
-from backend.api.data_processing import retrieval, json_parquet_converter
+from backend.api.data_processing import json_parquet_converter
+from backend.api.data_processing.data_retriever import (
+    retrieve_data_frame_sync as retrieve_data,
+)
+from backend.api.models.schemas import RecommendationsResponse
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -86,6 +89,9 @@ def get_recommendations(
     outbound_date: Optional[str] = None,
     return_date: Optional[str] = None,
     api_key: Optional[str] = None,
+    limit: Optional[Union[str, int]] = 10,
+    min_trend: Optional[Union[str, float]] = -1.0,
+    include_fares: Optional[Union[str, bool]] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get travel recommendations using Python recommendation_service.
@@ -96,31 +102,68 @@ def get_recommendations(
         outbound_date: Optional outbound date
         return_date: Optional return date
         api_key: Optional API key
+        limit: Maximum number of recommendations (default: 10)
+        min_trend: Minimum trend value (default: -1.0)
+        include_fares: Whether to include fares (default: False)
 
     Returns:
         List of recommendation data
     """
     try:
         logger.info(
-            f"Python adapter: Getting recommendations for {departure_airport} "
+            f"Getting recommendations for {departure_airport} "
             f"with base currency {base_currency}"
         )
-        recommendations = recommendation_service.get_recommendations(
-            base_currency,
+
+        # Convert parameters to appropriate types
+        limit_int = int(limit) if limit is not None else 10
+        min_trend_float = float(min_trend) if min_trend is not None else -1.0
+        include_fares_bool = False
+        if include_fares is not None:
+            if isinstance(include_fares, str):
+                include_fares_bool = include_fares.lower() == "true"
+            else:
+                include_fares_bool = bool(include_fares)
+
+        # Call the service with properly typed parameters
+        result = recommendation_service.get_recommendations(
             departure_airport,
-            outbound_date,
-            return_date,
-            api_key,
+            base_currency,
+            limit=limit_int,
+            min_trend=min_trend_float,
+            include_fares=include_fares_bool,
+            outbound_date=outbound_date,
+            return_date=return_date,
         )
-        return recommendations
+
+        # Convert response to list of dicts
+        if isinstance(result, RecommendationsResponse) and hasattr(
+            result, "recommendations"
+        ):
+            # Return list of dictionaries that can be JSON serialized
+            return [
+                {
+                    "destination": rec.destination,
+                    "country": rec.country,
+                    "trend": rec.trend,
+                    "currency": rec.currency,
+                    "base_currency": rec.base_currency,
+                    "exchange_rate": rec.exchange_rate,
+                    "fare": rec.fare if hasattr(rec, "fare") else None,
+                }
+                for rec in result.recommendations
+            ]
+
+        # Return empty list if no recommendations
+        return []
     except Exception as e:
-        logger.error(f"Error in get_recommendations: {str(e)}")
-        return {"error": str(e), "type": type(e).__name__}
+        logger.error(f"Error getting recommendations: {str(e)}")
+        return [{"error": str(e), "type": type(e).__name__}]
 
 
 def retrieve_parquet_data(
     file_key: str, filters: Optional[Dict] = None
-) -> Dict[str, Any]:
+) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Retrieve data from a Parquet file.
 
@@ -129,14 +172,29 @@ def retrieve_parquet_data(
         filters: Optional filters to apply to the data
 
     Returns:
-        Dict containing the retrieved data
+        List of dicts containing the retrieved data or error dict
     """
     try:
-        logger.info(f"Python adapter: Retrieving parquet data for {file_key}")
-        data = retrieval.retrieve_data(file_key, filters)
-        return data
+        logger.info(f"Retrieving parquet data for {file_key}")
+        df = retrieve_data(file_key)
+
+        if df is not None:
+            # Apply filters if provided
+            if filters:
+                for column, value in filters.items():
+                    if column in df.columns:
+                        df = df[df[column] == value]
+
+            # Convert to list of dictionaries
+            return df.to_dict(orient="records")
+
+        # Return error if retrieval failed
+        return {
+            "error": "Failed to retrieve data",
+            "type": "DataRetrievalError",
+        }
     except Exception as e:
-        logger.error(f"Error in retrieve_parquet_data: {str(e)}")
+        logger.error(f"Error retrieving parquet data: {str(e)}")
         return {"error": str(e), "type": type(e).__name__}
 
 
@@ -154,16 +212,45 @@ def json_to_parquet(
         Dict containing status message
     """
     try:
-        logger.info(
-            f"Python adapter: Converting JSON to Parquet at {output_path}"
-        )
-        result = json_parquet_converter.convert_json_to_parquet(
-            json_data, output_path
-        )
+        logger.info(f"Converting JSON to Parquet at {output_path}")
+
+        # In the dual backend, handle different input types
+        if isinstance(json_data, str):
+            # If json_data is a file path string
+            success = json_parquet_converter.json_to_parquet(
+                json_data, output_path
+            )
+        else:
+            # If json_data is already parsed, convert to string
+            import json
+            import tempfile
+            import os
+
+            json_str = json.dumps(json_data)
+            # Create a temporary file
+            with tempfile.NamedTemporaryFile(
+                suffix=".json", delete=False
+            ) as f:
+                f.write(json_str.encode("utf-8"))
+                temp_json_path = f.name
+
+            # Call the function with the temp file path
+            success = json_parquet_converter.json_to_parquet(
+                temp_json_path, output_path
+            )
+
+            # Clean up
+            os.unlink(temp_json_path)
+
+        if success:
+            return {
+                "success": True,
+                "message": "JSON converted to Parquet",
+                "path": output_path,
+            }
         return {
-            "success": True,
-            "message": "JSON converted to Parquet",
-            "path": output_path,
+            "success": False,
+            "message": "Failed to convert JSON to Parquet",
         }
     except Exception as e:
         logger.error(f"Error in json_to_parquet: {str(e)}")
