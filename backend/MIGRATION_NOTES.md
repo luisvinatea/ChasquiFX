@@ -37,12 +37,12 @@ The following Python components are still being used through the Node.js bridge:
 
 ## Deprecation Timeline
 
-The legacy Python endpoints have been replaced with stub files that maintain import compatibility. The actual functionality has been completely migrated to Node.js.
+The legacy Python endpoints have been fully removed from the codebase. The functionality now exists exclusively in the Node.js backend.
 
 - **Phase 1 (Completed)**: Mark Python endpoints as deprecated
 - **Phase 2 (Completed)**: Create Node.js implementations
 - **Phase 3 (Completed)**: Replace Python implementation with stub files
-- **Phase 4 (Future)**: Complete removal of stub files
+- **Phase 4 (Completed on May 18, 2025)**: Full removal of deprecated files
 
 ## Usage for Developers
 

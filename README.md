@@ -6,12 +6,14 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 
 ## Architecture
 
-ChasquiFX uses a hybrid architecture:
+ChasquiFX uses a hybrid architecture with clear separation of concerns:
 
-- **Node.js Backend**: Handles API endpoints, authentication, and asynchronous operations
-- **Python Backend**: Focuses on core data processing tasks and complex calculations
+- **Node.js Backend**: Handles all API endpoints, authentication, and user-facing operations
+- **Python Backend**: Specialized data processing engine that works through Node.js integration
 
-> **Note:** See [Migration Notes](backend/MIGRATION_NOTES.md) for details on the Python to Node.js migration.
+This architecture represents a complete migration from the original Python API implementation to Node.js, with Python now serving as a specialized processing component rather than an API layer.
+
+> **Note:** See [Migration Notes](backend/MIGRATION_NOTES.md) for details on the completed Python to Node.js migration.
 
 ## Features
 
@@ -62,7 +64,7 @@ ChasquiFX includes a comprehensive data processing module that handles:
 
 For details, see the [Data Processing documentation](backend/api/data_processing/README.md).
 
-## Architecture
+Architecture
 
 ChasquiFX uses a hybrid architecture with the following components:
 

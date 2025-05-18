@@ -31,8 +31,9 @@ logger = get_api_logger()
 # Initialize FastAPI
 app = FastAPI(
     title="ChasquiFX API (Python Backend)",
-    description="API for flight and forex recommendations - running in hybrid mode with Node.js",
-    version="1.0.0",
+    description="Data processing backend"
+    "for the ChasquiFX hybrid architecture",
+    version="1.0.1",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -46,7 +47,8 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Include API routes (some are deprecated in favor of Node.js endpoints)
+# Include empty API router - all API endpoints have been migrated to Node.js
+# This remains for compatibility with the application structure
 # See MIGRATION_NOTES.md for more information
 app.include_router(router)
 

@@ -1,19 +1,16 @@
 """
 API routes initialization module.
 
-NOTE: These routes are now stub files that maintain backward compatibility.
-The actual implementation has been migrated to the Node.js backend.
+NOTE: The API functionality has been fully migrated to the Node.js backend.
+This file exists only for backward compatibility
+ with the Python application structure.
 See MIGRATION_NOTES.md for more information.
 """
 
 from fastapi import APIRouter
 
-from backend.api.routes.recommendations import router as recommendations_router
-from backend.api.routes.forex import router as forex_router
-
-# Create main router
+# Create main router with no routes
 router = APIRouter()
 
-# Include all routers
-router.include_router(recommendations_router)
-router.include_router(forex_router)
+# Note: Previously imported routes have been fully migrated to Node.js
+# and are no longer available in the Python backend

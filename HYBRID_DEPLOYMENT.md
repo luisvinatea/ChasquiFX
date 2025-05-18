@@ -1,6 +1,6 @@
 # ChasquiFX Hybrid Backend Deployment
 
-This document describes the deployment of the ChasquiFX application with its hybrid backend architecture, using Node.js for API handling and Python for data processing.
+This document describes the deployment of the ChasquiFX application with its hybrid backend architecture, using Node.js exclusively for API handling and Python for specialized data processing tasks.
 
 ## Architecture Overview
 
@@ -43,8 +43,8 @@ The ChasquiFX application now uses a hybrid backend architecture:
 
 2. **Python Backend**
 
-   - Handles all data processing tasks
-   - Performs forex data analysis
+   - Specialized data processing engine only (no API endpoints)
+   - Performs forex data analysis and calculations
    - Manages flight data processing
    - Converts between JSON and Parquet formats
    - Generates recommendations based on forex and flight data
@@ -177,6 +177,7 @@ SERPAPI_API_KEY=your_serpapi_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
 VERCEL_DEPLOYMENT=true  # Only for Vercel deployment
+DATA_PROCESSING_ONLY=true  # Indicates Python runs as data processor only
 ```
 
 ### Node.js Backend

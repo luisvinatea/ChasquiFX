@@ -1,5 +1,18 @@
 # ChasquiFX Changelog
 
+## [1.3.1] - 2025-05-18
+
+### Removed in 1.3.1
+
+- Fully removed deprecated Python API routes (forex and recommendations)
+- Removed deprecated authentication middleware
+- Removed all stub files that were previously maintained for backward compatibility
+
+### Changed in 1.3.1
+
+- Updated documentation to reflect the complete migration to Node.js for API handling
+- Simplified Python backend to focus exclusively on data processing
+
 ## [1.3.0] - 2025-05-18
 
 ### Added in 1.3.0
