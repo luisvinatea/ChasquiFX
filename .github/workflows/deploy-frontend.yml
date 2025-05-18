@@ -35,11 +35,15 @@ jobs:
       - name: Create env file
         run: |
           cd frontend
-          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > .env.production.local
-          echo "REACT_APP_SUPABASE_URL=${{ secrets.REACT_APP_SUPABASE_URL }}" >> .env.production.local
-          echo "REACT_APP_SUPABASE_ANON_KEY=${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}" >> .env.production.local
+          echo "REACT_APP_API_URL=${REACT_APP_API_URL}" > .env.production.local
+          echo "REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}" >> .env.production.local
+          echo "REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}" >> .env.production.local
           echo "CI=false" >> .env.production.local
           cat .env.production.local
+        env:
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+          REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
 
       - name: Build
         run: |
@@ -47,9 +51,6 @@ jobs:
           npm run build
         env:
           CI: false
-          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
-          REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
-          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

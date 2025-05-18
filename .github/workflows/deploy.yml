@@ -1,0 +1,108 @@
+// filepath: /home/luisvinatea/DEVinatea/Repos/chasquifx/.github/workflows/deploy.yml
+name: Deploy ChasquiFX
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend to Vercel
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Create vercel.json
+        run: |
+          cd backend
+          if [ ! -f "vercel.json" ]; then
+            echo '{
+              "version": 2,
+              "builds": [
+                {
+                  "src": "api/main.py",
+                  "use": "@vercel/python"
+                }
+              ],
+              "routes": [
+                {
+                  "src": "/(.*)",
+                  "dest": "/api/main.py"
+                }
+              ]
+            }' > vercel.json
+          fi
+
+      - name: Deploy to Vercel
+        run: |
+          cd backend
+          vercel deploy --prod --token "$VERCEL_TOKEN" --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          # Pass Supabase and API environment variables
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+
+  deploy-frontend:
+    name: Deploy Frontend to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+
+      # Create .env file for production build
+      - name: Create env file
+        working-directory: frontend
+        run: |
+          touch .env.production.local
+          echo "REACT_APP_API_URL=$API_URL" > .env.production.local
+          echo "REACT_APP_SUPABASE_URL=$SUPABASE_URL" >> .env.production.local
+          echo "REACT_APP_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> .env.production.local
+          echo "CI=false" >> .env.production.local
+        env:
+          API_URL: ${{ secrets.REACT_APP_API_URL }}
+          SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          CI: false
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: frontend/build
