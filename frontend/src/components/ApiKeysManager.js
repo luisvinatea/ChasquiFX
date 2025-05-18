@@ -26,23 +26,10 @@ import { storeUserApiKey, getUserApiKey } from "../services/supabaseClient";
  * Stores keys securely in Supabase database with user account
  */
 const ApiKeysManager = ({ open, onClose, user }) => {
-  const [apiKeys, setApiKeys] = useState({
-    serpApi: "",
-    exchangeApi: "",
-  });
-
-  const [showKeys, setShowKeys] = useState({
-    serpApi: false,
-    exchangeApi: false,
-  });
-
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [refreshMessage, setRefreshMessage] = useState({
-    show: false,
-    success: false,
-    message: "",
-  });
-  const [refreshing, setRefreshing] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Load saved API keys on component mount
@@ -54,266 +41,147 @@ const ApiKeysManager = ({ open, onClose, user }) => {
       getUserApiKey(user.id)
         .then((apiKey) => {
           if (apiKey) {
-            setApiKeys({
-              serpApi: apiKey,
-            });
+            setApiKey(apiKey);
           }
           setLoading(false);
         })
         .catch((error) => {
           console.error("Failed to load API key:", error);
+          setSaveError("Failed to load API key. Please try again.");
           setLoading(false);
         });
     }
   }, [open, user]);
 
-  // Handle input change
-  const handleChange = (key) => (e) => {
-    setApiKeys({
-      ...apiKeys,
-      [key]: e.target.value,
-    });
-    // Reset success message when editing
-    setSaveSuccess(false);
-  };
-
-  // Handle toggle visibility
-  const toggleVisibility = (key) => {
-    setShowKeys({
-      ...showKeys,
-      [key]: !showKeys[key],
-    });
-  };
-
   // Handle save
   const handleSave = async () => {
-    // Save to localStorage
-    localStorage.setItem("chasquiFxApiKeys", JSON.stringify(apiKeys));
-
-    // Save to Supabase
-    if (user) {
-      try {
-        await storeUserApiKey(user.id, apiKeys.serpApi);
-      } catch (error) {
-        console.error("Failed to store API key:", error);
-      }
-    }
-
-    setSaveSuccess(true);
-
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      setSaveSuccess(false);
-    }, 3000);
-  };
-
-  // Handle refreshing forex data
-  const handleRefreshForex = async () => {
-    if (!apiKeys.serpApi) {
-      setRefreshMessage({
-        show: true,
-        success: false,
-        message: "SerpAPI key is required to refresh forex data",
-      });
+    if (!user) {
+      setSaveError("You must be logged in to save API keys");
       return;
     }
 
-    setRefreshing(true);
-    setRefreshMessage({ show: false, success: false, message: "" });
-
     try {
-      await apiService.refreshForexData();
-      setRefreshMessage({
-        show: true,
-        success: true,
-        message: "Forex data refreshed successfully with real-time rates!",
-      });
-    } catch (error) {
-      setRefreshMessage({
-        show: true,
-        success: false,
-        message: `Failed to refresh forex data: ${error.message}`,
-      });
-    } finally {
-      setRefreshing(false);
-      // Hide message after 5 seconds
+      setLoading(true);
+      setSaveSuccess(false);
+      setSaveError("");
+
+      await storeUserApiKey(user.id, apiKey);
+
+      setSaveSuccess(true);
       setTimeout(() => {
-        setRefreshMessage({ show: false, success: false, message: "" });
-      }, 5000);
+        setSaveSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Failed to save API key:", error);
+      setSaveError("Failed to save API key. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Handle close modal
+  const handleClose = () => {
+    setSaveSuccess(false);
+    setSaveError("");
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
-        }}
-      >
-        <ApiIcon sx={{ mr: 1 }} />
-        API Keys Manager
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Box display="flex" alignItems="center">
+          <ApiIcon sx={{ mr: 1 }} />
+          API Key Management
+        </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 3 }}>
+      <DialogContent>
         {loading && (
-          <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+          <Box display="flex" justifyContent="center" my={3}>
             <CircularProgress />
           </Box>
         )}
 
-        {saveSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            API keys saved successfully!
-          </Alert>
-        )}
+        {!loading && (
+          <>
+            {saveSuccess && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                API key saved successfully!
+              </Alert>
+            )}
 
-        <Typography variant="body2" color="textSecondary" paragraph>
-          Enter your API keys for external services. These keys will be stored
-          locally in your browser and used for API requests.
-        </Typography>
+            {saveError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {saveError}
+              </Alert>
+            )}
 
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            SerpAPI Key
-          </Typography>
-          <Typography variant="body2" color="textSecondary" paragraph>
-            Used for fetching forex data from Google Finance and flight
-            information. Get a key at{" "}
-            <a
-              href="https://serpapi.com/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Typography variant="subtitle1" gutterBottom>
+              Your SerpAPI Key
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Enter your SerpAPI key to enable real-time forex and flight data.
+              Your key is stored securely in your account.
+            </Typography>
+
+            <TextField
+              label="SerpAPI Key"
+              variant="outlined"
+              fullWidth
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              margin="normal"
+              type={showApiKey ? "text" : "password"}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      edge="end"
+                    >
+                      {showApiKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              paragraph
+              sx={{ mt: 1 }}
             >
-              serpapi.com
-            </a>
-          </Typography>
-          <Typography variant="body2" color="info.main" paragraph>
-            <strong>Important:</strong> This key is required for real-time
-            exchange rates and flight costs.
-          </Typography>
-
-          {apiKeys.serpApi && (
-            <Box sx={{ display: "flex", alignItems: "center", mt: 1, mb: 2 }}>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={
-                  refreshing ? <CircularProgress size={20} /> : <RefreshIcon />
-                }
-                onClick={handleRefreshForex}
-                disabled={refreshing}
-                size="small"
+              Don't have a SerpAPI key?{" "}
+              <a
+                href="https://serpapi.com/register"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {refreshing ? "Refreshing..." : "Refresh Forex Data"}
-              </Button>
-            </Box>
-          )}
+                Sign up here
+              </a>
+              . SerpAPI provides access to Google Finance and Google Flights
+              data.
+            </Typography>
 
-          {refreshMessage.show && (
-            <Alert
-              severity={refreshMessage.success ? "success" : "error"}
-              sx={{ mb: 2 }}
-            >
-              {refreshMessage.message}
-            </Alert>
-          )}
-          <TextField
-            fullWidth
-            variant="outlined"
-            size="small"
-            value={apiKeys.serpApi}
-            onChange={handleChange("serpApi")}
-            type={showKeys.serpApi ? "text" : "password"}
-            placeholder="Enter your SerpAPI key"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => toggleVisibility("serpApi")}
-                    edge="end"
-                  >
-                    {showKeys.serpApi ? (
-                      <VisibilityOffIcon />
-                    ) : (
-                      <VisibilityIcon />
-                    )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
+            <Divider sx={{ my: 2 }} />
 
-        <Divider sx={{ my: 2 }} />
-
-        <Box>
-          <Typography variant="subtitle1" gutterBottom>
-            Exchange Rate API Key (Legacy/Optional)
-          </Typography>
-          <Typography variant="body2" color="textSecondary" paragraph>
-            Deprecated - Keep empty as the app now uses SerpAPI (Google Finance)
-            for forex data.
-          </Typography>
-          <Typography variant="body2" color="info.main">
-            Note: This field is maintained for backward compatibility only.
-          </Typography>
-          <TextField
-            fullWidth
-            variant="outlined"
-            size="small"
-            value={apiKeys.exchangeApi}
-            onChange={handleChange("exchangeApi")}
-            type={showKeys.exchangeApi ? "text" : "password"}
-            placeholder="Enter your Exchange Rate API key (optional)"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => toggleVisibility("exchangeApi")}
-                    edge="end"
-                  >
-                    {showKeys.exchangeApi ? (
-                      <VisibilityOffIcon />
-                    ) : (
-                      <VisibilityIcon />
-                    )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
-
-        <Box sx={{ mt: 3 }}>
-          <Alert severity="info" variant="outlined">
-            Your API keys are stored locally in your browser and are not
-            transmitted to any server other than the respective API providers.
-          </Alert>
-        </Box>
-
-        {refreshMessage.show && (
-          <Alert
-            severity={refreshMessage.success ? "success" : "error"}
-            sx={{ mt: 2 }}
-          >
-            {refreshMessage.message}
-          </Alert>
+            <Typography variant="body2" color="info.main">
+              Your API key is stored securely and never shared with other users.
+            </Typography>
+          </>
         )}
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions>
+        <Button onClick={handleClose}>Close</Button>
         <Button
-          onClick={handleRefreshForex}
-          disabled={refreshing}
-          color="secondary"
+          onClick={handleSave}
+          variant="contained"
+          color="primary"
+          disabled={loading}
         >
-          {refreshing ? "Refreshing..." : "Refresh Forex Data"}
-        </Button>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} color="primary" variant="contained">
-          Save Keys
+          {loading ? <CircularProgress size={24} /> : "Save"}
         </Button>
       </DialogActions>
     </Dialog>

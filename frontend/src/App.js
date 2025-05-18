@@ -13,17 +13,24 @@ import {
   Tabs,
   Button,
   Chip,
+  Avatar,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import FlightIcon from "@mui/icons-material/Flight";
 import ApiIcon from "@mui/icons-material/Api";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import LogoutIcon from "@mui/icons-material/Logout";
 import "./App.css";
 import Sidebar from "./components/Sidebar";
 import RecommendationsList from "./components/RecommendationsList";
 import StatsCards from "./components/StatsCards";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ApiKeysManager from "./components/ApiKeysManager";
+import Auth from "./components/Auth";
 import { apiService } from "./services/apiService";
+import { getSession, signOutUser, getUserRecommendations } from "./services/supabaseClient";
 
 // Create a theme
 const theme = createTheme({
@@ -53,285 +60,412 @@ function App() {
     message: "",
     severity: "info",
   });
-  const [currentTab, setCurrentTab] = useState(0);
-  const [apiKeysDialogOpen, setApiKeysDialogOpen] = useState(false);
+  const [openApiKeysManager, setOpenApiKeysManager] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [user, setUser] = useState(null);
+  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const [pastRecommendations, setPastRecommendations] = useState([]);
+  const [pastRecommendationsLoading, setPastRecommendationsLoading] = useState(false);
 
-  // Check API status on component mount
+  // Check user session on mount
   useEffect(() => {
-    checkApiStatus();
-    // Load favorites from localStorage
-    const savedFavorites = localStorage.getItem("chasquiFxFavorites");
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
+    const checkSession = async () => {
+      try {
+        const { session } = await getSession();
+        if (session) {
+          setUser(session.user);
+          loadPastRecommendations(session.user.id);
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+      }
+    };
+    
+    checkSession();
   }, []);
 
-  // Check if the API is running
-  const checkApiStatus = async () => {
+  // Load user's past recommendations
+  const loadPastRecommendations = async (userId) => {
     try {
-      const status = await apiService.checkApiStatus();
-      setApiStatus(status);
+      setPastRecommendationsLoading(true);
+      const recommendations = await getUserRecommendations(userId);
+      setPastRecommendations(recommendations);
     } catch (error) {
-      setApiStatus(false);
-      console.error("Error checking API status:", error);
+      console.error("Failed to load past recommendations:", error);
+    } finally {
+      setPastRecommendationsLoading(false);
     }
   };
 
-  // Handle search submissions
-  const handleSearch = async (searchParams) => {
-    // Check if SerpAPI key is available when fare data is requested
-    if (searchParams.includeFares) {
-      const apiKeys = JSON.parse(
-        localStorage.getItem("chasquiFxApiKeys") || "{}"
-      );
-
-      if (!apiKeys.serpApi) {
-        setNotification({
-          open: true,
-          message:
-            "SerpAPI key is required for flight fare data. Please set your API key.",
-          severity: "warning",
-        });
-        setApiKeysDialogOpen(true);
-        return;
-      }
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = {
-        departure_airport: searchParams.departureAirport,
-        limit: searchParams.maxResults,
-        include_fares: searchParams.includeFares.toString(),
-        base_currency: "USD",
-        outbound_date: searchParams.outboundDate,
-        return_date: searchParams.returnDate,
-        min_trend: -1.0, // Include all trends
-      };
-
-      const data = await apiService.getRecommendations(params);
-
-      if (data && data.recommendations) {
-        setRecommendations(data.recommendations);
-        setNotification({
-          open: true,
-          message: `Found ${data.recommendations.length} destinations with favorable exchange rates!`,
-          severity: "success",
-        });
-      } else {
-        setRecommendations([]);
-        setError("No recommendations found for the selected parameters");
-      }
-    } catch (error) {
-      setError(`Error fetching recommendations: ${error.message}`);
+  // Handle API key modal
+  const handleOpenApiKeysManager = () => {
+    if (!user) {
       setNotification({
         open: true,
-        message: `Error: ${error.message}`,
+        message: "Please log in to manage API keys",
+        severity: "warning",
+      });
+      return;
+    }
+    setOpenApiKeysManager(true);
+  };
+
+  const handleCloseApiKeysManager = () => {
+    setOpenApiKeysManager(false);
+  };
+
+  // Handle user menu
+  const handleUserMenuOpen = (event) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOutUser();
+      setUser(null);
+      handleUserMenuClose();
+      setNotification({
+        open: true,
+        message: "Successfully logged out",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      setNotification({
+        open: true,
+        message: "Logout failed",
         severity: "error",
       });
+    }
+  };
+
+  // Handle successful authentication
+  const handleAuthSuccess = (user) => {
+    setUser(user);
+    if (user) {
+      loadPastRecommendations(user.id);
+    }
+  };
+
+  // Check API status on component mount
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      try {
+        const status = await apiService.getStatus();
+        setApiStatus(status.status === "healthy");
+      } catch (error) {
+        console.error("API Status Check Error:", error);
+        setApiStatus(false);
+      }
+    };
+
+    checkApiStatus();
+    // Setup periodic status check
+    const statusInterval = setInterval(checkApiStatus, 60000);
+
+    return () => {
+      clearInterval(statusInterval);
+    };
+  }, []);
+
+  // Handle notification close
+  const handleCloseNotification = () => {
+    setNotification({
+      ...notification,
+      open: false,
+    });
+  };
+
+  // Handle tab change
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  // Handle form submission from sidebar
+  const handleFormSubmit = async (formData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setRecommendations([]);
+
+      // Add user ID to request if user is logged in
+      if (user) {
+        formData.userId = user.id;
+      }
+
+      const response = await apiService.getRecommendations(formData);
+
+      if (response && response.recommendations) {
+        setRecommendations(response.recommendations);
+        
+        // If user is logged in, refresh past recommendations
+        if (user) {
+          loadPastRecommendations(user.id);
+        }
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("API Error:", error);
+      setError(
+        `Failed to fetch recommendations: ${
+          error.message || "Unknown error"
+        }`
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Toggle favorite destination
-  const toggleFavorite = (destination) => {
-    let newFavorites;
-
-    if (favorites.includes(destination)) {
-      newFavorites = favorites.filter((fav) => fav !== destination);
-      setNotification({
-        open: true,
-        message: `Removed ${destination} from favorites`,
-        severity: "info",
-      });
+  // Handle adding/removing favorites
+  const toggleFavorite = (rec) => {
+    if (favorites.some((fav) => fav.id === rec.id)) {
+      setFavorites(favorites.filter((fav) => fav.id !== rec.id));
     } else {
-      newFavorites = [...favorites, destination];
-      setNotification({
-        open: true,
-        message: `Added ${destination} to favorites`,
-        severity: "success",
-      });
-    }
-
-    setFavorites(newFavorites);
-    localStorage.setItem("chasquiFxFavorites", JSON.stringify(newFavorites));
-  };
-
-  // Handle tab change
-  const handleTabChange = (event, newValue) => {
-    setCurrentTab(newValue);
-  };
-
-  // Handle refresh data
-  const handleRefreshData = async () => {
-    await checkApiStatus();
-    setNotification({
-      open: true,
-      message: "Data refreshed",
-      severity: "info",
-    });
-  };
-
-  // Close notification
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
-  };
-
-  // Check if we're using real-time forex data
-  const checkForexDataStatus = () => {
-    const apiKeys = JSON.parse(
-      localStorage.getItem("chasquiFxApiKeys") || "{}"
-    );
-    if (apiKeys.serpApi) {
-      return {
-        isRealTime: true,
-        message: "Using real-time forex data from Google Finance",
-      };
-    } else {
-      return {
-        isRealTime: false,
-        message:
-          "Using synthetic forex data. Add SerpAPI key for real-time rates.",
-      };
+      setFavorites([...favorites, rec]);
     }
   };
-
-  const forexStatus = checkForexDataStatus();
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static">
+      {/* App Bar */}
+      <AppBar position="static" elevation={0}>
         <Toolbar>
-          <FlightIcon sx={{ mr: 1 }} />
+          <FlightIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            ChasquiFX Explorer
+            ChasquiFX
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Chip
-              label={forexStatus.isRealTime ? "Real-time rates" : "Demo rates"}
-              color={forexStatus.isRealTime ? "success" : "warning"}
-              size="small"
-              sx={{ mr: 2 }}
-            />
-            <Button
-              color="inherit"
-              startIcon={<ApiIcon />}
-              onClick={() => setApiKeysDialogOpen(true)}
-            >
-              API Keys
+          <Chip
+            label={apiStatus ? "API Online" : "API Offline"}
+            color={apiStatus ? "success" : "error"}
+            size="small"
+            sx={{ mr: 2 }}
+          />
+          <Button
+            startIcon={<ApiIcon />}
+            onClick={handleOpenApiKeysManager}
+            color="inherit"
+            sx={{ mr: 2 }}
+          >
+            API Keys
+          </Button>
+          
+          {user ? (
+            <>
+              <Button
+                color="inherit"
+                onClick={handleUserMenuOpen}
+                startIcon={<AccountCircleIcon />}
+              >
+                {user.email.split('@')[0]}
+              </Button>
+              <Menu
+                anchorEl={userMenuAnchor}
+                open={Boolean(userMenuAnchor)}
+                onClose={handleUserMenuClose}
+              >
+                <MenuItem onClick={handleOpenApiKeysManager}>
+                  <ApiIcon fontSize="small" sx={{ mr: 1 }} />
+                  API Keys
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>
+                  <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
+                  Logout
+                </MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <Button color="inherit" onClick={() => setActiveTab(2)}>
+              Login / Sign Up
             </Button>
-          </Box>
+          )}
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
-          p: 3,
-          minHeight: "calc(100vh - 64px)",
-          backgroundImage: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-        }}
-      >
-        <Container maxWidth="xl">
-          <Typography variant="h4" component="h1" gutterBottom>
-            ChasquiFX Explorer
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            Find destinations with favorable exchange rates from your departure
-            airport
-          </Typography>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Tabs value={activeTab} onChange={handleTabChange} centered sx={{ mb: 3 }}>
+          <Tab label="Recommendations" />
+          <Tab label="Favorites" />
+          {!user && <Tab label="Login / Sign Up" />}
+          {user && <Tab label="History" />}
+        </Tabs>
 
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid sx={{ gridColumn: { xs: "span 12", md: "span 3" } }}>
+        {/* Main content */}
+        {activeTab === 0 && (
+          <Grid container spacing={3}>
+            {/* Sidebar */}
+            <Grid item xs={12} md={3}>
               <Sidebar
-                apiStatus={apiStatus}
+                onSubmit={handleFormSubmit}
                 departureAirport={departureAirport}
                 setDepartureAirport={setDepartureAirport}
-                onSearch={handleSearch}
-                refreshData={handleRefreshData}
               />
             </Grid>
 
-            <Grid sx={{ gridColumn: { xs: "span 12", md: "span 9" } }}>
-              <Box sx={{ width: "100%", bgcolor: "background.paper", mb: 2 }}>
-                <Tabs
-                  value={currentTab}
-                  onChange={handleTabChange}
-                  variant="fullWidth"
-                >
-                  <Tab label="Recommendations" />
-                  <Tab label="Favorites" />
-                  <Tab label="Trends" />
-                </Tabs>
-              </Box>
+            {/* Main content area */}
+            <Grid item xs={12} md={9}>
+              {/* Stats cards */}
+              {recommendations.length > 0 && <StatsCards data={recommendations} />}
 
-              {error && (
+              {/* Loading indicator */}
+              {loading && <LoadingSpinner />}
+
+              {/* Error message */}
+              {error && !loading && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {error}
                 </Alert>
               )}
 
-              {currentTab === 0 && (
-                <>
-                  {loading ? (
-                    <LoadingSpinner message="Finding destinations with favorable exchange rates..." />
-                  ) : (
-                    <>
-                      {recommendations.length > 0 && (
-                        <StatsCards recommendations={recommendations} />
-                      )}
-                      <RecommendationsList
-                        recommendations={recommendations}
-                        loading={false}
-                        favorites={favorites}
-                        toggleFavorite={toggleFavorite}
-                      />
-                    </>
-                  )}
-                </>
+              {/* Recommendations list */}
+              {!loading && !error && (
+                <RecommendationsList
+                  recommendations={recommendations}
+                  favorites={favorites}
+                  onToggleFavorite={toggleFavorite}
+                />
               )}
 
-              {currentTab === 1 && (
-                <>
-                  {loading ? (
-                    <LoadingSpinner message="Loading favorites..." />
-                  ) : (
-                    <RecommendationsList
-                      recommendations={recommendations.filter((rec) =>
-                        favorites.includes(rec.city)
-                      )}
-                      loading={false}
-                      favorites={favorites}
-                      toggleFavorite={toggleFavorite}
-                    />
-                  )}
-                </>
-              )}
-
-              {currentTab === 2 && (
-                <Box p={3} bgcolor="background.paper">
-                  <Typography variant="h6">
-                    Coming Soon: Currency Trend Analysis
+              {/* Empty state */}
+              {!loading && !error && recommendations.length === 0 && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 8,
+                    backgroundColor: "background.paper",
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="h5" gutterBottom>
+                    No Recommendations Yet
                   </Typography>
-                  <Typography variant="body1">
-                    This feature will allow you to visualize currency trend data
-                    over time.
+                  <Typography variant="body1" color="textSecondary">
+                    Fill out the form to get personalized forex travel
+                    recommendations.
                   </Typography>
                 </Box>
               )}
             </Grid>
           </Grid>
-        </Container>
-      </Box>
+        )}
 
+        {/* Favorites tab */}
+        {activeTab === 1 && (
+          <Box>
+            <Typography variant="h5" gutterBottom>
+              Your Favorites
+            </Typography>
+            {favorites.length > 0 ? (
+              <RecommendationsList
+                recommendations={favorites}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+              />
+            ) : (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 8,
+                  backgroundColor: "background.paper",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="h5" gutterBottom>
+                  No Favorites Yet
+                </Typography>
+                <Typography variant="body1" color="textSecondary">
+                  Add recommendations to your favorites to see them here.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Login/Signup tab (only visible when not logged in) */}
+        {!user && activeTab === 2 && (
+          <Auth onAuthSuccess={handleAuthSuccess} />
+        )}
+
+        {/* History tab (only visible when logged in) */}
+        {user && activeTab === (user ? 2 : 3) && (
+          <Box>
+            <Typography variant="h5" gutterBottom>
+              Your Recommendation History
+            </Typography>
+            {pastRecommendationsLoading ? (
+              <LoadingSpinner />
+            ) : pastRecommendations.length > 0 ? (
+              <Box sx={{ mt: 2 }}>
+                {pastRecommendations.map((rec) => (
+                  <Box 
+                    key={rec.id} 
+                    sx={{ 
+                      mb: 2, 
+                      p: 2, 
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 1
+                    }}
+                  >
+                    <Typography variant="h6">
+                      {rec.origin_currency} → {rec.destination_currency}
+                    </Typography>
+                    <Typography>
+                      Amount: {rec.amount} {rec.origin_currency}
+                    </Typography>
+                    <Typography>
+                      Recommended Destination: {rec.recommended_destination}
+                    </Typography>
+                    <Typography>
+                      Exchange Rate: {rec.exchange_rate}
+                    </Typography>
+                    <Typography>
+                      Savings: {rec.savings_percentage}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(rec.timestamp).toLocaleString()}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 8,
+                  backgroundColor: "background.paper",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="h5" gutterBottom>
+                  No History Yet
+                </Typography>
+                <Typography variant="body1" color="textSecondary">
+                  Your recommendation history will appear here after you get recommendations.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+      </Container>
+
+      {/* API Keys Manager Modal */}
+      <ApiKeysManager
+        open={openApiKeysManager}
+        onClose={handleCloseApiKeysManager}
+        user={user}
+      />
+
+      {/* Notification snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
           onClose={handleCloseNotification}
@@ -341,12 +475,6 @@ function App() {
           {notification.message}
         </Alert>
       </Snackbar>
-
-      {/* API Keys Manager Dialog */}
-      <ApiKeysManager
-        open={apiKeysDialogOpen}
-        onClose={() => setApiKeysDialogOpen(false)}
-      />
     </ThemeProvider>
   );
 }
