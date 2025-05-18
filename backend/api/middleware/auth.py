@@ -1,6 +1,10 @@
 """
 API authentication middleware for ChasquiFX.
 Handles user authentication and API key validation.
+
+NOTE: DEPRECATED - This authentication middleware has been migrated to the Node.js backend.
+This file is kept for backward compatibility but will be removed in a future version.
+Please use the Node.js authentication middleware instead.
 """
 
 import os
@@ -27,6 +31,8 @@ async def get_api_key(
     x_api_key: Optional[str] = Header(None),
 ) -> str:
     """
+    DEPRECATED: Use Node.js authentication middleware instead.
+
     Extract and validate API key from request.
 
     Args:

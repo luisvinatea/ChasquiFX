@@ -1,7 +1,8 @@
 """
 Vercel Handler for ChasquiFX API
-This module provides
-a compatibility layer for running the ChasquiFX API on Vercel.
+This module provides a compatibility layer
+for running the ChasquiFX API on Vercel
+and facilitates communication with the Node.js API layer.
 """
 
 import os

@@ -4,6 +4,15 @@
 
 ChasquiFX is a tool that integrates flight route data with foreign exchange data to provide destination recommendations based on favorable exchange rates and available flight routes.
 
+## Architecture
+
+ChasquiFX uses a hybrid architecture:
+
+- **Node.js Backend**: Handles API endpoints, authentication, and asynchronous operations
+- **Python Backend**: Focuses on core data processing tasks and complex calculations
+
+> **Note:** See [Migration Notes](backend/MIGRATION_NOTES.md) for details on the Python to Node.js migration.
+
 ## Features
 
 - Find destinations with favorable exchange rates
@@ -55,22 +64,33 @@ For details, see the [Data Processing documentation](backend/api/data_processing
 
 ## Architecture
 
-ChasquiFX consists of three main components:
+ChasquiFX uses a hybrid architecture with the following components:
 
 1. **React Frontend**: Deployed on GitHub Pages
 
    - User authentication with Supabase
    - Material UI interface
+   - Modern responsive design
 
-2. **Python Backend**: Deployed on Vercel
+2. **Node.js API Backend**: Deployed on Vercel
 
-   - FastAPI server for recommendations and data processing
-   - SerpAPI integration for real-time forex and flight data
+   - Handles all API requests from the frontend
+   - Manages authentication and user sessions
+   - Provides RESTful endpoints with Express.js
+   - Optimizes asynchronous operations
 
-3. **Supabase Database**:
+3. **Python Data Processing Backend**: Deployed on Vercel
+
+   - Processes forex and flight data
+   - Handles complex data analysis and transformations
+   - Manages Parquet file conversions
+   - Generates travel recommendations
+
+4. **Supabase Database**:
    - PostgreSQL database for storing user data and API logs
    - Authentication service
    - Cache layer for API responses
+   - Storage for Parquet data files
 
 ## Setup and Deployment
 
@@ -83,6 +103,36 @@ ChasquiFX consists of three main components:
 
 ### Setup
 
+#### Automated Setup (Recommended)
+
+Run the automated setup script which configures all components:
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/chasquifx.git
+cd chasquifx
+
+# Run the setup script
+./setup_chasquifx.sh
+```
+
+The script will:
+
+- Set up Python backend with virtual environment
+- Set up Node.js backend
+- Set up React frontend
+- Create environment files from templates
+- Make all scripts executable
+
+After running the script, you'll need to:
+
+1. Edit the environment files with your API keys and credentials
+2. Set up your Supabase project (see below)
+
+#### Manual Setup
+
+If you prefer to set up components manually:
+
 1. **Clone the repository**
 
    ```bash
@@ -90,7 +140,7 @@ ChasquiFX consists of three main components:
    cd chasquifx
    ```
 
-2. **Backend setup**
+2. **Python backend setup**
 
    ```bash
    # Create and activate a virtual environment
@@ -104,7 +154,19 @@ ChasquiFX consists of three main components:
    cp .env.template .env
    ```
 
-3. **Frontend setup**
+3. **Node.js backend setup**
+
+   ```bash
+   # Run the setup script
+   ./scripts/setup_node_backend.sh
+
+   # Or manually:
+   cd backend/node
+   npm install
+   cp .env.template .env
+   ```
+
+4. **Frontend setup**
 
    ```bash
    cd frontend
@@ -114,7 +176,7 @@ ChasquiFX consists of three main components:
    cp .env.template .env.local
    ```
 
-4. **Supabase setup**
+5. **Supabase setup**
 
    - Create a new project in [Supabase](https://supabase.com)
    - Use the SQL script in `backend/api/db/supabase_schema.sql` to create the database tables
@@ -122,10 +184,21 @@ ChasquiFX consists of three main components:
 
 ### Running locally
 
-1. **Start the backend**
+1. **Start the hybrid backend**
 
    ```bash
+   ./run_chasquifx_hybrid.sh
+   ```
+
+   Or start the backends separately:
+
+   ```bash
+   # Python backend for data processing
    ./run_chasquifx.sh
+
+   # Node.js backend for API handling
+   cd backend/node
+   npm run dev
    ```
 
 2. **Start the frontend**

@@ -1,5 +1,8 @@
 """
 API routes initialization module.
+
+NOTE: Many of these routes are deprecated as functionality has been migrated to the Node.js backend.
+See MIGRATION_NOTES.md for more information.
 """
 
 from fastapi import APIRouter

@@ -7,16 +7,33 @@
       "config": {
         "runtime": "python3.9"
       }
+    },
+    {
+      "src": "node/src/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/v1/(.*)",
+      "dest": "node/src/index.js"
+    },
+    {
+      "src": "/node_bridge/(.*)",
       "dest": "api/vercel_handler.py"
+    },
+    {
+      "src": "/python/(.*)",
+      "dest": "api/vercel_handler.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "node/src/index.js"
     }
   ],
   "env": {
     "PYTHONPATH": ".",
-    "VERCEL_DEPLOYMENT": "true"
+    "VERCEL_DEPLOYMENT": "true",
+    "NODE_ENV": "production"
   }
 }

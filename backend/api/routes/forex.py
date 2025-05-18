@@ -1,5 +1,9 @@
 """
 Forex data API endpoints for ChasquiFX.
+
+NOTE: DEPRECATED - Most functionality has been migrated to the Node.js backend.
+These routes are kept for backward compatibility but will be removed in a future version.
+Please use the Node.js API endpoints instead.
 """
 
 from fastapi import APIRouter, Query, Header, Security, Depends, HTTPException
@@ -48,6 +52,8 @@ async def refresh_forex_data(
     x_serpapi_key: Optional[str] = Header(None, alias="X-Serpapi-Key"),
 ) -> Dict[str, Any]:
     """
+    DEPRECATED: Use Node.js endpoint instead.
+
     Force refresh of forex data using the SerpAPI key provided in the header.
 
     Args:
@@ -106,6 +112,8 @@ async def refresh_forex_data(
 @router.get("/status")
 async def get_forex_status() -> Dict[str, Any]:
     """
+    DEPRECATED: Use Node.js endpoint instead.
+
     Check if we have valid forex data and SerpAPI key.
 
     Returns:
@@ -164,6 +172,8 @@ async def get_exchange_rate_endpoint(
     ),
 ):
     """
+    DEPRECATED: Use Node.js endpoint instead.
+
     Get the current exchange rate between two currencies.
     """
     # Get exchange rate
@@ -202,6 +212,8 @@ async def get_exchange_rate_endpoint(
 @router.get("/available_currencies", response_model=List[str])
 async def get_available_currencies():
     """
+    DEPRECATED: Use Node.js endpoint instead.
+
     Get a list of available currency codes.
     """
     # Load forex data
@@ -227,6 +239,8 @@ async def reset_quota_status(
     valid_key: bool = Depends(get_api_key),
 ) -> Dict[str, Any]:
     """
+    DEPRECATED: Use Node.js endpoint instead.
+
     Reset the SerpAPI quota exceeded status.
     Requires admin API key for authorization.
 

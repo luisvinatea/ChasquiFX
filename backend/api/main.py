@@ -30,8 +30,8 @@ logger = get_api_logger()
 
 # Initialize FastAPI
 app = FastAPI(
-    title="ChasquiFX API",
-    description="API for flight and forex recommendations",
+    title="ChasquiFX API (Python Backend)",
+    description="API for flight and forex recommendations - running in hybrid mode with Node.js",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -46,8 +46,18 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Include API routes
+# Include API routes (some are deprecated in favor of Node.js endpoints)
+# See MIGRATION_NOTES.md for more information
 app.include_router(router)
+
+# Import and include Node.js bridge router
+try:
+    from backend.api.node_bridge import node_bridge_router
+
+    app.include_router(node_bridge_router)
+    logger.info("Node.js bridge router loaded successfully")
+except ImportError as e:
+    logger.error(f"Failed to load Node.js bridge router: {e}")
 
 
 # Add global exception handler

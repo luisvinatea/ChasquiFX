@@ -1,5 +1,9 @@
 """
 Main API endpoints for the ChasquiFX application.
+
+NOTE: DEPRECATED - Most functionality has been migrated to the Node.js backend.
+These routes are kept for backward compatibility but will be removed in a future version.
+Please use the Node.js API endpoints instead.
 """
 
 from fastapi import APIRouter, Query, HTTPException, Header
@@ -47,6 +51,8 @@ async def get_destination_recommendations(
     x_serpapi_key: Optional[str] = Header(None, alias="X-Serpapi-Key"),
 ):
     """
+    DEPRECATED: Use Node.js endpoint instead.
+
     Get destination recommendations based on forex trends and available routes.
 
     This endpoint combines forex data with flight route information to
