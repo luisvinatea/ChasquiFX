@@ -9,10 +9,13 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 - Find destinations with favorable exchange rates
 - View flight routes and fare information (via SerpAPI integration)
 - Compare destinations with interactive visualizations
+- User authentication with Supabase
+- Secure storage of API keys in user accounts
+- Database logging of recommendations and API usage
+- Cached forex and flight data to reduce API calls
 - Save favorite destinations
 - Export results to CSV
 - Modern React frontend for improved reliability and user experience
-- Locally stored API keys for secure access to external services
 - Robust API error handling with retry mechanisms
 
 ## User Interface
@@ -21,346 +24,143 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 
 - Enhanced performance and reliability
 - Better handling of API requests
-- Local storage for user preferences and API keys
+- User authentication with Supabase
 - Responsive design for mobile and desktop
-
-## API Key Setup
-
-ChasquiFX uses several external APIs:
-
-### SerpAPI for Google Finance Data (Forex)
-
-ChasquiFX now uses Google Finance via SerpAPI to fetch currency exchange rates, which provides more reliable data compared to the previous Yahoo Finance implementation.
-
-1. Sign up for a SerpAPI account at [https://serpapi.com/](https://serpapi.com/)
-2. Get your API key from your SerpAPI dashboard
-3. Create or edit the file `backend/.env` with the following content:
-
-   ```bash
-   SERPAPI_API_KEY=your_serpapi_key_here
-   ```
-
-### Amadeus API for Flight Data
-
-For flight data, ChasquiFX uses the Amadeus API:
-
-1. Register for an Amadeus API key at [https://developers.amadeus.com/](https://developers.amadeus.com/)
-2. Add your key and secret to the `backend/.env` file:
-
-   ```bash
-   AMADEUS_API_KEY=your_amadeus_key_here
-   AMADEUS_API_SECRET=your_amadeus_secret_here
-   ```
-
-> **Note:** Without valid API keys, the application will fall back to using simulated data with a warning message.
-
-## Recent Improvements
-
-1. **Forex Data Provider**: Switched from Yahoo Finance to Google Finance via SerpAPI for more reliable forex data
-2. **Robust API Handling**: Implemented retry mechanism with exponential backoff for handling API rate limiting
-3. **Improved Error Handling**: Better error reporting and fallback mechanisms
-4. **Environment Management**: Enhanced environment variable handling with validation and guided setup
-5. **Automated Testing**: Added unit tests for key functionality
-
-## Quick Start
-
-### Using the launcher scripts
-
-ChasquiFX comes with several convenience scripts to help you manage the application:
-
-#### Start the application
-
-To start both the API server and the React frontend with a single command:
-
-```bash
-./run_chasquifx.sh
-```
-
-This will:
-
-1. Launch the FastAPI backend server on port 8000
-2. Launch the React frontend on port 3000
-3. Monitor both services and log their output to `logs/` directory
-
-You can access:
-
-- Web application: <http://localhost:3000>
-- API documentation: <http://localhost:8000/docs>
-
-#### Stop the application
-
-To stop the application, you can either:
-
-1. Press `CTRL+C` in the terminal where `run_ChasquiFX.sh` is running
-2. Or run the stop script:
-
-   ```bash
-   ./stop_ChasquiFX.sh
-   ```
-
-#### Check status
-
-To check if the services are running:
-
-```bash
-./status_chasquifx.sh
-```
-
-This will display the status of both the API server and Streamlit app.
-
-#### Desktop Launcher
-
-For convenience, you can also use the included desktop entry file to launch the application from your desktop environment:
-
-```bash
-# Copy the desktop file to your applications directory
-cp ChasquiFX.desktop ~/.local/share/applications/
-```
-
-## Manual Usage
-
-If you prefer to run the components separately:
-
-### Start the API server
-
-```bash
-python backend/api/main.py
-```
-
-### Start the Streamlit frontend
-
-```bash
-streamlit run frontend/ChasquiFX.py
-```
+- Cached API results for better performance
 
 ## Architecture
 
-- **Backend**: FastAPI application providing the core functionality and data processing
-- **Frontend**: Streamlit application providing an interactive user interface
-- **Data**: Currency exchange rates and flight route information
+ChasquiFX consists of three main components:
 
-## Development
+1. **React Frontend**: Deployed on GitHub Pages
 
-### Project Structure
+   - User authentication with Supabase
+   - Material UI interface
 
-- `/backend/api/`: API implementation
-- `/backend/assets/data/`: Data files including forex and geographic data
-- `/frontend/`: React Frontend
-- `/test/`: Unit tests
+2. **Python Backend**: Deployed on Vercel
 
-### Requirements
+   - FastAPI server for recommendations and data processing
+   - SerpAPI integration for real-time forex and flight data
 
-- Python 3.8+
-- Dependencies listed in requirements.txt
+3. **Supabase Database**:
+   - PostgreSQL database for storing user data and API logs
+   - Authentication service
+   - Cache layer for API responses
 
-## Testing
+## Setup and Deployment
 
-ChasquiFX includes several test scripts to verify functionality:
+### Prerequisites
 
-### Running the Forex Service Tests
+- Node.js 18+ and npm for frontend development
+- Python 3.9+ for backend development
+- Supabase account (free tier available)
+- SerpAPI account (free trial available)
 
-To test the forex data retrieval and processing functionality:
+### Setup
 
-```bash
-./test_forex.sh
-```
-
-This will run unit tests for the forex service, including tests for:
-
-- API request retry mechanism
-- Error handling logic
-- Data processing functions
-
-### Testing Environment Variables
-
-To verify environment variables are correctly loaded:
-
-```bash
-python backend/api/utils/test_env_variables.py
-```
-
-### Testing SerpAPI Integration
-
-To test the SerpAPI integration specifically:
-
-```bash
-python backend/api/utils/test_serpapi_forex.py
-```
-
-### Forex API Diagnostics
-
-If you experience issues with the forex data retrieval:
-
-```bash
-python backend/api/utils/diagnose_forex_api.py
-```
-
-This will run a series of diagnostic checks and output the results.
-
-## Troubleshooting
-
-### Common Issues
-
-#### Application won't start
-
-1. **Check the logs**: Look at the log files in the `logs/` directory for error messages:
+1. **Clone the repository**
 
    ```bash
-   tail -n 50 logs/api_server.log
-   tail -n 50 logs/streamlit_app.log
+   git clone https://github.com/your-username/chasquifx.git
+   cd chasquifx
    ```
 
-2. **Port conflicts**: If another application is using port 8000 or 8501:
+2. **Backend setup**
 
    ```bash
-   # Check if ports are in use
-   lsof -i :8000
-   lsof -i :8501
-   
-   # Modify the ports in the scripts if needed
+   # Create and activate a virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+   # Install dependencies
+   pip install -r requirements.txt
+
+   # Create environment variables file
+   cp .env.template .env
    ```
 
-3. **Python environment issues**: If you're getting import errors:
+3. **Frontend setup**
 
    ```bash
-   # Run the setup script to create a fresh environment
-   ./setup.sh
-   ```
-
-#### Data not updating
-
-1. **Clear the cache**: Use the "Refresh Data" button in the app interface
-
-2. **Check API status**: Use the status indicator in the app or run:
-
-   ```bash
-   ./status_chasquifx.sh
-   ```
-
-3. **Clear React cache**: For the React frontend:
-
-   ```bash
-   # Clear React browser cache
-   # In Chrome, open Developer Tools (F12) > Application > Clear storage > Clear site data
-   ```
-
-4. **Forex data API issues**: If you see yfinance errors like "No timezone found, symbol may be delisted":
-
-   ```bash
-   # Check if Yahoo Finance API is accessible
-   curl -s "https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X"
-   
-   # You may need to use an alternative data provider by updating the forex_service.py
-   # The application will fall back to synthetic data if real data can't be fetched
-   ```
-
-#### Visualization issues
-
-1. **Browser compatibility**: Try a different browser (Chrome or Firefox recommended)
-
-2. **React rendering issues**: If the React UI has display problems:
-
-   ```bash
-   # Rebuild the React frontend
    cd frontend
-   npm run build
+   npm install
+
+   # Create environment variables file
+   cp .env.template .env.local
    ```
 
-3. **Clear browser cache**: Press Ctrl+F5 to force refresh the page
+4. **Supabase setup**
 
-4. **Check console**: Open your browser's developer tools to check for JavaScript errors
+   - Create a new project in [Supabase](https://supabase.com)
+   - Use the SQL script in `backend/api/db/supabase_schema.sql` to create the database tables
+   - Copy the Supabase URL and keys to your environment files
 
-### Missing Forex Data
+### Running locally
 
-If you see warnings about missing forex data:
-
-1. Check that your `SERPAPI_API_KEY` is correctly set in the `.env` file
-2. Run `python backend/api/utils/diagnose_forex_api.py` to diagnose the issue
-3. If API access is unavailable, you can generate synthetic data:
+1. **Start the backend**
 
    ```bash
-   python backend/api/utils/generate_synthetic_forex.py
+   ./run_chasquifx.sh
    ```
 
-### API Connection Issues
-
-If you encounter API connection issues:
-
-1. Verify your internet connection
-2. Check that your API keys are valid
-3. Try running the application with the `--debug` flag:
+2. **Start the frontend**
 
    ```bash
-   ./run_chasquifx.sh --debug
+   cd frontend
+   npm start
    ```
 
-4. Check the logs in the `logs/` directory
+### Deployment
 
-#### Forex Data Issues
+1. **Backend deployment to Vercel**
 
-If you encounter errors with forex data retrieval:
+   Connect your GitHub repository to Vercel and enable automatic deployments.
+   Configure the environment variables in Vercel dashboard.
 
-1. **Run diagnostics** to check the Yahoo Finance API connection:
+2. **Frontend deployment to GitHub Pages**
 
-   ```bash
-   python backend/api/utils/diagnose_forex_api.py
-   ```
+   Use the included GitHub Actions workflow by configuring the necessary secrets in your repository.
 
-2. **Generate synthetic data** as a fallback solution:
+## API Key Setup
 
-   ```bash
-   python backend/api/utils/generate_synthetic_forex.py
-   ```
+ChasquiFX uses SerpAPI for retrieving real-time data:
 
-3. **Update settings**: Add a setting to your `backend/.env` file to use synthetic data:
+### SerpAPI for Google Finance and Google Flights data
 
-   ```bash
-   USE_SYNTHETIC_DATA=true
-   ```
+1. Sign up for a [SerpAPI account](https://serpapi.com/users/sign_up)
+2. Get your API key from your dashboard
+3. Set up your API key:
+   - If you want to use the application without creating an account, enter your SerpAPI key in the API Keys section
+   - If you create a ChasquiFX account, you can securely store your API key in your user profile
 
-### Support
+## Data Management
 
-If you continue to experience issues:
+ChasquiFX now uses a sophisticated data management system:
 
-1. Check the GitHub Issues page for similar problems
-2. Create a new issue with detailed information about the problem
-3. Include log files and your system information
+1. **Real-time Data**: When a user requests recommendations, ChasquiFX fetches real-time forex and flight data using SerpAPI
 
-### Forex Data API
+2. **Database Cache**: Results are cached in the Supabase database to:
 
-ChasquiFX now uses Google Finance via SerpAPI to fetch currency exchange rates, which provides more reliable data compared to the previous Yahoo Finance implementation.
+   - Reduce API calls (and costs)
+   - Improve response times
+   - Provide fallback data when API services are unavailable
 
-1. **API Configuration**: The system uses the same SERPAPI_API_KEY as the flight data:
+3. **User History**: All recommendations are logged in the user's profile for future reference
 
-   ```bash
-   # Make sure your SERPAPI_API_KEY is set in backend/.env
-   SERPAPI_API_KEY=your_serpapi_key_here
-   ```
+4. **Analytics**: API usage is logged to enable future improvements and optimizations
 
-2. **Testing the Forex API**: You can test the forex data retrieval with:
+## Contributing
 
-   ```bash
-   # Run the test script to verify SerpAPI forex integration
-   python backend/api/utils/test_serpapi_forex.py
-   ```
-
-3. **Diagnosing Issues**: If you encounter problems with forex data:
-
-   ```bash
-   # Run the diagnostic tool
-   python backend/api/utils/diagnose_forex_api.py
-   ```
-
-4. **Fallback Options**: The application can use synthetic data if API access fails:
-
-   ```bash
-   # Generate synthetic forex data
-   python backend/api/utils/generate_synthetic_forex.py
-   
-   # Or force synthetic data mode by setting in backend/.env:
-   USE_SYNTHETIC_DATA=true
-   ```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [FastAPI](https://fastapi.tiangolo.com/) for the backend API
+- [React](https://reactjs.org/) for the frontend framework
+- [Material-UI](https://mui.com/) for the UI components
+- [Supabase](https://supabase.com/) for database and authentication
+- [SerpAPI](https://serpapi.com/) for Google Finance and Google Flights data

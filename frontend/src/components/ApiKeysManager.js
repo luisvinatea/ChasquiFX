@@ -17,8 +17,6 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ApiIcon from "@mui/icons-material/Api";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import { apiService } from "../services/apiService";
 import { storeUserApiKey, getUserApiKey } from "../services/supabaseClient";
 
 /**

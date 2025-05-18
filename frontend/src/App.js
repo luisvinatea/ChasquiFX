@@ -13,7 +13,6 @@ import {
   Tabs,
   Button,
   Chip,
-  Avatar,
   Menu,
   MenuItem,
 } from "@mui/material";
@@ -30,7 +29,11 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import ApiKeysManager from "./components/ApiKeysManager";
 import Auth from "./components/Auth";
 import { apiService } from "./services/apiService";
-import { getSession, signOutUser, getUserRecommendations } from "./services/supabaseClient";
+import {
+  getSession,
+  signOutUser,
+  getUserRecommendations,
+} from "./services/supabaseClient";
 
 // Create a theme
 const theme = createTheme({
@@ -65,7 +68,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [pastRecommendations, setPastRecommendations] = useState([]);
-  const [pastRecommendationsLoading, setPastRecommendationsLoading] = useState(false);
+  const [pastRecommendationsLoading, setPastRecommendationsLoading] =
+    useState(false);
 
   // Check user session on mount
   useEffect(() => {
@@ -80,7 +84,7 @@ function App() {
         console.error("Session check error:", error);
       }
     };
-    
+
     checkSession();
   }, []);
 
@@ -202,7 +206,7 @@ function App() {
 
       if (response && response.recommendations) {
         setRecommendations(response.recommendations);
-        
+
         // If user is logged in, refresh past recommendations
         if (user) {
           loadPastRecommendations(user.id);
@@ -213,9 +217,7 @@ function App() {
     } catch (error) {
       console.error("API Error:", error);
       setError(
-        `Failed to fetch recommendations: ${
-          error.message || "Unknown error"
-        }`
+        `Failed to fetch recommendations: ${error.message || "Unknown error"}`
       );
     } finally {
       setLoading(false);
@@ -255,7 +257,7 @@ function App() {
           >
             API Keys
           </Button>
-          
+
           {user ? (
             <>
               <Button
@@ -263,7 +265,7 @@ function App() {
                 onClick={handleUserMenuOpen}
                 startIcon={<AccountCircleIcon />}
               >
-                {user.email.split('@')[0]}
+                {user.email.split("@")[0]}
               </Button>
               <Menu
                 anchorEl={userMenuAnchor}
@@ -289,7 +291,12 @@ function App() {
       </AppBar>
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} centered sx={{ mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          centered
+          sx={{ mb: 3 }}
+        >
           <Tab label="Recommendations" />
           <Tab label="Favorites" />
           {!user && <Tab label="Login / Sign Up" />}
@@ -311,7 +318,9 @@ function App() {
             {/* Main content area */}
             <Grid item xs={12} md={9}>
               {/* Stats cards */}
-              {recommendations.length > 0 && <StatsCards data={recommendations} />}
+              {recommendations.length > 0 && (
+                <StatsCards data={recommendations} />
+              )}
 
               {/* Loading indicator */}
               {loading && <LoadingSpinner />}
@@ -388,9 +397,7 @@ function App() {
         )}
 
         {/* Login/Signup tab (only visible when not logged in) */}
-        {!user && activeTab === 2 && (
-          <Auth onAuthSuccess={handleAuthSuccess} />
-        )}
+        {!user && activeTab === 2 && <Auth onAuthSuccess={handleAuthSuccess} />}
 
         {/* History tab (only visible when logged in) */}
         {user && activeTab === (user ? 2 : 3) && (
@@ -403,13 +410,13 @@ function App() {
             ) : pastRecommendations.length > 0 ? (
               <Box sx={{ mt: 2 }}>
                 {pastRecommendations.map((rec) => (
-                  <Box 
-                    key={rec.id} 
-                    sx={{ 
-                      mb: 2, 
-                      p: 2, 
-                      border: '1px solid #e0e0e0',
-                      borderRadius: 1
+                  <Box
+                    key={rec.id}
+                    sx={{
+                      mb: 2,
+                      p: 2,
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 1,
                     }}
                   >
                     <Typography variant="h6">
@@ -421,12 +428,8 @@ function App() {
                     <Typography>
                       Recommended Destination: {rec.recommended_destination}
                     </Typography>
-                    <Typography>
-                      Exchange Rate: {rec.exchange_rate}
-                    </Typography>
-                    <Typography>
-                      Savings: {rec.savings_percentage}%
-                    </Typography>
+                    <Typography>Exchange Rate: {rec.exchange_rate}</Typography>
+                    <Typography>Savings: {rec.savings_percentage}%</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {new Date(rec.timestamp).toLocaleString()}
                     </Typography>
@@ -446,7 +449,8 @@ function App() {
                   No History Yet
                 </Typography>
                 <Typography variant="body1" color="textSecondary">
-                  Your recommendation history will appear here after you get recommendations.
+                  Your recommendation history will appear here after you get
+                  recommendations.
                 </Typography>
               </Box>
             )}
