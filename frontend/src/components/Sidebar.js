@@ -69,8 +69,16 @@ const Sidebar = ({
 
   // Handle refresh button click
   const handleRefresh = () => {
-    refreshData();
-    setLastRefresh(dayjs());
+    if (typeof refreshData === "function") {
+      refreshData();
+      setLastRefresh(dayjs());
+    } else {
+      console.warn("refreshData function is not properly initialized");
+      // Provide user feedback
+      alert(
+        "Refresh function is not available. Please check your API configuration."
+      );
+    }
   };
 
   return (

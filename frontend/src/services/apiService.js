@@ -35,10 +35,21 @@ class ApiService {
   // Get API server status
   async getStatus() {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/forex/status`, {
-        timeout: 2000,
-      });
-      return response.data;
+      // Try the forex status endpoint first
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/forex/status`, {
+          timeout: 2000,
+        });
+        return response.data;
+      } catch (statusError) {
+        // If forex status endpoint fails, fall back to checking API root
+        const isAlive = await this.checkApiStatus();
+        if (isAlive) {
+          // API is alive but status endpoint might not exist
+          return { status: "healthy" };
+        }
+        throw statusError; // Rethrow if API root is also unreachable
+      }
     } catch (error) {
       console.error("API Status error:", error);
       return { status: "error" };
