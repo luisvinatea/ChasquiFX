@@ -133,11 +133,29 @@ def convert_command(args) -> None:
     """
     logger.info(f"Converting {args.json_file} to {args.parquet_file}")
 
-    if json_to_parquet(args.json_file, args.parquet_file):
-        logger.info("Conversion successful")
+    if args.upload_to_supabase:
+        try:
+            # Import here to avoid circular dependencies
+            from .supabase_integration import convert_and_upload_sync
+
+            success, file_key = convert_and_upload_sync(
+                args.json_file, args.parquet_file
+            )
+
+            if success:
+                logger.info(f"Conversion successful, file_key: {file_key}")
+            else:
+                logger.error("Conversion or upload failed")
+                sys.exit(1)
+        except ImportError:
+            logger.error("Supabase integration not available")
+            sys.exit(1)
     else:
-        logger.error("Conversion failed")
-        sys.exit(1)
+        if json_to_parquet(args.json_file, args.parquet_file):
+            logger.info("Conversion successful")
+        else:
+            logger.error("Conversion failed")
+            sys.exit(1)
 
 
 def mirror_command(args) -> None:
@@ -158,6 +176,47 @@ def mirror_command(args) -> None:
 
     logger.info(f"Mirror summary: {success} succeeded, {failure} failed")
 
+    # Upload files to Supabase if requested
+    if args.upload_to_supabase and success > 0:
+        logger.info("Syncing files with Supabase storage...")
+        try:
+            # Import here to avoid circular imports
+            import asyncio
+            import os
+            from pathlib import Path
+            from ..scripts.sync_parquet_files import (
+                find_parquet_files,
+                sync_files,
+            )
+
+            # Get project root
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.abspath(
+                os.path.join(current_dir, "..", "..", "..")
+            )
+
+            # Run the sync process
+            async def run_sync():
+                # Find all parquet files
+                data_type = None
+                if args.dir:
+                    # Try to extract data type from directory path
+                    dir_path = Path(args.dir)
+                    for parent in dir_path.parents:
+                        if parent.name in ["flights", "forex", "geo"]:
+                            data_type = parent.name
+                            break
+
+                files = await find_parquet_files(project_root, data_type)
+                return await sync_files(files, args.force)
+
+            # Run the async function
+            uploaded = asyncio.run(run_sync())
+            logger.info(f"Uploaded {uploaded} files to Supabase")
+
+        except ImportError as e:
+            logger.error(f"Supabase integration not available: {e}")
+
     if failure > 0:
         sys.exit(1)
 
@@ -174,6 +233,36 @@ def mirror_all_command(args) -> None:
     success, failure = process_standard_data_directories()
 
     logger.info(f"Mirror summary: {success} succeeded, {failure} failed")
+
+    # Upload files to Supabase if requested
+    if args.upload_to_supabase and success > 0:
+        logger.info("Syncing files with Supabase storage...")
+        try:
+            # Import here to avoid circular imports
+            import asyncio
+            import os
+            from ..scripts.sync_parquet_files import (
+                find_parquet_files,
+                sync_files,
+            )
+
+            # Get project root
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.abspath(
+                os.path.join(current_dir, "..", "..", "..")
+            )
+
+            # Run the sync process
+            async def run_sync():
+                files = await find_parquet_files(project_root)
+                return await sync_files(files, args.force)
+
+            # Run the async function
+            uploaded = asyncio.run(run_sync())
+            logger.info(f"Uploaded {uploaded} files to Supabase")
+
+        except ImportError as e:
+            logger.error(f"Supabase integration not available: {e}")
 
     if failure > 0:
         sys.exit(1)
@@ -231,9 +320,12 @@ def setup_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to save the Parquet file",
     )
-    convert_parser.set_defaults(func=convert_command)
-
-    # Mirror command
+    convert_parser.add_argument(
+        "--upload-to-supabase",
+        action="store_true",
+        help="Upload the converted file to Supabase storage",
+    )
+    convert_parser.set_defaults(func=convert_command)  # Mirror command
     mirror_parser = subparsers.add_parser(
         "mirror", help="Mirror JSON files to Parquet format"
     )
@@ -247,11 +339,31 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Process subdirectories recursively",
         default=True,
     )
+    mirror_parser.add_argument(
+        "--upload-to-supabase",
+        action="store_true",
+        help="Upload the converted files to Supabase storage",
+    )
+    mirror_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force upload even if files haven't changed",
+    )
     mirror_parser.set_defaults(func=mirror_command)
 
     # Mirror all command (shortcut)
     mirror_all_parser = subparsers.add_parser(
         "mirror-all", help="Mirror all JSON directories to Parquet format"
+    )
+    mirror_all_parser.add_argument(
+        "--upload-to-supabase",
+        action="store_true",
+        help="Upload the converted files to Supabase storage",
+    )
+    mirror_all_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force upload even if files haven't changed",
     )
     mirror_all_parser.set_defaults(func=mirror_all_command)
 

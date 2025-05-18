@@ -20,14 +20,17 @@ function show_help {
     echo "  convert          Convert a single JSON file to Parquet format"
     echo "  mirror           Mirror JSON files to Parquet format"
     echo "  mirror-all       Mirror all data directories to Parquet format"
+    echo "  supabase         Manage Parquet files in Supabase storage"
     echo "  help             Show this help message"
     echo ""
     echo "Examples:"
     echo "  ./chasquifx_data.sh rename-flights"
     echo "  ./chasquifx_data.sh rename-forex"
     echo "  ./chasquifx_data.sh convert --json-file path/to/file.json --parquet-file path/to/output.parquet"
+    echo "  ./chasquifx_data.sh convert --json-file path/to/file.json --parquet-file path/to/output.parquet --upload-to-supabase"
     echo "  ./chasquifx_data.sh mirror --dir path/to/json/dir"
-    echo "  ./chasquifx_data.sh mirror-all"
+    echo "  ./chasquifx_data.sh mirror-all --upload-to-supabase"
+    echo "  ./chasquifx_data.sh supabase sync"
     echo ""
 }
 
@@ -61,6 +64,10 @@ mirror)
 mirror-all)
     echo "Mirroring all data directories..."
     python -m backend.api.data_processing.cli mirror-all "$@"
+    ;;
+supabase)
+    echo "Managing Parquet files in Supabase..."
+    ./scripts/parquet_supabase.sh "$@"
     ;;
 help)
     show_help

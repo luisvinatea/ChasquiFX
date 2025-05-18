@@ -78,6 +78,43 @@ CREATE TABLE
 CREATE INDEX user_recommendations_user_id_idx 
     ON user_recommendations (user_id);
 
+-- Table for parquet file metadata
+CREATE TABLE
+    parquet_file_storage (
+        id BIGSERIAL PRIMARY KEY,
+        file_key TEXT NOT NULL,       -- Unique identifier for the file
+        file_path TEXT NOT NULL,      -- Path in Supabase Storage
+        original_path TEXT NOT NULL,  -- Original local file path
+        data_type TEXT NOT NULL,      -- 'flight', 'forex', or 'geo'
+        file_size INTEGER NOT NULL,   -- Size in bytes
+        etag TEXT,                   -- For versioning
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        is_active BOOLEAN NOT NULL DEFAULT true
+    );
+
+-- Create unique index for file_key to ensure uniqueness
+CREATE UNIQUE INDEX parquet_file_storage_file_key_idx ON parquet_file_storage (file_key);
+
+-- Create index for data_type for faster queries
+CREATE INDEX parquet_file_storage_data_type_idx ON parquet_file_storage (data_type);
+
+-- Table for tracking data dependencies
+CREATE TABLE
+    data_dependencies (
+        id BIGSERIAL PRIMARY KEY,
+        service_name TEXT NOT NULL,    -- Name of the service depending on data
+        data_type TEXT NOT NULL,       -- Type of data needed
+        resource_id TEXT NOT NULL,     -- File key or resource identifier
+        is_required BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+-- Create index for dependency lookups
+CREATE INDEX data_dependencies_service_idx 
+    ON data_dependencies (service_name, data_type);
+
 -- Row level security policies
 ALTER TABLE api_usage_logs ENABLE ROW LEVEL SECURITY;
 
@@ -128,4 +165,17 @@ CREATE POLICY "Service role can manage forex cache"
 
 CREATE POLICY "Service role can manage flight cache" 
     ON flight_cache FOR ALL 
+    USING (auth.jwt() -> 'role' = 'service_role');
+
+-- Enable RLS for parquet_file_storage
+ALTER TABLE parquet_file_storage ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to parquet file metadata
+CREATE POLICY "Anyone can read parquet file metadata" 
+    ON parquet_file_storage FOR SELECT
+    USING (true);
+
+-- Only service role can modify parquet file metadata
+CREATE POLICY "Service role can manage parquet file metadata" 
+    ON parquet_file_storage FOR ALL 
     USING (auth.jwt() -> 'role' = 'service_role');
