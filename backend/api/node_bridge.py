@@ -50,43 +50,31 @@ async def call_adapter(
         logger.info(f"Node.js bridge: Calling {module_name}.{function_name}")
 
         # Dynamically import the module
-        if module_name == "node_adapter":
-            # Use our pre-imported adapter
-            module = node_adapter
-        else:
-            try:
-                # Try to import from adapters
-                module = importlib.import_module(
-                    f"backend.api.adapters.{module_name}"
-                )
-            except ImportError:
-                # Try to import from anywhere in the package
-                module = importlib.import_module(f"backend.api.{module_name}")
+        try:
+            module = importlib.import_module(
+                f"backend.api.adapters.{module_name}"
+            )
+            function = getattr(module, function_name)
+        except (ImportError, AttributeError) as e:
+            logger.error(
+                f"Failed to import {module_name}.{function_name}: {e}"
+            )
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "error": f"Function {module_name}.{function_name} not found"
+                },
+            )
 
-        # Get the function
-        func = getattr(module, function_name)
-
-        # Call the function with the provided arguments
-        if args and kwargs:
-            result = func(*args, **kwargs)
-        elif args:
-            result = func(*args)
-        elif kwargs:
-            result = func(**kwargs)
-        else:
-            result = func()
-
-        return JSONResponse(content=result)
+        # Call the function
+        result = function(*args, **kwargs)
+        return JSONResponse(status_code=200, content=result)
 
     except Exception as e:
-        logger.error(f"Error in call_adapter: {str(e)}", exc_info=True)
+        logger.error(f"Error in call_adapter: {e}")
         return JSONResponse(
             status_code=500,
-            content={
-                "status": "error",
-                "error": str(e),
-                "type": type(e).__name__,
-            },
+            content={"error": str(e), "type": type(e).__name__},
         )
 
 
