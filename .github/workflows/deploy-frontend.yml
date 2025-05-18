@@ -48,6 +48,8 @@ jobs:
       - name: Build
         run: |
           cd frontend
+          # Create a .nojekyll file to prevent GitHub from ignoring files that begin with an underscore
+          touch public/.nojekyll
           npm run build
         env:
           CI: false
