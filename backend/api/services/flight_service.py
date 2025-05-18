@@ -6,6 +6,7 @@ Handles flight fare fetching and processing using SerpAPI.
 import logging
 import os
 import sys
+import json
 from typing import Dict, List, Optional
 import requests
 from dotenv import load_dotenv
@@ -50,6 +51,52 @@ if not SERPAPI_KEY:
     )
 else:
     logger.info("SERPAPI_API_KEY loaded successfully.")
+
+
+def check_quota_status():
+    """
+    Check if SerpAPI quota has been exceeded based on status file
+
+    Returns:
+        bool: True if quota is exceeded, False otherwise
+    """
+    try:
+        # Try to read quota status from temporary file created by forex_service
+        quota_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "assets",
+            "data",
+            "forex",
+            "serpapi_quota_status.json",
+        )
+        if os.path.exists(quota_file):
+            with open(quota_file, "r") as f:
+                quota_data = json.load(f)
+
+                # Check if the quota exceeded status is recent (within 1 hour)
+                if "timestamp" in quota_data:
+                    try:
+                        from datetime import datetime
+
+                        quota_time = datetime.fromisoformat(
+                            quota_data["timestamp"]
+                        )
+                        current_time = datetime.now()
+                        time_diff = current_time - quota_time
+
+                        # If quota exceeded in the last hour,
+                        # consider it still active
+                        if time_diff.total_seconds() < 3600:  # 1 hour
+                            return quota_data.get("quota_exceeded", False)
+                    except Exception as e:
+                        logger.warning(f"Error parsing quota timestamp: {e}")
+
+                # No timestamp or parsing failed, just return the status
+                return quota_data.get("quota_exceeded", False)
+    except Exception as e:
+        logger.warning(f"Error checking quota status: {e}")
+
+    return False  # Default: assume quota is not exceeded
 
 
 async def fetch_flight_fare(
@@ -111,8 +158,8 @@ async def fetch_flight_fare(
         except Exception as e:
             logger.error(f"Error parsing cached flight data: {e}")
 
-    # Use SerpAPI if API key is available
-    if SERPAPI_KEY:
+    # Use SerpAPI if API key is available and quota is not exceeded
+    if SERPAPI_KEY and not check_quota_status():
         try:
             logger.info("Using SerpAPI to fetch flight data")
 

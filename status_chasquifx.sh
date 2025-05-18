@@ -50,10 +50,10 @@ if [ -z "$REACT_PIDS" ] && [ -z "$SERVE_PIDS" ]; then
     print_message "red" "✗ React Frontend: NOT RUNNING"
     FRONTEND_STATUS="STOPPED"
 else
-    if [ ! -z "$REACT_PIDS" ]; then
+    if [ -n "$REACT_PIDS" ]; then
         print_message "green" "✓ React Frontend (Development): RUNNING (PID: $REACT_PIDS)"
     fi
-    if [ ! -z "$SERVE_PIDS" ]; then
+    if [ -n "$SERVE_PIDS" ]; then
         print_message "green" "✓ React Frontend (Production): RUNNING (PID: $SERVE_PIDS)"
     fi
     FRONTEND_STATUS="RUNNING"

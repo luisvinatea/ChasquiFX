@@ -341,11 +341,9 @@ def execute_serpapi_request(params, max_retries=3, initial_delay=2):
                         "error": results["error"],
                         "quota_exceeded": True,
                         "message": (
-                            (
-                                "API quota limit has been reached. "
-                                "Please check your SerpAPI credits "
-                                "or try again later."
-                            )
+                            "API quota limit has been reached. "
+                            "Please check your SerpAPI credits "
+                            "or try again later."
                         ),
                     }
 
@@ -406,7 +404,7 @@ def execute_serpapi_request(params, max_retries=3, initial_delay=2):
 
 def update_forex_data(
     currencies: Optional[List[str]] = None, days: int = 30
-) -> bool:
+) -> Union[bool, Dict]:
     """
     Update forex data by fetching from Google Finance via SerpAPI.
 
@@ -416,7 +414,8 @@ def update_forex_data(
         days: Number of days of historical data to retrieve
 
     Returns:
-        True if update was successful, False otherwise
+        True if update was successful, False if failed,
+        or a dict with error info if quota exceeded
     """
     try:
         # Check if SERPAPI_KEY is available
@@ -465,8 +464,17 @@ def update_forex_data(
 
                 results = execute_serpapi_request(params)
 
-                # Check if we got valid results
-                if "error" in results:
+                # Check if we got quota exceeded error
+                if "error" in results and results.get("quota_exceeded", False):
+                    logger.error(
+                        f"SerpAPI quota exceeded for {current_pair}: "
+                        f"{results['error']}"
+                    )
+                    # Return the quota error so it can be handled by the caller
+                    return results
+
+                # Check for other errors
+                elif "error" in results:
                     logger.warning(
                         f"SerpAPI error for {current_pair}: {results['error']}"
                     )

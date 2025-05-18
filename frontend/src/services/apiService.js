@@ -57,6 +57,21 @@ class ApiService {
               // Just return a basic healthy status for root endpoint
               return { status: "healthy", message: "Basic connectivity OK" };
             }
+
+            // For forex status, check for quota_exceeded flag
+            if (
+              endpoint === "/api/forex/status" &&
+              response.data.quota_exceeded
+            ) {
+              return {
+                status: "limited",
+                message:
+                  response.data.quota_message || "API quota limit exceeded",
+                quotaExceeded: true,
+                ...response.data,
+              };
+            }
+
             return response.data;
           }
         } catch (endpointError) {
@@ -147,19 +162,44 @@ class ApiService {
         throw new Error("SerpAPI key is required to refresh forex data");
       }
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/forex/refresh`,
-        {},
-        {
-          headers,
-          timeout: 30000, // 30 seconds timeout as this can take a while
-        }
-      );
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/api/forex/refresh`,
+          {},
+          {
+            headers,
+            timeout: 30000, // 30 seconds timeout as this can take a while
+          }
+        );
 
-      return response.data.success;
+        if (response.status === 200 && response.data.success) {
+          return { success: true };
+        } else {
+          return { success: false, message: "Unknown error" };
+        }
+      } catch (error) {
+        // Check for quota limit error (status code 429)
+        if (error.response && error.response.status === 429) {
+          return {
+            success: false,
+            quotaExceeded: true,
+            message: error.response.data.detail || "API quota limit exceeded",
+          };
+        }
+
+        // Other API error
+        const errorMessage = error.response?.data?.detail || error.message;
+        return {
+          success: false,
+          message: `Error refreshing data: ${errorMessage}`,
+        };
+      }
     } catch (error) {
       console.error("Failed to refresh forex data:", error);
-      throw error;
+      return {
+        success: false,
+        message: `Connection error: ${error.message}`,
+      };
     }
   }
 
