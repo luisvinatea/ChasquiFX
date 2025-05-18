@@ -29,7 +29,7 @@ if [ -z "$API_PIDS" ]; then
     print_message "yellow" "No API server processes found."
 else
     for PID in $API_PIDS; do
-        kill $PID 2>/dev/null
+        kill "$PID" 2>/dev/null
         if [ $? -eq 0 ]; then
             print_message "green" "✓ Stopped API server process with PID: $PID"
         else

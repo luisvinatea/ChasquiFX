@@ -177,3 +177,101 @@ def process_data_directory(
             )
 
     return total_success, total_failure
+
+
+def process_project_data_directory():
+    """
+    Process the entire data directory structure.
+
+    Converts all JSON files in the standard data directories to Parquet format.
+
+    Returns:
+        Tuple[int, int]: (success_count, failure_count)
+    """
+    # Get the absolute path to the repository root directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # For this project, repository root is 3 levels up from the script location
+    repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+
+    logger.info(f"Repository root: {repo_root}")
+
+    # Define the base data directory
+    data_dir = os.path.join(repo_root, "backend", "assets", "data")
+    logger.info(f"Data directory: {data_dir}")
+
+    # Check if data directory exists
+    if not os.path.exists(data_dir):
+        logger.error(f"Data directory does not exist: {data_dir}")
+        return 0, 0
+
+    # Import the converter function here to avoid circular imports
+    from .json_parquet_converter import batch_convert_directory
+
+    # Process each subdirectory with a json folder
+    subdirs = [
+        os.path.join(data_dir, "flights", "json"),
+        os.path.join(data_dir, "forex", "json"),
+        os.path.join(data_dir, "geo", "json"),
+    ]
+
+    total_success = 0
+    total_failure = 0
+
+    for subdir in subdirs:
+        if os.path.exists(subdir):
+            logger.info(f"Processing directory: {subdir}")
+            success, failure = batch_convert_directory(subdir, recursive=True)
+            total_success += success
+            total_failure += failure
+        else:
+            logger.warning(f"Directory does not exist: {subdir}")
+
+    return total_success, total_failure
+
+
+def process_standard_data_directories():
+    """
+    Process the standard data directories in the ChasquiFX project.
+
+    Converts all JSON files to Parquet format in the flights, forex,
+    and geo directories.
+
+    Returns:
+        Tuple[int, int]: (success_count, failure_count)
+    """
+    # Get the absolute path to the repository root directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Repository root is 3 levels up from the script location
+    repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+
+    logger.info(f"Repository root: {repo_root}")
+
+    # Define the base data directory
+    data_dir = os.path.join(repo_root, "backend", "assets", "data")
+    logger.info(f"Data directory: {data_dir}")
+
+    # Check if data directory exists
+    if not os.path.exists(data_dir):
+        logger.error(f"Data directory does not exist: {data_dir}")
+        return 0, 0
+
+    # Import the converter function here to avoid circular imports
+    from .json_parquet_converter import batch_convert_directory
+
+    # Process each data directory individually
+    subdirs = ["flights", "forex", "geo"]
+
+    total_success = 0
+    total_failure = 0
+
+    for subdir in subdirs:
+        json_dir = os.path.join(data_dir, subdir, "json")
+        if os.path.exists(json_dir):
+            logger.info(f"Processing: {json_dir}")
+            success, failure = batch_convert_directory(json_dir, True)
+            total_success += success
+            total_failure += failure
+        else:
+            logger.warning(f"Directory not found: {json_dir}")
+
+    return total_success, total_failure

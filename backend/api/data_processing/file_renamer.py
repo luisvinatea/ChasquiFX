@@ -3,6 +3,13 @@ File Renaming Utility
 
 This module provides utilities for standardizing and renaming data files
 based on their content and metadata.
+
+Functions:
+    extract_json_metadata: Extract specific fields from JSON files
+    standardize_filename: Generate standardized filenames based on metadata
+    rename_directory_files: Rename all files in a directory based on a pattern
+    get_flight_renaming_config: Configuration for flight data file renaming
+    get_forex_renaming_config: Configuration for forex data file renaming
 """
 
 import os
@@ -200,6 +207,82 @@ def rename_files_in_directory(
     return success_count, failure_count, rename_operations
 
 
+def rename_directory_files(
+    directory: str,
+    metadata_keys: List[str],
+    filename_template: str,
+    dry_run: bool = False,
+) -> Tuple[int, int, int]:
+    """
+    Rename all JSON files in a directory based on metadata.
+
+    Args:
+        directory: Directory containing files to rename
+        metadata_keys: Keys to extract from JSON files
+        filename_template: Template for new filenames
+        dry_run: If True, don't actually rename files
+
+    Returns:
+        Tuple of (success_count, failure_count, skipped_count)
+    """
+    logger.info(f"Processing directory: {directory}")
+
+    # Find all JSON files in the directory
+    pattern = os.path.join(directory, "*.json")
+    files = glob.glob(pattern)
+
+    if not files:
+        logger.warning(f"No JSON files found in {directory}")
+        return 0, 0, 0
+
+    success_count = 0
+    failure_count = 0
+    skipped_count = 0
+
+    for file_path in files:
+        filename = os.path.basename(file_path)
+        dir_path = os.path.dirname(file_path)
+
+        # Generate standardized filename
+        new_filename = standardize_filename(
+            file_path, metadata_keys, filename_template
+        )
+
+        if not new_filename:
+            logger.error(f"Failed to generate filename for {filename}")
+            failure_count += 1
+            continue
+
+        new_path = os.path.join(dir_path, new_filename)
+
+        # Check if file already follows naming convention
+        if os.path.normpath(file_path) == os.path.normpath(new_path):
+            logger.info(f"Skipping {filename} - already follows pattern")
+            skipped_count += 1
+            continue
+
+        # Check if destination file already exists
+        if os.path.exists(new_path):
+            logger.warning(f"Destination file already exists: {new_filename}")
+            failure_count += 1
+            continue
+
+        # Perform the rename if not in dry run mode
+        if not dry_run:
+            try:
+                os.rename(file_path, new_path)
+                logger.info(f"Renamed: {filename} -> {new_filename}")
+                success_count += 1
+            except Exception as e:
+                logger.error(f"Failed to rename {filename}: {str(e)}")
+                failure_count += 1
+        else:
+            logger.info(f"Would rename: {filename} -> {new_filename}")
+            success_count += 1
+
+    return success_count, failure_count, skipped_count
+
+
 def standardize_flight_filenames(
     directory: str, recursive: bool = False, simulate: bool = False
 ) -> Tuple[int, int, List[Tuple[str, str]]]:
@@ -342,3 +425,43 @@ def standardize_forex_filenames(
             success_count += 1
 
     return success_count, failure_count, rename_operations
+
+
+def get_flight_renaming_config() -> Dict[str, Any]:
+    """
+    Get configuration for flight data file renaming.
+
+    Returns:
+        Dict with metadata_keys and template
+    """
+    return {
+        "metadata_keys": [
+            "search_parameters.departure_id",
+            "search_parameters.arrival_id",
+            "search_parameters.outbound_date",
+            "search_parameters.return_date",
+        ],
+        "template": (
+            "{departure_id}_{arrival_id}_{outbound_date}_{return_date}"
+        ),
+    }
+
+
+def get_forex_renaming_config() -> Dict[str, Any]:
+    """
+    Get configuration for forex data file renaming.
+
+    Returns:
+        Dict with metadata_keys and template
+    """
+    # For forex files, we need to process the timestamp separately
+    return {
+        "metadata_keys": [
+            "search_parameters.q",
+            "search_metadata.created_at",
+        ],
+        "template": "{q}_{created_at}",
+        "format_created_at": lambda ts: re.sub(r"[\s:]", "-", ts).split(" ")[
+            0
+        ],
+    }
