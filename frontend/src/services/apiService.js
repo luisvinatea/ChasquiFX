@@ -5,8 +5,12 @@
 
 import axios from "axios";
 
-// Define the API endpoint (assuming local development server)
-const API_BASE_URL = "http://localhost:8000";
+// Define the API endpoint with fallback options
+// Use environment variable if available, fallback to Vercel deployment, finally use local development server
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  "https://chasquifx.vercel.app" ||
+  "http://localhost:8000";
 
 // Helper function to get API keys from localStorage
 const getApiKeys = () => {
@@ -35,21 +39,34 @@ class ApiService {
   // Get API server status
   async getStatus() {
     try {
-      // Try the forex status endpoint first
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/forex/status`, {
-          timeout: 2000,
-        });
-        return response.data;
-      } catch (statusError) {
-        // If forex status endpoint fails, fall back to checking API root
-        const isAlive = await this.checkApiStatus();
-        if (isAlive) {
-          // API is alive but status endpoint might not exist
-          return { status: "healthy" };
+      // Try multiple endpoints in sequence
+      const endpoints = [
+        `/api/forex/status`, // Preferred endpoint
+        `/health`, // Fallback health check
+        `/`, // Base API check
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
+            timeout: 3000,
+          });
+
+          if (response.status === 200) {
+            if (endpoint === "/") {
+              // Just return a basic healthy status for root endpoint
+              return { status: "healthy", message: "Basic connectivity OK" };
+            }
+            return response.data;
+          }
+        } catch (endpointError) {
+          // Continue to next endpoint
+          console.log(`Endpoint ${endpoint} failed, trying next option...`);
         }
-        throw statusError; // Rethrow if API root is also unreachable
       }
+
+      // If we get here, all endpoints failed
+      throw new Error("All API endpoints unreachable");
     } catch (error) {
       console.error("API Status error:", error);
       return { status: "error" };
@@ -115,6 +132,12 @@ class ApiService {
   // Refresh forex data
   async refreshForexData() {
     try {
+      // First check if API is reachable
+      const apiStatus = await this.checkApiStatus();
+      if (!apiStatus) {
+        throw new Error("API server is not reachable");
+      }
+
       const apiKeys = getApiKeys();
       const headers = {};
 

@@ -31,7 +31,13 @@ logger = logging.getLogger(__name__)
 env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
-load_dotenv(env_path)
+
+# Only try to load .env if not in Vercel environment
+if not os.getenv("VERCEL_DEPLOYMENT"):
+    try:
+        load_dotenv(env_path)
+    except Exception as e:
+        logger.warning(f"Could not load .env file: {e}")
 
 # Get API key from environment variables
 SERPAPI_KEY = os.getenv("SERPAPI_API_KEY")

@@ -162,6 +162,15 @@ function App() {
       try {
         const status = await apiService.getStatus();
         setApiStatus(status.status === "healthy");
+
+        // If we were previously offline but now online, show a notification
+        if (!apiStatus) {
+          setNotification({
+            message: "API connection restored",
+            severity: "success",
+            open: true,
+          });
+        }
       } catch (error) {
         console.error("API Status Check Error:", error);
         setApiStatus(false);
@@ -169,13 +178,17 @@ function App() {
     };
 
     checkApiStatus();
-    // Setup periodic status check
-    const statusInterval = setInterval(checkApiStatus, 60000);
+
+    // Setup periodic status check with increased interval while API is down
+    const statusInterval = setInterval(
+      checkApiStatus,
+      apiStatus ? 60000 : 15000 // Check more frequently if API is down
+    );
 
     return () => {
       clearInterval(statusInterval);
     };
-  }, []);
+  }, [apiStatus]);
 
   // Handle notification close
   const handleCloseNotification = () => {

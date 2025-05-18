@@ -3,7 +3,7 @@ Forex data API endpoints for ChasquiFX.
 """
 
 from fastapi import APIRouter, Query, HTTPException, Header
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import sys
 import os
 
@@ -17,6 +17,7 @@ from backend.api.services.forex_service import (  # noqa: E402
     load_forex_data,
     get_exchange_rate,
     update_forex_data,
+    DEFAULT_FOREX_DATA_PATH,
 )
 from backend.api.models.schemas import ExchangeRateResponse  # noqa: E402
 
@@ -54,7 +55,7 @@ async def refresh_forex_data(
 
 
 @router.get("/status")
-async def get_forex_status() -> Dict[str, bool]:
+async def get_forex_status() -> Dict[str, Any]:
     """
     Check if we have valid forex data and SerpAPI key.
 
@@ -62,8 +63,26 @@ async def get_forex_status() -> Dict[str, bool]:
         Dictionary with status information
     """
     has_api_key = bool(os.getenv("SERPAPI_API_KEY"))
+    has_supabase = bool(
+        os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_KEY")
+    )
 
-    return {"has_api_key": has_api_key, "can_use_real_time_data": has_api_key}
+    # Check if the data file exists
+    data_file = DEFAULT_FOREX_DATA_PATH
+    has_data = (
+        os.path.exists(data_file)
+        if not os.getenv("VERCEL_DEPLOYMENT")
+        else True
+    )
+
+    return {
+        "status": "healthy",
+        "has_api_key": has_api_key,
+        "can_use_real_time_data": has_api_key,
+        "has_supabase": has_supabase,
+        "has_data": has_data,
+        "env": os.getenv("VERCEL_DEPLOYMENT", "local"),
+    }
 
 
 @router.get("/exchange_rate", response_model=ExchangeRateResponse)
