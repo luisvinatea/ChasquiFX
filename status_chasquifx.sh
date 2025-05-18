@@ -42,22 +42,46 @@ else
     fi
 fi
 
-# Check Streamlit app status
-STREAMLIT_PIDS=$(pgrep -f "streamlit.*ChasquiFX.py")
-if [ -z "$STREAMLIT_PIDS" ]; then
-    print_message "red" "✗ Streamlit App: NOT RUNNING"
-    STREAMLIT_STATUS="STOPPED"
+# Check React frontend status (check both development and production servers)
+REACT_PIDS=$(pgrep -f "node.*react-scripts start")
+SERVE_PIDS=$(pgrep -f "node.*serve -s build")
+
+if [ -z "$REACT_PIDS" ] && [ -z "$SERVE_PIDS" ]; then
+    print_message "red" "✗ React Frontend: NOT RUNNING"
+    FRONTEND_STATUS="STOPPED"
 else
-    print_message "green" "✓ Streamlit App: RUNNING (PID: $STREAMLIT_PIDS)"
-    STREAMLIT_STATUS="RUNNING"
-    print_message "green" "  App available at http://localhost:8501/"
+    if [ ! -z "$REACT_PIDS" ]; then
+        print_message "green" "✓ React Frontend (Development): RUNNING (PID: $REACT_PIDS)"
+    fi
+    if [ ! -z "$SERVE_PIDS" ]; then
+        print_message "green" "✓ React Frontend (Production): RUNNING (PID: $SERVE_PIDS)"
+    fi
+    FRONTEND_STATUS="RUNNING"
+
+    # Try to check if the app is responding on common ports
+    APP_PORTS="3000 40863"
+    APP_RESPONDING=false
+
+    for PORT in $APP_PORTS; do
+        if command -v curl &>/dev/null; then
+            if curl -s http://localhost:$PORT/ &>/dev/null; then
+                print_message "green" "  Frontend app is responding at http://localhost:$PORT/"
+                APP_RESPONDING=true
+                break
+            fi
+        fi
+    done
+
+    if [ "$APP_RESPONDING" = false ]; then
+        print_message "yellow" "  Frontend appears to be running but not responding on common ports."
+    fi
 fi
 
 # Summary
 echo ""
-if [ "$API_STATUS" = "RUNNING" ] && [ "$STREAMLIT_STATUS" = "RUNNING" ]; then
+if [ "$API_STATUS" = "RUNNING" ] && [ "$FRONTEND_STATUS" = "RUNNING" ]; then
     print_message "green" "All ChasquiFX services are running."
-elif [ "$API_STATUS" = "STOPPED" ] && [ "$STREAMLIT_STATUS" = "STOPPED" ]; then
+elif [ "$API_STATUS" = "STOPPED" ] && [ "$FRONTEND_STATUS" = "STOPPED" ]; then
     print_message "red" "All ChasquiFX services are stopped."
     print_message "yellow" "Run './run_ChasquiFX.sh' to start all services."
 else
@@ -67,9 +91,10 @@ else
         print_message "yellow" "To start the API server: 'python backend/api/main.py'"
     fi
 
-    if [ "$STREAMLIT_STATUS" = "STOPPED" ]; then
-        print_message "yellow" "To start the Streamlit app: 'streamlit run frontend/ChasquiFX.py'"
+    if [ "$FRONTEND_STATUS" = "STOPPED" ]; then
+        print_message "yellow" "To start the React frontend: 'cd frontend && npm start'"
+        print_message "yellow" "Or to serve the production build: 'cd frontend && npx serve -s build'"
     fi
 
-    print_message "yellow" "Or run './run_ChasquiFX.sh' to start all services."
+    print_message "yellow" "Or run './run_chasquifx.sh' to start all services."
 fi

@@ -254,15 +254,18 @@ while true; do
     # Check if API server is still running
     if ! ps -p $API_PID >/dev/null; then
         print_message "red" "API server has stopped unexpectedly!"
-        stop_services
+        break
     fi
 
-    # Check if Streamlit app is still running
-    if ! ps -p "$STREAMLIT_PID" >/dev/null; then
-        print_message "red" "Streamlit app has stopped unexpectedly!"
-        stop_services
+    # Check if React frontend is still running (skipping if REACT_PID is 0)
+    if [ "$REACT_PID" != "0" ] && ! ps -p $REACT_PID >/dev/null; then
+        print_message "red" "React frontend has stopped unexpectedly!"
+        break
     fi
 
     # Wait before checking again
     sleep 5
 done
+
+# Clean up resources
+bash "$PROJECT_ROOT/stop_chasquifx.sh"
