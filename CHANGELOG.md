@@ -22,6 +22,8 @@
 - Marked redundant Python API routes as deprecated
 - Created detailed migration documentation
 - Added clear deprecation notices to Python components
+- Removed deprecated Python code and replaced with minimal stub files
+- Archived original implementation for reference
 - Enhanced error handling across the entire stack
 - Updated deployment documentation with hybrid architecture details
 

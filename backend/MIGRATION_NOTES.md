@@ -37,7 +37,12 @@ The following Python components are still being used through the Node.js bridge:
 
 ## Deprecation Timeline
 
-The legacy Python endpoints are marked as deprecated but are still functional for backward compatibility. These endpoints will be removed in a future version of ChasquiFX.
+The legacy Python endpoints have been replaced with stub files that maintain import compatibility. The actual functionality has been completely migrated to Node.js.
+
+- **Phase 1 (Completed)**: Mark Python endpoints as deprecated
+- **Phase 2 (Completed)**: Create Node.js implementations
+- **Phase 3 (Completed)**: Replace Python implementation with stub files
+- **Phase 4 (Future)**: Complete removal of stub files
 
 ## Usage for Developers
 
