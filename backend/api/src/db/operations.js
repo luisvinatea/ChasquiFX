@@ -299,15 +299,18 @@ async function cacheForexData(currencyPair, data, expiryHours = 12) {
     await ForexCache.findOneAndUpdate(
       { cacheKey },
       {
-      searchParameters: {
-        q: currencyPair,
+        cacheKey,
+        searchParameters: {
+          q: currencyPair,
+        },
+        searchMetadata: {
+          created_at: data.search_metadata.created_at || now,
+        },
+        data,
+        expiresAt,
       },
-      searchMetadata: {
-        created_at: data.search_metadata.created_at || now,
-      },
-      data,
-      expiresAt,
-    });
+      { upsert: true, new: true }
+    );
 
     logger.info(`Cached forex data for ${currencyPair} with key: ${cacheKey}`);
     return true;
@@ -335,13 +338,36 @@ async function logApiCall({
   try {
     await ensureDbConnection();
 
-    await ApiCallLog.create({
-      endpoint,
-      requestData,
-      responseStatus,
-      userId,
-      timestamp: new Date(),
-    });
+    // Generate a unique timestamp to avoid duplicate logs
+    const timestamp = new Date();
+
+    // Create a unique fingerprint for the log to avoid duplicates
+    // This uses a combination of time (down to milliseconds) and a partial hash of the request data
+    const requestHash = JSON.stringify(requestData).slice(0, 50);
+    const fingerprint = `${endpoint}_${timestamp.getTime()}_${requestHash.replace(
+      /\W/g,
+      ""
+    )}`;
+
+    // Use updateOne with upsert to avoid duplicates
+    await ApiCallLog.updateOne(
+      {
+        endpoint,
+        timestamp,
+        userId,
+        // We use fingerprint as a unique field to prevent exact duplicates
+        fingerprint,
+      },
+      {
+        endpoint,
+        requestData,
+        responseStatus,
+        userId,
+        timestamp,
+        fingerprint,
+      },
+      { upsert: true }
+    );
 
     logger.debug(`Logged API call to ${endpoint}`);
   } catch (error) {

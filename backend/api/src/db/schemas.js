@@ -82,6 +82,12 @@ const apiCallLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Unique fingerprint to prevent duplicate logs
+  fingerprint: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow multiple null values (for backwards compatibility)
+  },
 });
 
 // Create models

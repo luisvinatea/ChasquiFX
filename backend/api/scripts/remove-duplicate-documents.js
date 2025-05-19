@@ -25,11 +25,12 @@ const logger = initLogger();
 const COLLECTION_UNIQUE_FIELDS = {
   ForexCache: "cacheKey",
   FlightCache: "cacheKey",
-  ApiCallLog: null, // No natural unique identifier, use composite key below
+  ApiCallLog: "fingerprint", // Use fingerprint field if available
 };
 
 // For collections without a natural unique field, define composite keys
 const COLLECTION_COMPOSITE_KEYS = {
+  // Fallback for older logs without fingerprint field
   ApiCallLog: ["endpoint", "timestamp", "userId"],
 };
 

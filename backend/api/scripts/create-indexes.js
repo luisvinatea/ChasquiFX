@@ -56,7 +56,16 @@ const COLLECTION_INDEXES = [
   {
     collection: "apicalllogs",
     indexes: [
-      // Create compound index on compound key fields for API logs
+      // Create unique index on the fingerprint field
+      {
+        fields: { fingerprint: 1 },
+        options: {
+          unique: true,
+          sparse: true, // Allow multiple documents without fingerprint (for backward compatibility)
+          name: "unique_fingerprint_index",
+        },
+      },
+      // Create compound index on compound key fields for API logs (for legacy entries)
       {
         fields: { endpoint: 1, timestamp: 1, userId: 1 },
         options: { name: "api_call_composite_index" },
