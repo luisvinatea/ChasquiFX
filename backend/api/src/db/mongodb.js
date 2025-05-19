@@ -13,9 +13,27 @@ const username = encodeURIComponent(
   process.env.MONGODB_USER || "paulobarberena"
 );
 const password = encodeURIComponent(process.env.MONGODB_PASSWORD || "");
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/chasquifx?retryWrites=true&w=majority&appName=ChasquiFX`;
+
+// Check if direct MONGODB_URI is provided in env, otherwise construct from parts
+let MONGODB_URI;
+if (process.env.MONGODB_URI) {
+  // Use URI directly if provided (may contain variable placeholders)
+  MONGODB_URI = process.env.MONGODB_URI.replace(
+    "${MONGODB_USER}",
+    username
+  ).replace("${MONGODB_PASSWORD}", password);
+
+  logger.debug("Using MongoDB connection URI from environment variable");
+} else {
+  // Construct URI from components
+  MONGODB_URI = `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/chasquifx?retryWrites=true&w=majority&appName=ChasquiFX`;
+
+  logger.debug("Using default MongoDB connection URI");
+}
+
+// Log connection info (without password)
+const logUri = MONGODB_URI.replace(password, "****");
+logger.debug(`MongoDB connection URI: ${logUri}`);
 
 /**
  * Connect to MongoDB database

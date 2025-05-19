@@ -18,6 +18,7 @@ practice/
 # Ignore environment variables files containing secrets
 .env
 *.env
+*.bak
 
 # Ignore virtual environment directories
 .python-version
