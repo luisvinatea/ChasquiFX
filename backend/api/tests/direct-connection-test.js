@@ -24,7 +24,7 @@ if (!username || !password) {
 
 const uri = `mongodb+srv://${username}:${password}@${host}/?retryWrites=true&w=majority&appName=ChasquiFX`;
 
-console.log("Attempting to connect with URI:", uri.replace(password, "****"));
+console.log("Attempting to connect to MongoDB Atlas...");
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
