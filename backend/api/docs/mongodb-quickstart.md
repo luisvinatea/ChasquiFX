@@ -8,17 +8,26 @@ This document provides a quick-start guide for the MongoDB integration in Chasqu
 
 Make sure you have:
 
-1. MongoDB 4.4+ installed and running
-2. Node.js 14+ installed
-3. MongoDB connection URI set in .env file as `MONGODB_URI`
+1. Access to MongoDB Atlas cluster (chasquifx.ymxb5bs.mongodb.net)
+2. Node.js 18+ installed
+3. MongoDB credentials set in .env file as `MONGODB_USER` and `MONGODB_PASSWORD`
 
-### Migration Steps
+### Connection Details
 
-1. **Run the full migration process**:
+The application uses MongoDB Atlas with the following connection details:
+
+- **Cluster**: chasquifx.ymxb5bs.mongodb.net
+- **Database Name**: chasquifx
+- **Authentication**: Username and password
+- **Connection Type**: MongoDB+SRV URI
+
+### Testing the Connection
+
+1. **Run the basic connection test**:
 
    ```bash
-   cd backend/api/scripts
-   ./full-migration-process.sh
+   cd backend/api
+   node tests/mongoose-connection-test.js
    ```
 
 2. **Test individual components**:
@@ -28,6 +37,7 @@ Make sure you have:
    ```
 
 3. **Monitor cache usage**:
+
    ```bash
    node generate-cache-dashboard.js --html --output ~/cache-dashboard.html
    ```

@@ -15,12 +15,13 @@ dotenv.config();
 const logger = initLogger();
 
 // MongoDB Atlas connection URI with credentials from environment variables
-const username = encodeURIComponent(
-  process.env.MONGODB_USER || "paulobarberena"
-);
-const password = encodeURIComponent(
-  process.env.MONGODB_PASSWORD || "oK3jLPBHTKFMoHB3e"
-);
+const username = encodeURIComponent(process.env.MONGODB_USER);
+const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
+
+// Check for missing credentials
+if (!process.env.MONGODB_USER || !process.env.MONGODB_PASSWORD) {
+  logger.error("MongoDB credentials missing in environment variables");
+}
 
 // Log credential info without exposing actual credentials
 logger.debug(`Username: ${username}`);
@@ -31,15 +32,25 @@ logger.debug(
 // Construct the MongoDB URI directly
 let MONGODB_URI;
 
-// Check if environment variables are loaded correctly
-if (!username || !password) {
-  logger.error("MongoDB credentials missing. Check environment variables.");
+// Get MongoDB host and DB name from environment variables, or use defaults
+const host = process.env.MONGODB_HOST || "chasquifx.ymxb5bs.mongodb.net";
+const dbName = process.env.MONGODB_DBNAME || "chasquifx";
+
+// Check if MONGODB_URI is provided directly in env variables
+if (process.env.MONGODB_URI && process.env.MONGODB_URI.includes("@")) {
+  // Use MONGODB_URI from environment but replace variables
+  MONGODB_URI = process.env.MONGODB_URI.replace(
+    "${MONGODB_USER}",
+    username
+  ).replace("${MONGODB_PASSWORD}", password);
+
+  logger.debug("Using MONGODB_URI from environment variables");
+} else {
+  // Construct URI from components
+  MONGODB_URI = `mongodb+srv://${username}:${password}@${host}/${dbName}?retryWrites=true&w=majority&appName=ChasquiFX`;
+
+  logger.debug("Using constructed MongoDB connection URI");
 }
-
-// Construct URI from components, ignoring MONGODB_URI from env since it contains unresolved placeholders
-MONGODB_URI = `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/chasquifx?retryWrites=true&w=majority&appName=ChasquiFX`;
-
-logger.debug("Using constructed MongoDB connection URI");
 
 // Log connection info (without password)
 const logUri = MONGODB_URI.replace(password, "****");

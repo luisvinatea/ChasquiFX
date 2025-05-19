@@ -4,7 +4,7 @@
 # This script handles the migration of data from files to MongoDB
 
 # Set the directory to the script location
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit 1
 
 # Default configuration
 DRY_RUN=false
@@ -79,13 +79,14 @@ fi
 # Execute migration
 echo "Starting data migration..."
 echo "Command: $CMD"
-eval $CMD
+eval "$CMD"
+MIGRATION_EXIT_CODE=$?
 
 # Check result
-if [ $? -eq 0 ]; then
+if [ $MIGRATION_EXIT_CODE -eq 0 ]; then
     echo "Migration completed successfully"
 else
-    echo "Migration failed with error code $?"
+    echo "Migration failed with error code $MIGRATION_EXIT_CODE"
     exit 1
 fi
 

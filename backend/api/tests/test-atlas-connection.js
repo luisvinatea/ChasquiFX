@@ -28,12 +28,19 @@ async function testDirectConnection() {
   );
 
   // Construct the connection string
-  const username = encodeURIComponent(
-    process.env.MONGODB_USER || "paulobarberena"
-  );
-  const password = encodeURIComponent(
-    process.env.MONGODB_PASSWORD || "oK3jLPBHTKFMoHB3e"
-  );
+  const username = encodeURIComponent(process.env.MONGODB_USER);
+  const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
+
+  // Exit if credentials are missing
+  if (!process.env.MONGODB_USER || !process.env.MONGODB_PASSWORD) {
+    console.error(
+      `${colors.red}ERROR: MongoDB credentials missing in environment variables${colors.reset}`
+    );
+    console.error(
+      `${colors.red}Please set MONGODB_USER and MONGODB_PASSWORD in .env file${colors.reset}`
+    );
+    process.exit(1);
+  }
 
   // Debug connection info
   console.log(`${colors.yellow}Username: ${username}${colors.reset}`);
@@ -43,7 +50,9 @@ async function testDirectConnection() {
     }${colors.reset}`
   );
 
-  const uri = `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/?retryWrites=true&w=majority&appName=ChasquiFX`;
+  const host = process.env.MONGODB_HOST || "chasquifx.ymxb5bs.mongodb.net";
+  const dbName = process.env.MONGODB_DBNAME || "chasquifx";
+  const uri = `mongodb+srv://${username}:${password}@${host}/?retryWrites=true&w=majority&appName=ChasquiFX`;
 
   // Create MongoDB client
   const client = new MongoClient(uri, {

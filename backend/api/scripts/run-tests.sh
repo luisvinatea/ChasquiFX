@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Set the directory to the script location
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit 1
 
 # Function to run a test and print result
 run_test() {
