@@ -12,13 +12,13 @@ set -e
 # Change to the script directory
 cd "$(dirname "$0")"
 
-# Define parent directory for .env file
-PARENT_DIR="$(dirname "$(pwd)")"
-ENV_FILE="${PARENT_DIR}/.env"
+# Define path for .env file (located at backend/api/.env)
+# The script is at backend/api/scripts/cleaning, so we go up two directories
+ENV_FILE="$(dirname "$(dirname "$(pwd)")")/.env"
 
-# Check if .env file exists in parent directory
+# Check if .env file exists in specified path
 if [ ! -f "${ENV_FILE}" ]; then
-    echo "Error: .env file not found in parent directory: ${ENV_FILE}"
+    echo "Error: .env file not found at: ${ENV_FILE}"
     exit 1
 fi
 

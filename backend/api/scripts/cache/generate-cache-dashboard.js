@@ -6,11 +6,10 @@
  */
 
 require("dotenv").config();
-const fs = require("fs").promises;
-const path = require("path");
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const { ForexCache, FlightCache, ApiCallLog } = require("../../src/db/schemas");
+import { promises as fs } from "fs";
+import { connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { ForexCache, FlightCache, ApiCallLog } from "../../src/db/schemas";
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -180,7 +179,7 @@ async function generateDashboardData() {
     const apiCallStats = await getApiCallStats();
 
     // Get overall database statistics
-    const dbStats = await mongoose.connection.db.stats();
+    const dbStats = await connection.db.stats();
 
     // Calculate cache hit rates (this is an estimate based on active vs expired ratio)
     const forexHitRate =
@@ -211,14 +210,14 @@ async function generateDashboardData() {
     };
 
     // Close MongoDB connection
-    await mongoose.connection.close();
+    await connection.close();
     console.log("MongoDB connection closed");
 
     return dashboardData;
   } catch (error) {
     console.error("Failed to generate dashboard:", error.message);
     try {
-      await mongoose.connection.close();
+      await connection.close();
     } catch (e) {
       // Ignore error on close
     }

@@ -6,20 +6,21 @@
 # and creates a .env file for the application to use.
 #
 
-# Change to the script directory and navigate to the api root
-cd "$(dirname "$0")" || exit
-cd ..
+# Get the absolute path to the api directory (same as in other scripts)
+API_DIR="$(dirname "$(dirname "$(pwd)")")"
+ENV_FILE="${API_DIR}/.env"
 
 echo "MongoDB Environment Setup for ChasquiFX"
 echo "========================================"
 echo
 echo "This script will help you set up MongoDB connection details."
-echo "The information will be saved to a .env file."
+echo "The information will be saved to: ${ENV_FILE}"
 echo
 
-# Check if .env already exists
-if [ -f ".env" ]; then
-    echo "A .env file already exists. Do you want to overwrite it? (y/n)"
+# Check if .env already exists at the specific location
+if [ -f "${ENV_FILE}" ]; then
+    echo "A .env file already exists at ${ENV_FILE}."
+    echo "Do you want to overwrite it? (y/n)"
     read -r overwrite
     if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
         echo "Setup canceled. Your .env file was not modified."
@@ -66,10 +67,10 @@ if [[ "$additional" == "y" || "$additional" == "Y" ]]; then
     done
 fi
 
-# Create .env file
+# Create .env file at the specific location
 echo
-echo "Creating .env file..."
-cat >.env <<EOF
+echo "Creating .env file at ${ENV_FILE}..."
+cat >"${ENV_FILE}" <<EOF
 # MongoDB Connection
 MONGODB_USER=${MONGODB_USER}
 MONGODB_PASSWORD=${MONGODB_PASSWORD}
@@ -85,13 +86,12 @@ NODE_ENV=development
 $(echo -e "$ADDITIONAL_ENV")
 EOF
 
-echo "Environment file created successfully!"
+echo "Environment file created successfully at ${ENV_FILE}!"
 echo
 echo "You can now run MongoDB tools:"
-echo "  cd scripts"
-echo "  ./verify-mongodb.sh --report"
+echo "  cd scripts/auth"
+echo "  ./test-atlas-connection.sh"
 echo
-echo "Or test the connection with:"
 echo "  cd scripts"
 echo "  ./mongodb-manager.sh test-connection"
 echo

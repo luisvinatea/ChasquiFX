@@ -9,22 +9,39 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure dotenv with absolute path
-const envPath = path.resolve(__dirname, "../.env");
+// Configure dotenv with path from ENV_PATH if available, otherwise use default
+const envPath = process.env.ENV_PATH || path.resolve(__dirname, "../.env");
 dotenv.config({ path: envPath });
 console.log("ENV Path:", envPath);
 
 // Get credentials from env
-const username = encodeURIComponent(process.env.MONGODB_USER);
-const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
+const username = process.env.MONGODB_USER;
+const password = process.env.MONGODB_PASSWORD;
+
+// Check if credentials are available
+if (!username || !password) {
+  console.error(
+    "Error: MongoDB credentials are missing from environment variables."
+  );
+  console.error(`MONGODB_USER: ${username ? "Set" : "Missing"}`);
+  console.error(`MONGODB_PASSWORD: ${password ? "Set" : "Missing"}`);
+  console.error(
+    `Make sure your .env file at ${envPath} contains these variables.`
+  );
+  process.exit(1);
+}
+
+// Encode credentials for URL
+const encodedUsername = encodeURIComponent(username);
+const encodedPassword = encodeURIComponent(password);
 
 // Use the correct host
 const host = "chasquifx.ymxb5bs.mongodb.net";
 const dbName = "chasquifx";
 
 // Build the URI
-const uri = `mongodb+srv://${username}:${password}@${host}/${dbName}?retryWrites=true&w=majority&appName=ChasquiFX`;
-console.log("Connection URI:", uri.replace(password, "****"));
+const uri = `mongodb+srv://${encodedUsername}:${encodedPassword}@${host}/${dbName}?retryWrites=true&w=majority&appName=ChasquiFX`;
+console.log("Connection URI:", uri.replace(encodedPassword, "****"));
 
 // Create a new MongoClient with MongoDB Atlas recommended options
 const client = new MongoClient(uri, {
@@ -290,12 +307,24 @@ async function main() {
     const db = await connectToMongoDB();
     await setupCollections(db);
 
-    console.log("Starting data import process...");
-    await importAllData(db);
+    // Check if data directories exist before attempting import
+    const dataDirectoryExists = fs.existsSync(dataDir);
 
-    console.log("Data import completed successfully");
+    if (dataDirectoryExists) {
+      console.log("Starting data import process...");
+      await importAllData(db);
+      console.log("Data import completed successfully");
+    } else {
+      console.log(
+        `Data directory ${dataDir} not found. Skipping data import.`
+      );
+      console.log(
+        "Connection test completed successfully without data import."
+      );
+    }
   } catch (error) {
     console.error("Error in main process:", error);
+    process.exit(1);
   } finally {
     if (client) {
       await client.close();

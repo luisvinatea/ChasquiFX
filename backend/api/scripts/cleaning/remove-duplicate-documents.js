@@ -21,18 +21,20 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize environment variables from the parent directory's .env file or from ENV_PATH
+// Initialize environment variables from ENV_PATH if provided, otherwise use default location
 let envPath;
 if (process.env.ENV_PATH && fs.existsSync(process.env.ENV_PATH)) {
   envPath = process.env.ENV_PATH;
 } else {
-  // Default to parent directory .env if ENV_PATH not provided
-  envPath = path.join(process.cwd(), "..", ".env");
+  // Default to the standard backend/api/.env location
+  envPath = path.resolve(__dirname, "../../.env");
   if (!fs.existsSync(envPath)) {
-    console.error(`Warning: .env file not found at ${envPath}`);
+    console.error(`Error: .env file not found at ${envPath}`);
+    process.exit(1);
   }
 }
 
+console.log(`Using environment file: ${envPath}`);
 dotenv.config({ path: envPath });
 
 // Initialize logger
@@ -80,7 +82,7 @@ if (!username || !password) {
 }
 
 // Use the correct host from .env
-const host = "chasquifx.2akcifh.mongodb.net";
+const host = "chasquifx.ymxb5bs.mongodb.net";
 const dbName = "chasquifx";
 
 // Build the URI
