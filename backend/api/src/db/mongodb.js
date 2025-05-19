@@ -3,10 +3,16 @@
  * Manages database connection and provides MongoDB client
  */
 
-const mongoose = require("mongoose");
-const { ServerApiVersion } = require("mongodb");
-const logger = require("../utils/logger");
-require("dotenv").config();
+import mongoose from "mongoose";
+import { ServerApiVersion } from "mongodb";
+import { initLogger } from "../utils/logger.js";
+import dotenv from "dotenv";
+
+// Initialize environment variables
+dotenv.config();
+
+// Initialize logger
+const logger = initLogger();
 
 // MongoDB Atlas connection URI with credentials from environment variables
 const username = encodeURIComponent(
