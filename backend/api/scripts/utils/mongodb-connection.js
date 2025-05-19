@@ -3,8 +3,8 @@
  * Uses CommonJS syntax for compatibility with scripts
  */
 
-const mongoose = require("mongoose");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+import { connection, connect } from "mongoose";
+import { MongoClient, ServerApiVersion } from "mongodb";
 require("dotenv").config();
 
 // Connection variables
@@ -27,9 +27,9 @@ const logger = {
 async function connectToDatabase() {
   try {
     // Check if already connected
-    if (mongoose.connection.readyState === 1) {
+    if (connection.readyState === 1) {
       logger.info("MongoDB already connected");
-      return mongoose.connection;
+      return connection;
     }
 
     logger.info("Connecting to MongoDB...");
@@ -44,32 +44,32 @@ async function connectToDatabase() {
     };
 
     // Create the connection
-    await mongoose.connect(MONGODB_URI, mongooseOptions);
+    await connect(MONGODB_URI, mongooseOptions);
     logger.info(`MongoDB connected to ${DB_NAME}`);
 
     // Handle connection events
-    mongoose.connection.on("error", (err) => {
+    connection.on("error", (err) => {
       logger.error(`MongoDB connection error: ${err}`);
     });
 
-    mongoose.connection.on("disconnected", () => {
+    connection.on("disconnected", () => {
       logger.warn("MongoDB disconnected");
     });
 
     process.on("SIGINT", async () => {
-      await mongoose.connection.close();
+      await connection.close();
       logger.info("MongoDB connection closed via app termination");
       process.exit(0);
     });
 
-    return mongoose.connection;
+    return connection;
   } catch (error) {
     logger.error(`MongoDB connection failed: ${error.message}`);
     throw error;
   }
 }
 
-module.exports = {
+export default {
   mongoose,
   connectToDatabase,
   MongoClient,
