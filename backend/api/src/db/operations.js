@@ -295,9 +295,10 @@ async function cacheForexData(currencyPair, data, expiryHours = 12) {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + expiryHours);
 
-    // Create a new cache entry
-    await ForexCache.create({
-      cacheKey,
+    // Create or update cache entry (upsert to prevent duplicates)
+    await ForexCache.findOneAndUpdate(
+      { cacheKey },
+      {
       searchParameters: {
         q: currencyPair,
       },
