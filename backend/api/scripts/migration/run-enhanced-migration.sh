@@ -12,7 +12,7 @@ fi
 
 # Set the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/../.." || exit
 
 # Check if we have MongoDB connection details in .env
 if [ ! -f .env ]; then
@@ -28,7 +28,7 @@ fi
 
 # Pass any arguments (like --dry-run) to the migration script
 echo "Starting migration to enhanced schema..."
-node scripts/migration/migrate-to-enhanced-schema.js "$@"
+NODE_DEBUG=module node scripts/migration/migrate-to-enhanced-schema.js "$@"
 
 # Check the exit status
 if [ $? -eq 0 ]; then

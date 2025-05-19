@@ -4,14 +4,14 @@
  */
 
 require("dotenv").config();
-const fs = require("fs").promises;
-const path = require("path");
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const { Flight } = require("../../src/db/schemas");
+import { promises as fs } from "fs";
+import { resolve, join } from "path";
+import { connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { Flight } from "../../src/db/schemas";
 
 // Configuration
-const FLIGHTS_DATA_DIR = path.resolve(
+const FLIGHTS_DATA_DIR = resolve(
   __dirname,
   "../../../assets/data/flights"
 );
@@ -57,7 +57,7 @@ async function migrateToEnhancedSchema() {
     await connectToDatabase();
 
     // Get all existing flight documents in MongoDB (using native driver for flexibility)
-    const db = mongoose.connection.db;
+    const db = connection.db;
     const existingDocuments = await db
       .collection("flights")
       .find({})
@@ -77,7 +77,7 @@ async function migrateToEnhancedSchema() {
         logger.info(`Processing document for ${fileName}`);
 
         // Check if file exists in the flights data directory
-        const filePath = path.join(FLIGHTS_DATA_DIR, fileName);
+        const filePath = join(FLIGHTS_DATA_DIR, fileName);
 
         let flightData;
         try {
@@ -245,7 +245,7 @@ async function migrateToEnhancedSchema() {
     );
 
     // Close database connection
-    await mongoose.connection.close();
+    await connection.close();
     logger.info("Database connection closed");
   } catch (error) {
     logger.error(`Migration failed: ${error.message}`);
