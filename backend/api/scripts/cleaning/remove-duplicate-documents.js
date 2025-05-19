@@ -111,7 +111,7 @@ const COLLECTION_UNIQUE_FIELDS = {
   
   // Actual collections from MongoDB Atlas connection test
   forex: "_source",  // Using the source filename as unique identifier
-  flights: "_source", // Using the source filename as unique identifier
+  flights: "_source", // Using the source filename as unique identifier - most reliable
   geo: "_id", // Using the MongoDB _id field
 };
 
@@ -122,7 +122,8 @@ const COLLECTION_COMPOSITE_KEYS = {
   
   // Alternative composite keys for imported data
   forex: ["currency_pair", "date_imported"],
-  flights: ["route", "date_imported"],
+  flights: ["route_info.departure_airport", "route_info.arrival_airport", 
+            "route_info.outbound_date", "route_info.return_date"], // Enhanced route info
   geo: ["name", "country", "iata_code"], // For airports with multiple identifiers
 };
 
