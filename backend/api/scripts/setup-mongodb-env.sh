@@ -7,7 +7,7 @@
 #
 
 # Change to the script directory and navigate to the api root
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 cd ..
 
 echo "MongoDB Environment Setup for ChasquiFX"
