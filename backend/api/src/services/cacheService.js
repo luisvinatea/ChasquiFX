@@ -4,7 +4,12 @@
  */
 
 import { info, error as _error } from "../utils/logger";
-import { getCachedFlightData, cacheFlightData, getCachedForexData, cacheForexData } from "../db/operations";
+import {
+  getCachedFlightData,
+  cacheFlightData,
+  getCachedForexData,
+  cacheForexData,
+} from "../db/operations";
 import { writeStandardizedFile } from "./fileStandardizationService";
 
 /**
@@ -72,9 +77,7 @@ async function getFlightData(params, fetchCallback) {
     );
 
     if (cachedData) {
-      info(
-        `Using cached flight data for ${departure_id}-${arrival_id}`
-      );
+      info(`Using cached flight data for ${departure_id}-${arrival_id}`);
       return { data: cachedData, source: "cache" };
     }
 
@@ -200,9 +203,108 @@ async function hasSimilarCache(type, params) {
   return false;
 }
 
+/**
+ * Get cached recommendations
+ * @param {string} cacheKey - Unique identifier for the recommendations
+ * @returns {Promise<Object|null>} - Cached recommendations or null if not found/expired
+ */
+export async function getCachedRecommendations(cacheKey) {
+  try {
+    info(`Looking for cached recommendations with key: ${cacheKey}`);
+
+    // Check if we have this in the database cache
+    const cachedRecommendation = await findCachedRecommendation(cacheKey);
+
+    if (!cachedRecommendation) {
+      info(`No cache found for recommendations: ${cacheKey}`);
+      return null;
+    }
+
+    // Check if cache is still valid (6 hours)
+    const cacheExpiry = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+    const cacheTime = new Date(cachedRecommendation.created_at).getTime();
+    const now = new Date().getTime();
+
+    if (now - cacheTime > cacheExpiry) {
+      info(`Cache expired for recommendations: ${cacheKey}`);
+      return null;
+    }
+
+    info(`Found valid cached recommendations for ${cacheKey}`);
+    return cachedRecommendation;
+  } catch (err) {
+    _error(`Error retrieving recommendation cache: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * Save recommendations to cache
+ * @param {string} cacheKey - Unique identifier for the recommendations
+ * @param {Object} recommendations - Recommendations to cache
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function cacheRecommendations(cacheKey, recommendations) {
+  try {
+    info(`Caching recommendations for key: ${cacheKey}`);
+
+    const cacheData = {
+      cache_key: cacheKey,
+      recommendations,
+      created_at: new Date().toISOString(),
+    };
+
+    // Save to database
+    await saveCachedRecommendation(cacheData);
+
+    info(`Successfully cached recommendations for ${cacheKey}`);
+    return true;
+  } catch (err) {
+    _error(`Error caching recommendations: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Find cached recommendation in the database
+ * @param {string} cacheKey - Cache key to search for
+ * @returns {Promise<Object|null>} - Cached recommendation or null
+ */
+async function findCachedRecommendation(cacheKey) {
+  try {
+    // This implementation would be replaced with actual database access
+    // For now, return null to indicate no cache found
+    return null;
+  } catch (err) {
+    _error(
+      `Database error when finding cached recommendation: ${err.message}`
+    );
+    return null;
+  }
+}
+
+/**
+ * Save cached recommendation to database
+ * @param {Object} cacheData - Recommendation data to cache
+ * @returns {Promise<boolean>} - Success status
+ */
+async function saveCachedRecommendation(cacheData) {
+  try {
+    // This implementation would be replaced with actual database access
+    // For now, just log the operation
+    info(`Would save recommendation cache with key: ${cacheData.cache_key}`);
+    return true;
+  } catch (err) {
+    _error(`Database error when saving cached recommendation: ${err.message}`);
+    return false;
+  }
+}
+
 export default {
   getFlightData,
   getForexData,
   hasSimilarCache,
   standardizeSearchParams,
+  getCachedRecommendations,
+  cacheRecommendations,
 };
