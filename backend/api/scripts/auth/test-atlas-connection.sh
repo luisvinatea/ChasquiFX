@@ -36,7 +36,9 @@ fi
 
 # Run the test with explicit reference to the .env file
 echo -e "${BLUE}Running connection test...${NC}"
-ENV_PATH="${ENV_FILE}" node test-atlas-connection.js
+# Use full path to the JS file to ensure we're running the right one
+SCRIPT_DIR="$(dirname "$0")"
+ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/test-atlas-connection.js"
 
 # Check the exit code
 if [ $? -eq 0 ]; then
