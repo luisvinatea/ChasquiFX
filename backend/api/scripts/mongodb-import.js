@@ -1,26 +1,30 @@
-// Impo// Get directory name (equivalent to __dirname in CommonJS)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Configure dotenv with absolute path
-const envPath = path.resolve(__dirname, '../.env');
-dotenv.config({ path: envPath });
-console.log('ENV Path:', envPath);uired modules
+// Import required modules
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { MongoClient } from "mongodb";
 import { fileURLToPath } from "url";
 
-// Configure dotenv
-dotenv.config({ path: "../.env" });
-
 // Get directory name (equivalent to __dirname in CommonJS)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Database connection string
-const uri = process.env.MONGODB_URI;
+// Configure dotenv with absolute path
+const envPath = path.resolve(__dirname, "../.env");
+dotenv.config({ path: envPath });
+console.log("ENV Path:", envPath);
+
+// Check if environment variables are loaded
+console.log("MONGODB_URI:", process.env.MONGODB_URI);
+
+// Resolve template strings in MONGODB_URI
+let uri = process.env.MONGODB_URI;
+if (uri) {
+  uri = uri.replace("${MONGODB_USER}", process.env.MONGODB_USER);
+  uri = uri.replace("${MONGODB_PASSWORD}", process.env.MONGODB_PASSWORD);
+}
+console.log("Resolved MONGODB_URI:", uri);
+
 const client = new MongoClient(uri);
 
 // Base directory for data files
@@ -68,6 +72,8 @@ async function readJsonFiles(directory) {
     const files = fs.readdirSync(directory);
     const jsonFiles = files.filter((file) => file.endsWith(".json"));
 
+    console.log(`Found ${jsonFiles.length} JSON files in ${directory}`);
+
     const fileContents = [];
     for (const file of jsonFiles) {
       const filePath = path.join(directory, file);
@@ -98,6 +104,7 @@ async function importData(db) {
   try {
     // Import forex data
     const forexDir = path.join(dataDir, "forex");
+    console.log(`Reading forex data from ${forexDir}`);
     const forexData = await readJsonFiles(forexDir);
     if (forexData.length > 0) {
       const forexCollection = db.collection("forex");
@@ -109,6 +116,7 @@ async function importData(db) {
 
     // Import flights data
     const flightsDir = path.join(dataDir, "flights");
+    console.log(`Reading flights data from ${flightsDir}`);
     const flightsData = await readJsonFiles(flightsDir);
     if (flightsData.length > 0) {
       const flightsCollection = db.collection("flights");
@@ -120,6 +128,7 @@ async function importData(db) {
 
     // Import geo data
     const geoDir = path.join(dataDir, "geo");
+    console.log(`Reading geo data from ${geoDir}`);
     const geoData = await readJsonFiles(geoDir);
     if (geoData.length > 0) {
       const geoCollection = db.collection("geo");
