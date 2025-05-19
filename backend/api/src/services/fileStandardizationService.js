@@ -6,9 +6,9 @@
  * implemented in JavaScript for the Node.js backend.
  */
 
-const fs = require("fs").promises;
-const path = require("path");
-const logger = require("../utils/logger");
+import { promises as fs } from "fs";
+import { extname, resolve, join } from "path";
+import { error as _error, warning, info } from "../utils/logger";
 
 /**
  * Extract specific metadata from a JSON file or object
@@ -51,7 +51,7 @@ async function extractJsonMetadata(jsonInput, keys) {
 
     return result;
   } catch (error) {
-    logger.error(`Error extracting metadata: ${error.message}`);
+    _error(`Error extracting metadata: ${error.message}`);
     return {};
   }
 }
@@ -82,7 +82,7 @@ async function standardizeFilename(
         (k) => metadata[k] === null || metadata[k] === undefined
       )
     ) {
-      logger.warning(
+      warning(
         `Could not extract required metadata from ${
           typeof originalFile === "string" ? originalFile : "object"
         }`
@@ -106,13 +106,13 @@ async function standardizeFilename(
 
     // If original file is a file path, add the extension
     if (typeof originalFile === "string") {
-      const ext = path.extname(originalFile);
+      const ext = extname(originalFile);
       return `${newBasename}${ext}`;
     }
 
     return newBasename;
   } catch (error) {
-    logger.error(`Error standardizing filename: ${error.message}`);
+    _error(`Error standardizing filename: ${error.message}`);
     return null;
   }
 }
@@ -184,18 +184,17 @@ async function writeStandardizedFile(data, type, baseDir = null) {
     if (type === "flight") {
       filename = await standardizeFlightFilename(data);
       targetDir =
-        baseDir || path.resolve(__dirname, "../../../assets/data/flights");
+        baseDir || resolve(__dirname, "../../../assets/data/flights");
     } else if (type === "forex") {
       filename = await standardizeForexFilename(data);
-      targetDir =
-        baseDir || path.resolve(__dirname, "../../../assets/data/forex");
+      targetDir = baseDir || resolve(__dirname, "../../../assets/data/forex");
     } else {
-      logger.error(`Unknown data type: ${type}`);
+      _error(`Unknown data type: ${type}`);
       return null;
     }
 
     if (!filename) {
-      logger.error("Failed to generate standardized filename");
+      _error("Failed to generate standardized filename");
       return null;
     }
 
@@ -206,15 +205,15 @@ async function writeStandardizedFile(data, type, baseDir = null) {
       if (err.code !== "EEXIST") throw err;
     }
 
-    const filePath = path.join(targetDir, `${filename}.json`);
+    const filePath = join(targetDir, `${filename}.json`);
 
     // Write the file
     await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
-    logger.info(`Successfully wrote standardized file: ${filePath}`);
+    info(`Successfully wrote standardized file: ${filePath}`);
 
     return filePath;
   } catch (error) {
-    logger.error(`Error writing standardized file: ${error.message}`);
+    _error(`Error writing standardized file: ${error.message}`);
     return null;
   }
 }
@@ -232,12 +231,12 @@ async function generateCacheKey(data, type) {
   } else if (type === "forex") {
     return await standardizeForexFilename(data);
   } else {
-    logger.error(`Unknown data type: ${type}`);
+    _error(`Unknown data type: ${type}`);
     return null;
   }
 }
 
-module.exports = {
+export default {
   extractJsonMetadata,
   standardizeFilename,
   standardizeFlightFilename,

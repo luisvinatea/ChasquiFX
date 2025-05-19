@@ -10,7 +10,7 @@ const {
   generateCacheKey,
   standardizeFlightFilename,
   standardizeForexFilename,
-} = require("../services/fileStandardizationService");
+} = require("../services/fileStandardizationService").default;
 
 // Ensure database connection is established before operations
 let dbInitialized = false;

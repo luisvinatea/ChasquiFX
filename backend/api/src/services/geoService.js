@@ -3,16 +3,16 @@
  * Provides geographical and route data.
  */
 
-const fs = require("fs");
-const path = require("path");
-const logger = require("../utils/logger");
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
+import { warn, error } from "../utils/logger";
 
 // Path to geo data files
-const ROUTES_PATH = path.resolve(
+const ROUTES_PATH = resolve(
   __dirname,
   "../../../assets/data/geo/routes.json"
 );
-const AIRPORTS_PATH = path.resolve(
+const AIRPORTS_PATH = resolve(
   __dirname,
   "../../../assets/data/geo/airports.json"
 );
@@ -24,12 +24,12 @@ const AIRPORTS_PATH = path.resolve(
  */
 async function getRoutesForAirport(airportCode) {
   try {
-    if (!fs.existsSync(ROUTES_PATH)) {
-      logger.warn(`Routes file not found: ${ROUTES_PATH}`);
+    if (!existsSync(ROUTES_PATH)) {
+      warn(`Routes file not found: ${ROUTES_PATH}`);
       return [];
     }
 
-    const routesData = JSON.parse(fs.readFileSync(ROUTES_PATH, "utf8"));
+    const routesData = JSON.parse(readFileSync(ROUTES_PATH, "utf8"));
 
     // Filter routes for departure airport
     return routesData.filter(
@@ -38,7 +38,7 @@ async function getRoutesForAirport(airportCode) {
         route["Origin airport"] === airportCode
     );
   } catch (e) {
-    logger.error(`Error getting routes for ${airportCode}: ${e.message}`);
+    error(`Error getting routes for ${airportCode}: ${e.message}`);
     return [];
   }
 }
@@ -49,12 +49,12 @@ async function getRoutesForAirport(airportCode) {
  */
 async function getAirportCountryMap() {
   try {
-    if (!fs.existsSync(AIRPORTS_PATH)) {
-      logger.warn(`Airports file not found: ${AIRPORTS_PATH}`);
+    if (!existsSync(AIRPORTS_PATH)) {
+      warn(`Airports file not found: ${AIRPORTS_PATH}`);
       return {};
     }
 
-    const airportsData = JSON.parse(fs.readFileSync(AIRPORTS_PATH, "utf8"));
+    const airportsData = JSON.parse(readFileSync(AIRPORTS_PATH, "utf8"));
 
     // Create mapping of airport code to country code
     const airportMap = {};
@@ -66,12 +66,12 @@ async function getAirportCountryMap() {
 
     return airportMap;
   } catch (e) {
-    logger.error(`Error getting airport country map: ${e.message}`);
+    error(`Error getting airport country map: ${e.message}`);
     return {};
   }
 }
 
-module.exports = {
+export default {
   getRoutesForAirport,
   getAirportCountryMap,
 };

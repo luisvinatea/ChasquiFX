@@ -12,19 +12,16 @@
  */
 
 require("dotenv").config();
-const fs = require("fs").promises;
-const path = require("path");
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const { ForexCache, FlightCache, Flight } = require("../../src/db/schemas");
-const {
-  standardizeFlightFilename,
-  standardizeForexFilename,
-} = require("../../src/services/fileStandardizationService");
+import { promises as fs } from "fs";
+import { resolve, join, basename } from "path";
+import { connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { ForexCache, FlightCache, Flight } from "../../src/db/schemas";
+import { standardizeFlightFilename, standardizeForexFilename } from "../../src/services/fileStandardizationService";
 
 // Configuration
-const FLIGHTS_DATA_DIR = path.resolve(__dirname, "../../assets/data/flights");
-const FOREX_DATA_DIR = path.resolve(__dirname, "../../assets/data/forex");
+const FLIGHTS_DATA_DIR = resolve(__dirname, "../../assets/data/flights");
+const FOREX_DATA_DIR = resolve(__dirname, "../../assets/data/forex");
 const DEFAULT_EXPIRY_HOURS = {
   flight: 24,
   forex: 12,
@@ -78,7 +75,7 @@ async function migrateFlightData(dryRun) {
 
     for (const fileName of jsonFiles) {
       try {
-        const filePath = path.join(FLIGHTS_DATA_DIR, fileName);
+        const filePath = join(FLIGHTS_DATA_DIR, fileName);
         const data = await readJsonFile(filePath);
 
         if (!data) {
@@ -87,7 +84,7 @@ async function migrateFlightData(dryRun) {
         }
 
         // Extract search parameters from filename
-        const fileNameParts = path.basename(fileName, ".json").split("_");
+        const fileNameParts = basename(fileName, ".json").split("_");
         if (fileNameParts.length !== 4) {
           logger.warn(`Skipping ${fileName}: Invalid naming format`);
           skipCount++;
@@ -180,7 +177,7 @@ async function migrateFlightDataEnhanced(dryRun) {
 
     for (const fileName of jsonFiles) {
       try {
-        const filePath = path.join(FLIGHTS_DATA_DIR, fileName);
+        const filePath = join(FLIGHTS_DATA_DIR, fileName);
         const flightData = await readJsonFile(filePath);
 
         if (!flightData) {
@@ -189,7 +186,7 @@ async function migrateFlightDataEnhanced(dryRun) {
         }
 
         // Extract route information from filename
-        const fileNameParts = path.basename(fileName, ".json").split("_");
+        const fileNameParts = basename(fileName, ".json").split("_");
         if (fileNameParts.length !== 4) {
           logger.warn(`Skipping ${fileName}: Invalid naming format`);
           skipCount++;
@@ -339,7 +336,7 @@ async function migrateForexData(dryRun) {
 
     for (const fileName of jsonFiles) {
       try {
-        const filePath = path.join(FOREX_DATA_DIR, fileName);
+        const filePath = join(FOREX_DATA_DIR, fileName);
         const data = await readJsonFile(filePath);
 
         if (!data) {
@@ -348,8 +345,7 @@ async function migrateForexData(dryRun) {
         }
 
         // Extract currency pair from filename
-        const fileNameMatch = path
-          .basename(fileName, ".json")
+        const fileNameMatch = basename(fileName, ".json")
           .match(/^([A-Z]{3}-[A-Z]{3})_(.+)$/);
         if (!fileNameMatch) {
           logger.warn(`Skipping ${fileName}: Invalid naming format`);
@@ -459,7 +455,7 @@ async function migrateData() {
     logger.info("Data migration completed");
 
     // Close database connection
-    await mongoose.connection.close();
+    await connection.close();
   } catch (error) {
     logger.error(`Migration failed: ${error.message}`);
     process.exit(1);

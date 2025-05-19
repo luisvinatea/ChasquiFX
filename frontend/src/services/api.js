@@ -126,4 +126,5 @@ export const recommendationService = {
   },
 };
 
-export default { forexService, recommendationService };
+const apiServices = { forexService, recommendationService };
+export default apiServices;

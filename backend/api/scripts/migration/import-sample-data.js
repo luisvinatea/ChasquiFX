@@ -6,15 +6,12 @@
  */
 
 require("dotenv").config();
-const fs = require("fs").promises;
-const path = require("path");
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const { ForexCache, FlightCache } = require("../../src/db/schemas");
-const {
-  standardizeFlightFilename,
-  standardizeForexFilename,
-} = require("../../src/services/fileStandardizationService");
+import { promises as fs } from "fs";
+import { basename, join } from "path";
+import { connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { ForexCache, FlightCache } from "../../src/db/schemas";
+import { standardizeFlightFilename, standardizeForexFilename } from "../../src/services/fileStandardizationService";
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -75,7 +72,7 @@ async function readJsonFile(filePath) {
  * @returns {string} - 'forex' or 'flight' or null if can't determine
  */
 function identifyDataType(filePath, data) {
-  const fileName = path.basename(filePath);
+  const fileName = basename(filePath);
 
   // Check for common patterns in filename
   if (fileName.match(/[A-Z]{3}-[A-Z]{3}_\d{4}-\d{2}-\d{2}/)) {
@@ -151,7 +148,7 @@ async function importFile(filePath) {
     if (dataType === "forex") {
       // Extract currency pair from filename or data
       const currencyPair =
-        data.search_parameters?.q || path.basename(filePath).split("_")[0];
+        data.search_parameters?.q || basename(filePath).split("_")[0];
 
       // Ensure search parameters exist
       if (!data.search_parameters) {
@@ -170,7 +167,7 @@ async function importFile(filePath) {
       expiryHours = 12;
     } else if (dataType === "flight") {
       // Extract flight details from filename or data
-      const fileName = path.basename(filePath, ".json");
+      const fileName = basename(filePath, ".json");
       const parts = fileName.split("_");
 
       let departure_id, arrival_id, outbound_date, return_date;
@@ -284,7 +281,7 @@ async function importDirectory(directoryPath) {
 
     // Process each file
     for (const file of jsonFiles) {
-      const filePath = path.join(directoryPath, file);
+      const filePath = join(directoryPath, file);
       const success = await importFile(filePath);
 
       if (success) {
@@ -331,14 +328,14 @@ async function main() {
     }
 
     // Close connection
-    await mongoose.connection.close();
+    await connection.close();
     logger.info("MongoDB connection closed");
 
     process.exit(0);
   } catch (error) {
     logger.error(`Import failed: ${error.message}`);
     try {
-      await mongoose.connection.close();
+      await connection.close();
     } catch (e) {
       // Ignore error on close
     }

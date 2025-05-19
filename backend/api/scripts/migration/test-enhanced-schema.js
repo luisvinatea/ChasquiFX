@@ -4,14 +4,14 @@
  */
 
 require("dotenv").config();
-const fs = require("fs").promises;
-const path = require("path");
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const { Flight } = require("../../src/db/schemas");
+import { promises as fs } from "fs";
+import { resolve, join, basename } from "path";
+import { connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { Flight } from "../../src/db/schemas";
 
 // Configuration
-const FLIGHTS_DATA_DIR = path.resolve(__dirname, "../../assets/data/flights");
+const FLIGHTS_DATA_DIR = resolve(__dirname, "../../assets/data/flights");
 const TEST_FILE = "JFK_AMM_2025-08-10_2025-08-17.json";
 
 async function readJsonFile(filePath) {
@@ -32,7 +32,7 @@ async function testEnhancedSchema() {
     await connectToDatabase();
 
     // Read test file
-    const filePath = path.join(FLIGHTS_DATA_DIR, TEST_FILE);
+    const filePath = join(FLIGHTS_DATA_DIR, TEST_FILE);
     console.log(`Reading test file: ${filePath}`);
     const flightData = await readJsonFile(filePath);
 
@@ -42,7 +42,7 @@ async function testEnhancedSchema() {
     }
 
     // Extract route information from filename
-    const fileNameParts = path.basename(TEST_FILE, ".json").split("_");
+    const fileNameParts = basename(TEST_FILE, ".json").split("_");
     if (fileNameParts.length !== 4) {
       console.error("Invalid filename format");
       process.exit(1);
@@ -195,7 +195,7 @@ async function testEnhancedSchema() {
     console.log("\nTest completed successfully!");
 
     // Close database connection
-    await mongoose.connection.close();
+    await connection.close();
     console.log("Database connection closed");
   } catch (error) {
     console.error("Test failed:", error);

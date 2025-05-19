@@ -5,9 +5,9 @@
  * Run with: node test-mongodb.js
  */
 
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../src/db/mongodb");
-const { ForexCache, FlightCache } = require("../src/db/schemas");
+import { connection as _connection } from "mongoose";
+import { connectToDatabase } from "../src/db/mongodb";
+import { ForexCache, FlightCache } from "../src/db/schemas";
 
 // Test MongoDB connection and operations
 async function testMongoDBConnection() {
@@ -22,7 +22,7 @@ async function testMongoDBConnection() {
     console.log(`Connected to database: ${connection.name}`);
 
     // Print available collections
-    const collections = await mongoose.connection.db
+    const collections = await _connection.db
       .listCollections()
       .toArray();
     console.log("\nAvailable collections:");
@@ -31,13 +31,13 @@ async function testMongoDBConnection() {
     });
 
     console.log("\nConnection details:", {
-      host: mongoose.connection.host,
-      port: mongoose.connection.port,
-      name: mongoose.connection.name,
+      host: _connection.host,
+      port: _connection.port,
+      name: _connection.name,
     });
 
     // Close connection
-    await mongoose.connection.close();
+    await _connection.close();
     console.log("Connection closed successfully");
 
     return true;
@@ -114,13 +114,13 @@ async function testCRUDOperations() {
     }
 
     // Close connection
-    await mongoose.connection.close();
+    await _connection.close();
 
     return true;
   } catch (error) {
     console.error("❌ CRUD operations test failed:", error.message);
     try {
-      await mongoose.connection.close();
+      await _connection.close();
     } catch (e) {
       // Ignore error on close
     }

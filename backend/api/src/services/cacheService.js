@@ -3,24 +3,9 @@
  * Manages cache operations and MongoDB interactions
  */
 
-const fs = require("fs");
-const path = require("path");
-const logger = require("../utils/logger");
-const {
-  getCachedFlightData,
-  cacheFlightData,
-  getCachedForexData,
-  cacheForexData,
-  generateFlightCacheKey,
-  generateForexCacheKey,
-  isCacheSimilarEnough,
-} = require("../db/operations");
-const {
-  standardizeFlightFilename,
-  standardizeForexFilename,
-  writeStandardizedFile,
-  generateCacheKey,
-} = require("./fileStandardizationService");
+import { info, error as _error } from "../utils/logger";
+import { getCachedFlightData, cacheFlightData, getCachedForexData, cacheForexData } from "../db/operations";
+import { writeStandardizedFile } from "./fileStandardizationService";
 
 /**
  * Format date to YYYY-MM-DD format
@@ -87,14 +72,14 @@ async function getFlightData(params, fetchCallback) {
     );
 
     if (cachedData) {
-      logger.info(
+      info(
         `Using cached flight data for ${departure_id}-${arrival_id}`
       );
       return { data: cachedData, source: "cache" };
     }
 
     // Cache miss - fetch new data
-    logger.info(`Cache miss for flight data ${departure_id}-${arrival_id}`);
+    info(`Cache miss for flight data ${departure_id}-${arrival_id}`);
     const apiData = await fetchCallback(stdParams);
 
     // Cache the new data
@@ -126,7 +111,7 @@ async function getFlightData(params, fetchCallback) {
 
     return { data: null, source: null };
   } catch (error) {
-    logger.error(`Error in getFlightData: ${error.message}`);
+    _error(`Error in getFlightData: ${error.message}`);
     throw error;
   }
 }
@@ -147,12 +132,12 @@ async function getForexData(params, fetchCallback) {
     const cachedData = await getCachedForexData(q);
 
     if (cachedData) {
-      logger.info(`Using cached forex data for ${q}`);
+      info(`Using cached forex data for ${q}`);
       return { data: cachedData, source: "cache" };
     }
 
     // Cache miss - fetch new data
-    logger.info(`Cache miss for forex data ${q}`);
+    info(`Cache miss for forex data ${q}`);
     const apiData = await fetchCallback(stdParams);
 
     // Cache the new data
@@ -178,7 +163,7 @@ async function getForexData(params, fetchCallback) {
 
     return { data: null, source: null };
   } catch (error) {
-    logger.error(`Error in getForexData: ${error.message}`);
+    _error(`Error in getForexData: ${error.message}`);
     throw error;
   }
 }
@@ -215,7 +200,7 @@ async function hasSimilarCache(type, params) {
   return false;
 }
 
-module.exports = {
+export default {
   getFlightData,
   getForexData,
   hasSimilarCache,

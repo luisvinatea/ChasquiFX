@@ -3,14 +3,11 @@
  * Combines forex and flight data to provide destination recommendations.
  */
 
-const logger = require("../utils/logger");
-const {
-  DestinationRecommendation,
-  RecommendationsResponse,
-} = require("../models/schemas");
-const forexService = require("./forexService");
-const geoService = require("./geoService");
-const flightService = require("./flightService");
+import { warning, error, info } from "../utils/logger";
+import { DestinationRecommendation, RecommendationsResponse } from "../models/schemas";
+import { getExchangeRate, ensureFreshForexData, loadConsolidatedForexData } from "./forexService";
+import { getRoutesForAirport, getAirportCountryMap } from "./geoService";
+import { fetchMultipleFares } from "./flightService";
 
 /**
  * Calculate the trend of a currency pair over a specified number of days.
@@ -28,7 +25,7 @@ function calculateTrend(forexData, currencyPair, days = 30) {
   try {
     // Check if the currency pair exists in the data
     if (!forexData[currencyPair]) {
-      logger.warning(`Currency pair ${currencyPair} not found in forex data`);
+      warning(`Currency pair ${currencyPair} not found in forex data`);
       return 0.0;
     }
 
@@ -64,7 +61,7 @@ function calculateTrend(forexData, currencyPair, days = 30) {
     );
 
     if (yValues.some((v) => v === undefined)) {
-      logger.warning(
+      warning(
         "Neither ExchangeRate nor Close found in some data points"
       );
       return 0.0;
@@ -90,7 +87,7 @@ function calculateTrend(forexData, currencyPair, days = 30) {
     // Clamp to range [-1, 1]
     return Math.max(Math.min(normalizedSlope, 1.0), -1.0);
   } catch (e) {
-    logger.error(`Error calculating trend for ${currencyPair}: ${e.message}`);
+    error(`Error calculating trend for ${currencyPair}: ${e.message}`);
     return 0.0;
   }
 }
@@ -108,7 +105,7 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
   const inversePair = `${quoteCurrency}${baseCurrency}=X`;
 
   if (!forexData || Object.keys(forexData).length === 0) {
-    logger.warning("No forex data available");
+    warning("No forex data available");
     return [1.0, 0.0];
   }
 
@@ -141,7 +138,7 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
       }
 
       if (rate === undefined) {
-        logger.warning(`No rate column found for ${currencyPair}`);
+        warning(`No rate column found for ${currencyPair}`);
         return [1.0, 0.0];
       }
 
@@ -177,7 +174,7 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
       }
 
       if (inverseValue === undefined) {
-        logger.warning(`No rate column found for ${inversePair}`);
+        warning(`No rate column found for ${inversePair}`);
         return [1.0, 0.0];
       }
 
@@ -189,7 +186,7 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
       if (inverseFloat !== 0) {
         rateFloat = 1.0 / inverseFloat;
       } else {
-        logger.warning(`Zero exchange rate found for ${inversePair}`);
+        warning(`Zero exchange rate found for ${inversePair}`);
       }
 
       // Calculate trend of inverse pair and negate it for our pair
@@ -250,11 +247,11 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
 
       // If direct pairs not found, try the API
       if (baseUsd === null) {
-        baseUsd = forexService.getExchangeRate(baseCurrency, "USD");
+        baseUsd = getExchangeRate(baseCurrency, "USD");
       }
 
       if (usdQuote === null) {
-        usdQuote = forexService.getExchangeRate("USD", quoteCurrency);
+        usdQuote = getExchangeRate("USD", quoteCurrency);
       }
 
       if (baseUsd && usdQuote) {
@@ -263,13 +260,13 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
         return [rate, 0.0];
       }
 
-      logger.warning(
+      warning(
         `Exchange rate not found for ${baseCurrency}/${quoteCurrency}`
       );
       return [1.0, 0.0];
     }
   } catch (e) {
-    logger.error(
+    error(
       `Error getting exchange rate for ${baseCurrency}/${quoteCurrency}: ${e.message}`
     );
     return [1.0, 0.0];
@@ -294,7 +291,7 @@ async function getRecommendations(
   baseCurrency,
   options = {}
 ) {
-  logger.info(
+  info(
     `Generating recommendations for ${departureAirport} in ${baseCurrency}`
   );
 
@@ -308,10 +305,10 @@ async function getRecommendations(
   } = options;
 
   // Get available routes
-  const routes = await geoService.getRoutesForAirport(departureAirport);
+  const routes = await getRoutesForAirport(departureAirport);
 
   if (!routes || routes.length === 0) {
-    logger.warning(`No routes found for ${departureAirport}`);
+    warning(`No routes found for ${departureAirport}`);
     return new RecommendationsResponse({
       recommendations: [],
       baseCurrency,
@@ -319,20 +316,20 @@ async function getRecommendations(
   }
 
   // Get airport-country mapping
-  const airportCountryMap = await geoService.getAirportCountryMap();
+  const airportCountryMap = await getAirportCountryMap();
 
   // Ensure we have fresh forex data before generating recommendations
-  const updated = await forexService.ensureFreshForexData();
+  const updated = await ensureFreshForexData();
   if (updated) {
-    logger.info(
+    info(
       "Using freshly updated real-time forex data from Google Finance"
     );
   } else {
-    logger.warning("Using existing forex data from filesystem");
+    warning("Using existing forex data from filesystem");
   }
 
   // Get forex data (either updated or existing)
-  const forexData = forexService.loadConsolidatedForexData();
+  const forexData = loadConsolidatedForexData();
 
   const recommendations = [];
   // Limit initial processing to 100 routes for performance
@@ -399,7 +396,7 @@ async function getRecommendations(
 
       recommendations.push(recommendation);
     } catch (e) {
-      logger.error(`Error processing recommendation: ${e.message}`);
+      error(`Error processing recommendation: ${e.message}`);
       continue;
     }
   }
@@ -419,7 +416,7 @@ async function getRecommendations(
       (rec) => rec.arrivalAirport
     );
 
-    const fares = await flightService.fetchMultipleFares(
+    const fares = await fetchMultipleFares(
       departureAirport,
       arrivalAirports,
       outboundDate,
@@ -439,7 +436,7 @@ async function getRecommendations(
   });
 }
 
-module.exports = {
+export default {
   calculateTrend,
   getExchangeRateWithTrend,
   getRecommendations,

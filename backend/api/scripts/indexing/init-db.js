@@ -5,9 +5,9 @@
  */
 
 require("dotenv").config();
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const schemas = require("../../src/db/schemas");
+import { connection as _connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { ForexCache, FlightCache, ApiCallLog } from "../../src/db/schemas";
 
 // Set up logger
 const logger = {
@@ -25,13 +25,13 @@ async function createIndexes() {
     logger.info("Creating indexes...");
 
     // ForexCache indexes
-    const forexIndexes = await schemas.ForexCache.collection
+    const forexIndexes = await ForexCache.collection
       .listIndexes()
       .toArray();
     const forexIndexNames = forexIndexes.map((index) => index.name);
 
     if (!forexIndexNames.includes("cacheKey_1")) {
-      await schemas.ForexCache.collection.createIndex(
+      await ForexCache.collection.createIndex(
         { cacheKey: 1 },
         { unique: true }
       );
@@ -39,14 +39,14 @@ async function createIndexes() {
     }
 
     if (!forexIndexNames.includes("search_parameters.q_1")) {
-      await schemas.ForexCache.collection.createIndex({
+      await ForexCache.collection.createIndex({
         "searchParameters.q": 1,
       });
       logger.info("Created index on ForexCache.searchParameters.q");
     }
 
     if (!forexIndexNames.includes("expiresAt_1")) {
-      await schemas.ForexCache.collection.createIndex(
+      await ForexCache.collection.createIndex(
         { expiresAt: 1 },
         { expireAfterSeconds: 0 }
       );
@@ -54,13 +54,13 @@ async function createIndexes() {
     }
 
     // FlightCache indexes
-    const flightIndexes = await schemas.FlightCache.collection
+    const flightIndexes = await FlightCache.collection
       .listIndexes()
       .toArray();
     const flightIndexNames = flightIndexes.map((index) => index.name);
 
     if (!flightIndexNames.includes("cacheKey_1")) {
-      await schemas.FlightCache.collection.createIndex(
+      await FlightCache.collection.createIndex(
         { cacheKey: 1 },
         { unique: true }
       );
@@ -72,7 +72,7 @@ async function createIndexes() {
         "searchParameters.departure_id_1_searchParameters.arrival_id_1"
       )
     ) {
-      await schemas.FlightCache.collection.createIndex({
+      await FlightCache.collection.createIndex({
         "searchParameters.departure_id": 1,
         "searchParameters.arrival_id": 1,
       });
@@ -82,7 +82,7 @@ async function createIndexes() {
     }
 
     if (!flightIndexNames.includes("expiresAt_1")) {
-      await schemas.FlightCache.collection.createIndex(
+      await FlightCache.collection.createIndex(
         { expiresAt: 1 },
         { expireAfterSeconds: 0 }
       );
@@ -90,18 +90,18 @@ async function createIndexes() {
     }
 
     // ApiCallLog indexes
-    const apiLogIndexes = await schemas.ApiCallLog.collection
+    const apiLogIndexes = await ApiCallLog.collection
       .listIndexes()
       .toArray();
     const apiLogIndexNames = apiLogIndexes.map((index) => index.name);
 
     if (!apiLogIndexNames.includes("timestamp_1")) {
-      await schemas.ApiCallLog.collection.createIndex({ timestamp: 1 });
+      await ApiCallLog.collection.createIndex({ timestamp: 1 });
       logger.info("Created index on ApiCallLog.timestamp");
     }
 
     if (!apiLogIndexNames.includes("endpoint_1")) {
-      await schemas.ApiCallLog.collection.createIndex({ endpoint: 1 });
+      await ApiCallLog.collection.createIndex({ endpoint: 1 });
       logger.info("Created index on ApiCallLog.endpoint");
     }
 
@@ -129,7 +129,7 @@ async function initializeDatabase() {
     logger.info("Database initialization completed successfully");
 
     // Close the connection
-    await mongoose.connection.close();
+    await _connection.close();
     logger.info("Database connection closed");
   } catch (error) {
     logger.error(`Database initialization failed: ${error.message}`);

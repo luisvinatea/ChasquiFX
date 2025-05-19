@@ -4,9 +4,9 @@
  */
 
 require("dotenv").config();
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../../src/db/mongodb");
-const { Flight } = require("../../src/db/schemas");
+import { connection } from "mongoose";
+import { connectToDatabase } from "../../src/db/mongodb";
+import { Flight } from "../../src/db/schemas";
 
 async function createIndexes() {
   try {
@@ -75,7 +75,7 @@ async function createIndexes() {
     console.log("Indexes created successfully!");
 
     // Close the connection
-    await mongoose.connection.close();
+    await connection.close();
     console.log("Database connection closed");
   } catch (error) {
     console.error("Error creating indexes:", error);

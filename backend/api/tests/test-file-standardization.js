@@ -4,15 +4,7 @@
  * Run with: node test-file-standardization.js
  */
 
-const fs = require("fs").promises;
-const path = require("path");
-const {
-  extractJsonMetadata,
-  standardizeFilename,
-  standardizeFlightFilename,
-  standardizeForexFilename,
-  generateCacheKey,
-} = require("../src/services/fileStandardizationService");
+import { extractJsonMetadata, standardizeFilename, standardizeFlightFilename, standardizeForexFilename, generateCacheKey } from "../src/services/fileStandardizationService";
 
 // Mock logger to prevent console output during tests
 jest.mock("../src/utils/logger", () => ({

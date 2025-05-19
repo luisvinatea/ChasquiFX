@@ -4,13 +4,13 @@
  */
 
 require("dotenv").config();
-const fs = require("fs").promises;
-const path = require("path");
-const { mongoose, connectToDatabase } = require("../utils/mongodb-connection");
-const { Flight } = require("../../src/db/schemas");
+import { promises as fs } from "fs";
+import { resolve, join } from "path";
+import { mongoose, connectToDatabase } from "../utils/mongodb-connection";
+import { Flight } from "../../src/db/schemas";
 
 // Configuration
-const FLIGHTS_DATA_DIR = path.resolve(
+const FLIGHTS_DATA_DIR = resolve(
   __dirname,
   "../../../assets/data/flights"
 );
@@ -76,7 +76,7 @@ async function migrateToEnhancedSchema() {
         logger.info(`Processing document for ${fileName}`);
 
         // Check if file exists in the flights data directory
-        const filePath = path.join(FLIGHTS_DATA_DIR, fileName);
+        const filePath = join(FLIGHTS_DATA_DIR, fileName);
 
         let flightData;
         try {

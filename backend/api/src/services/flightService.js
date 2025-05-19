@@ -3,13 +3,13 @@
  * Handles flight fare fetching and processing using API services.
  */
 
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
-const logger = require("../utils/logger");
-const { getCachedFlightData, logApiCall } = require("../db/operations");
-const { FlightFare } = require("../models/schemas");
-require("dotenv").config({ path: path.resolve(__dirname, "../../../.env") });
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
+import { get } from "axios";
+import { warn, info, error as _error } from "../utils/logger";
+import { getCachedFlightData, logApiCall } from "../db/operations";
+import { FlightFare } from "../models/schemas";
+require("dotenv").config({ path: resolve(__dirname, "../../../.env") });
 
 // Get API keys from environment variables
 const SERPAPI_KEY = process.env.SERPAPI_API_KEY;
@@ -17,15 +17,15 @@ const SEARCHAPI_KEY = process.env.SEARCHAPI_API_KEY;
 
 // Log API key status
 if (!SERPAPI_KEY && !SEARCHAPI_KEY) {
-  logger.warn(
+  warn(
     "No API keys found in environment variables. Flight fare queries will use simulated data."
   );
 } else if (!SERPAPI_KEY) {
-  logger.info("SEARCHAPI_API_KEY loaded successfully for flight data.");
+  info("SEARCHAPI_API_KEY loaded successfully for flight data.");
 } else if (!SEARCHAPI_KEY) {
-  logger.info("SERPAPI_API_KEY loaded successfully for flight data.");
+  info("SERPAPI_API_KEY loaded successfully for flight data.");
 } else {
-  logger.info("Both API keys loaded successfully for flight data.");
+  info("Both API keys loaded successfully for flight data.");
 }
 
 /**
@@ -35,13 +35,13 @@ if (!SERPAPI_KEY && !SEARCHAPI_KEY) {
 function checkQuotaStatus() {
   try {
     // Try to read quota status from temporary file created by forex service
-    const quotaFile = path.resolve(
+    const quotaFile = resolve(
       __dirname,
       "../../../assets/data/forex/api_quota_status.json"
     );
 
-    if (fs.existsSync(quotaFile)) {
-      const quotaData = JSON.parse(fs.readFileSync(quotaFile, "utf8"));
+    if (existsSync(quotaFile)) {
+      const quotaData = JSON.parse(readFileSync(quotaFile, "utf8"));
 
       // Check if the quota exceeded status is recent (within 1 hour)
       if (quotaData.timestamp) {
@@ -59,7 +59,7 @@ function checkQuotaStatus() {
             };
           }
         } catch (e) {
-          logger.warn(`Error parsing quota timestamp: ${e.message}`);
+          warn(`Error parsing quota timestamp: ${e.message}`);
         }
       }
 
@@ -70,7 +70,7 @@ function checkQuotaStatus() {
       };
     }
   } catch (e) {
-    logger.warn(`Error checking quota status: ${e.message}`);
+    warn(`Error checking quota status: ${e.message}`);
   }
 
   return {
@@ -93,21 +93,21 @@ async function executeSearchapiRequest(baseUrl, params) {
     }
 
     // Make the request
-    const response = await axios.get(baseUrl, { params });
+    const response = await get(baseUrl, { params });
     return response.data;
   } catch (e) {
     if (
       (e.message && e.message.toLowerCase().includes("quota")) ||
       (e.message && e.message.toLowerCase().includes("limit exceeded"))
     ) {
-      logger.error(`SearchAPI quota limit exception: ${e.message}`);
+      _error(`SearchAPI quota limit exception: ${e.message}`);
       return {
         error: e.message,
         quota_exceeded: true,
         message: "API quota limit has been reached.",
       };
     } else {
-      logger.error(`SearchAPI request error: ${e.message}`);
+      _error(`SearchAPI request error: ${e.message}`);
       return { error: e.message };
     }
   }
@@ -134,7 +134,7 @@ async function fetchFlightFare(
   currency = "USD",
   userId = null
 ) {
-  logger.info(
+  info(
     `Fetching fare for ${departureAirport}-${arrivalAirport} (${outboundDate} to ${returnDate})`
   );
 
@@ -144,7 +144,7 @@ async function fetchFlightFare(
     arrivalAirport
   );
   if (cachedData) {
-    logger.info(
+    info(
       `Using cached flight data for ${departureAirport}-${arrivalAirport}`
     );
 
@@ -167,7 +167,7 @@ async function fetchFlightFare(
         carbonEmissions: cachedData.carbon_emissions,
       });
     } catch (e) {
-      logger.error(`Error parsing cached flight data: ${e.message}`);
+      _error(`Error parsing cached flight data: ${e.message}`);
     }
   }
 
@@ -178,7 +178,7 @@ async function fetchFlightFare(
   let flightData = null;
   if (SERPAPI_KEY && !quotaStatus.serpapi) {
     try {
-      logger.info("Using SerpAPI to fetch flight data");
+      info("Using SerpAPI to fetch flight data");
 
       // Build the SerpAPI request URL
       const baseUrl = "https://serpapi.com/search";
@@ -209,7 +209,7 @@ async function fetchFlightFare(
         userId,
       });
 
-      const response = await axios.get(baseUrl, { params });
+      const response = await get(baseUrl, { params });
 
       if (response.status === 200) {
         flightData = response.data;
@@ -226,7 +226,7 @@ async function fetchFlightFare(
               errorData.error.toLowerCase().includes("quota") &&
               SEARCHAPI_KEY
             ) {
-              logger.warn(
+              warn(
                 "SerpAPI quota exceeded, trying SearchAPI as fallback"
               );
               throw new Error("SerpAPI quota exceeded");
@@ -236,10 +236,10 @@ async function fetchFlightFare(
           // Continue to SearchAPI fallback
         }
 
-        logger.warn(errorMessage);
+        warn(errorMessage);
       }
     } catch (e) {
-      logger.warn(`Error with SerpAPI request: ${e.message}`);
+      warn(`Error with SerpAPI request: ${e.message}`);
       // Will continue to SearchAPI fallback if available
     }
   }
@@ -251,7 +251,7 @@ async function fetchFlightFare(
     !quotaStatus.searchapi
   ) {
     try {
-      logger.info("Using SearchAPI to fetch flight data");
+      info("Using SearchAPI to fetch flight data");
 
       // Build the SearchAPI request URL
       const baseUrl = "https://www.searchapi.io/api/v1/search";
@@ -283,11 +283,11 @@ async function fetchFlightFare(
       flightData = await executeSearchapiRequest(baseUrl, params);
 
       if (flightData.error) {
-        logger.warn(`SearchAPI request failed: ${flightData.error}`);
+        warn(`SearchAPI request failed: ${flightData.error}`);
         // Will fall back to simulated data
       }
     } catch (e) {
-      logger.error(`Error with SearchAPI request: ${e.message}`);
+      _error(`Error with SearchAPI request: ${e.message}`);
       // Will fall back to simulated data
     }
   }
@@ -314,7 +314,7 @@ async function fetchFlightFare(
         if (typeof flightInfo === "object" && flightInfo !== null) {
           priceValue = flightInfo.price || 0;
         } else {
-          logger.warn(`flightInfo is not an object: ${typeof flightInfo}`);
+          warn(`flightInfo is not an object: ${typeof flightInfo}`);
         }
 
         if (typeof priceValue === "string") {
@@ -327,7 +327,7 @@ async function fetchFlightFare(
               .trim();
             priceValue = parseFloat(priceStr);
           } catch (e) {
-            logger.warn(
+            warn(
               `Could not parse price string: ${priceValue}, using default`
             );
             priceValue = 100.0;
@@ -409,7 +409,7 @@ async function fetchFlightFare(
           }
         }
 
-        logger.info(
+        info(
           `Successfully fetched flight data: ${priceValue} ${currency}, duration: ${duration}`
         );
 
@@ -431,12 +431,12 @@ async function fetchFlightFare(
         });
       }
     } catch (e) {
-      logger.error(`Error processing flight data: ${e.message}`);
+      _error(`Error processing flight data: ${e.message}`);
     }
   }
 
   // For demo purposes or if API calls fail, generate simulated fare data
-  logger.info("Generating simulated flight fare data");
+  info("Generating simulated flight fare data");
   try {
     // Simulated fare data generation based on airport codes
     const basePrice =
@@ -489,7 +489,7 @@ async function fetchFlightFare(
       returnDate,
     });
   } catch (e) {
-    logger.error(`Error generating simulated flight fare: ${e.message}`);
+    _error(`Error generating simulated flight fare: ${e.message}`);
     return null;
   }
 }
@@ -511,7 +511,7 @@ async function fetchMultipleFares(
   returnDate,
   currency = "USD"
 ) {
-  logger.info(`Fetching fares for ${arrivalAirports.length} destinations`);
+  info(`Fetching fares for ${arrivalAirports.length} destinations`);
 
   const results = {};
 
@@ -537,7 +537,7 @@ async function fetchMultipleFares(
   return results;
 }
 
-module.exports = {
+export default {
   fetchFlightFare,
   fetchMultipleFares,
   checkQuotaStatus,

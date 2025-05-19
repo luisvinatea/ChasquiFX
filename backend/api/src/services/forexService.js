@@ -3,27 +3,23 @@
  * Manages fetching, processing, and analyzing forex data.
  */
 
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
-const logger = require("../utils/logger");
-const {
-  getCachedForexData,
-  cacheForexData,
-  logApiCall,
-} = require("../db/operations");
-require("dotenv").config({ path: path.resolve(__dirname, "../../../.env") });
+import { existsSync, readFileSync, mkdirSync, writeFileSync, statSync, readdirSync } from "fs";
+import { resolve as _resolve, dirname, join } from "path";
+import { get } from "axios";
+import { warn, info, error as _error, warning } from "../utils/logger";
+import { getCachedForexData, cacheForexData, logApiCall } from "../db/operations";
+require("dotenv").config({ path: _resolve(__dirname, "../../../.env") });
 
 // Configuration paths
-const DEFAULT_FOREX_DATA_PATH = path.resolve(
+const DEFAULT_FOREX_DATA_PATH = _resolve(
   __dirname,
   "../../../assets/data/forex/forex_data.json"
 );
-const DEFAULT_FOREX_MAPPINGS_PATH = path.resolve(
+const DEFAULT_FOREX_MAPPINGS_PATH = _resolve(
   __dirname,
   "../../../assets/data/forex/forex_mappings.json"
 );
-const DEFAULT_CURRENCY_CODES_PATH = path.resolve(
+const DEFAULT_CURRENCY_CODES_PATH = _resolve(
   __dirname,
   "../../../assets/data/forex/currency_codes.json"
 );
@@ -34,15 +30,15 @@ const SEARCHAPI_KEY = process.env.SEARCHAPI_API_KEY;
 
 // Log API key status
 if (!SERPAPI_KEY && !SEARCHAPI_KEY) {
-  logger.warn(
+  warn(
     "No API keys found in environment variables. Forex data queries will use synthetic data."
   );
 } else if (!SERPAPI_KEY) {
-  logger.info("SEARCHAPI_API_KEY loaded successfully for forex data.");
+  info("SEARCHAPI_API_KEY loaded successfully for forex data.");
 } else if (!SEARCHAPI_KEY) {
-  logger.info("SERPAPI_API_KEY loaded successfully for forex data.");
+  info("SERPAPI_API_KEY loaded successfully for forex data.");
 } else {
-  logger.info("Both API keys loaded successfully for forex data.");
+  info("Both API keys loaded successfully for forex data.");
 }
 
 /**
@@ -51,16 +47,16 @@ if (!SERPAPI_KEY && !SEARCHAPI_KEY) {
  * @returns {Object} - Forex data as an object
  */
 function loadForexData(filePath = DEFAULT_FOREX_DATA_PATH) {
-  if (!fs.existsSync(filePath)) {
-    logger.warn(`Forex data file not found: ${filePath}`);
+  if (!existsSync(filePath)) {
+    warn(`Forex data file not found: ${filePath}`);
     return {};
   }
 
   try {
-    const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const data = JSON.parse(readFileSync(filePath, "utf8"));
     return data;
   } catch (e) {
-    logger.error(`Error loading forex data: ${e.message}`);
+    _error(`Error loading forex data: ${e.message}`);
     return {};
   }
 }
@@ -70,26 +66,26 @@ function loadForexData(filePath = DEFAULT_FOREX_DATA_PATH) {
  * @returns {Object} - Consolidated forex data
  */
 function loadConsolidatedForexData() {
-  const filePath = path.resolve(
-    path.dirname(DEFAULT_FOREX_DATA_PATH),
+  const filePath = _resolve(
+    dirname(DEFAULT_FOREX_DATA_PATH),
     "consolidated_forex_data.json"
   );
 
-  if (!fs.existsSync(filePath)) {
-    logger.warn(`Consolidated forex data file not found: ${filePath}`);
+  if (!existsSync(filePath)) {
+    warn(`Consolidated forex data file not found: ${filePath}`);
     return {};
   }
 
   try {
-    const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    logger.info(
+    const data = JSON.parse(readFileSync(filePath, "utf8"));
+    info(
       `Loaded consolidated forex data with ${
         Object.keys(data).length
       } currency pairs`
     );
     return data;
   } catch (e) {
-    logger.error(`Error loading consolidated forex data: ${e.message}`);
+    _error(`Error loading consolidated forex data: ${e.message}`);
     return {};
   }
 }
@@ -100,15 +96,15 @@ function loadConsolidatedForexData() {
  * @returns {Object} - Forex mappings
  */
 function loadForexMappings(filePath = DEFAULT_FOREX_MAPPINGS_PATH) {
-  if (!fs.existsSync(filePath)) {
-    logger.warn(`Forex mappings file not found: ${filePath}`);
+  if (!existsSync(filePath)) {
+    warn(`Forex mappings file not found: ${filePath}`);
     return {};
   }
 
   try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return JSON.parse(readFileSync(filePath, "utf8"));
   } catch (e) {
-    logger.error(`Error loading forex mappings: ${e.message}`);
+    _error(`Error loading forex mappings: ${e.message}`);
     return {};
   }
 }
@@ -119,13 +115,13 @@ function loadForexMappings(filePath = DEFAULT_FOREX_MAPPINGS_PATH) {
  * @returns {Object} - Currency codes mapping
  */
 function loadCurrencyCodes(filePath = DEFAULT_CURRENCY_CODES_PATH) {
-  if (!fs.existsSync(filePath)) {
-    logger.warn(`Currency codes file not found: ${filePath}`);
+  if (!existsSync(filePath)) {
+    warn(`Currency codes file not found: ${filePath}`);
     return {};
   }
 
   try {
-    const currencyData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const currencyData = JSON.parse(readFileSync(filePath, "utf8"));
     // Convert country-to-code mapping to code-to-code mapping
     const result = {};
     Object.entries(currencyData).forEach(([country, code]) => {
@@ -133,7 +129,7 @@ function loadCurrencyCodes(filePath = DEFAULT_CURRENCY_CODES_PATH) {
     });
     return result;
   } catch (e) {
-    logger.error(`Error loading currency codes: ${e.message}`);
+    _error(`Error loading currency codes: ${e.message}`);
     return {};
   }
 }
@@ -148,7 +144,7 @@ function getExchangeRate(baseCurrency, quoteCurrency) {
   const forexData = loadForexData();
 
   if (Object.keys(forexData).length === 0) {
-    logger.warn("No forex data available");
+    warn("No forex data available");
     return null;
   }
 
@@ -159,7 +155,7 @@ function getExchangeRate(baseCurrency, quoteCurrency) {
       const value = forexData[currencyPair].Close;
       return parseFloat(value);
     } catch (e) {
-      logger.warn(`Error getting rate for ${currencyPair}: ${e.message}`);
+      warn(`Error getting rate for ${currencyPair}: ${e.message}`);
       return null;
     }
   }
@@ -174,18 +170,18 @@ function getExchangeRate(baseCurrency, quoteCurrency) {
       if (inverseRate > 0) {
         return 1.0 / inverseRate;
       } else {
-        logger.warn(`Zero or negative rate for ${inversePair}`);
+        warn(`Zero or negative rate for ${inversePair}`);
         return null;
       }
     } catch (e) {
-      logger.warn(
+      warn(
         `Error getting inverse rate for ${inversePair}: ${e.message}`
       );
       return null;
     }
   }
 
-  logger.warn(`Exchange rate not found for ${baseCurrency}/${quoteCurrency}`);
+  warn(`Exchange rate not found for ${baseCurrency}/${quoteCurrency}`);
   return null;
 }
 
@@ -207,7 +203,7 @@ async function executeSerpApiRequest(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       // Use axios to make the SerpAPI request
-      const response = await axios.get("https://serpapi.com/search", {
+      const response = await get("https://serpapi.com/search", {
         params,
       });
       const results = response.data;
@@ -222,7 +218,7 @@ async function executeSerpApiRequest(
           errorMsg.includes("limit exceeded") ||
           errorMsg.includes("credits")
         ) {
-          logger.error(`SerpAPI quota limit reached: ${results.error}`);
+          _error(`SerpAPI quota limit reached: ${results.error}`);
           quotaLimitReached = true;
           // Return error with specific flag for quota limits
           return {
@@ -243,7 +239,7 @@ async function executeSerpApiRequest(
           const retryMsg = `Rate limit exceeded. Retry ${
             attempt + 1
           }/${maxRetries} in ${delay / 1000}s`;
-          logger.warn(retryMsg);
+          warn(retryMsg);
 
           // Wait with exponential backoff before retrying
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -259,7 +255,7 @@ async function executeSerpApiRequest(
         (e.message && e.message.toLowerCase().includes("quota")) ||
         (e.message && e.message.toLowerCase().includes("limit exceeded"))
       ) {
-        logger.error(`SerpAPI quota limit exception: ${e.message}`);
+        _error(`SerpAPI quota limit exception: ${e.message}`);
         return {
           error: e.message,
           quota_exceeded: true,
@@ -270,7 +266,7 @@ async function executeSerpApiRequest(
 
       if (attempt < maxRetries - 1) {
         // Log the error and retry
-        logger.warn(
+        warn(
           `API request error: ${e.message}. Retry ${
             attempt + 1
           }/${maxRetries} in ${delay / 1000}s`
@@ -279,7 +275,7 @@ async function executeSerpApiRequest(
         delay = Math.min(delay * 2, 60000); // Cap at 60 seconds
       } else {
         // Final failure
-        logger.error(
+        _error(
           `API request failed after ${maxRetries} attempts: ${e.message}`
         );
         return { error: e.message };
@@ -320,7 +316,7 @@ async function executeSearchApiRequest(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       // Make the request
-      const response = await axios.get(baseUrl, { params });
+      const response = await get(baseUrl, { params });
       const results = response.data;
 
       // Check for API errors in the response
@@ -333,7 +329,7 @@ async function executeSearchApiRequest(
           errorMsg.includes("limit exceeded") ||
           errorMsg.includes("credits")
         ) {
-          logger.error(`SearchAPI quota limit reached: ${results.error}`);
+          _error(`SearchAPI quota limit reached: ${results.error}`);
           quotaLimitReached = true;
           return {
             error: results.error,
@@ -349,7 +345,7 @@ async function executeSearchApiRequest(
           errorMsg.includes("limit") &&
           attempt < maxRetries - 1
         ) {
-          logger.warn(
+          warn(
             `Rate limit exceeded. Retry ${attempt + 1}/${maxRetries} in ${
               delay / 1000
             }s`
@@ -367,7 +363,7 @@ async function executeSearchApiRequest(
         (e.message && e.message.toLowerCase().includes("quota")) ||
         (e.message && e.message.toLowerCase().includes("limit exceeded"))
       ) {
-        logger.error(`SearchAPI quota limit exception: ${e.message}`);
+        _error(`SearchAPI quota limit exception: ${e.message}`);
         return {
           error: e.message,
           quota_exceeded: true,
@@ -376,7 +372,7 @@ async function executeSearchApiRequest(
       }
 
       if (attempt < maxRetries - 1) {
-        logger.warn(
+        warn(
           `API request error: ${e.message}. Retry ${
             attempt + 1
           }/${maxRetries} in ${delay / 1000}s`
@@ -384,7 +380,7 @@ async function executeSearchApiRequest(
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay = Math.min(delay * 2, 60000); // Cap at 60 seconds
       } else {
-        logger.error(
+        _error(
           `API request failed after ${maxRetries} attempts: ${e.message}`
         );
         return { error: e.message };
@@ -408,7 +404,7 @@ async function updateForexData(currencies = null, days = 30) {
   try {
     // Check if any API key is available
     if (!SERPAPI_KEY && !SEARCHAPI_KEY) {
-      logger.warn("No API keys found. Cannot fetch forex data.");
+      warn("No API keys found. Cannot fetch forex data.");
       return false;
     }
 
@@ -417,7 +413,7 @@ async function updateForexData(currencies = null, days = 30) {
       currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF"];
     }
 
-    logger.info("Fetching forex data using Google Finance via APIs...");
+    info("Fetching forex data using Google Finance via APIs...");
 
     // Generate all currency pairs in Google Finance format (currency1-currency2)
     const pairs = [];
@@ -438,7 +434,7 @@ async function updateForexData(currencies = null, days = 30) {
     for (let i = 0; i < pairs.length; i += batchSize) {
       const batchPairs = pairs.slice(i, i + batchSize);
       const currentPair = batchPairs[0];
-      logger.info(
+      info(
         `Processing forex pair ${i + 1}/${pairs.length}: ${currentPair}`
       );
 
@@ -457,7 +453,7 @@ async function updateForexData(currencies = null, days = 30) {
 
           // Check if we got quota exceeded error
           if (results.error && results.quota_exceeded && SEARCHAPI_KEY) {
-            logger.warning(
+            warning(
               `SerpAPI quota exceeded for ${currentPair}, trying SearchAPI as fallback`
             );
 
@@ -470,7 +466,7 @@ async function updateForexData(currencies = null, days = 30) {
 
             results = await executeSearchApiRequest(searchParams);
             if (!results.error) {
-              logger.info(
+              info(
                 `Successfully used SearchAPI as fallback for ${currentPair}`
               );
             }
@@ -489,7 +485,7 @@ async function updateForexData(currencies = null, days = 30) {
 
         // Check if both APIs failed due to quota
         if (results.error && results.quota_exceeded) {
-          logger.error(
+          _error(
             `All API quotas exceeded for ${currentPair}: ${results.error}`
           );
           // Return the quota error so it can be handled by the caller
@@ -519,13 +515,13 @@ async function updateForexData(currencies = null, days = 30) {
             ExchangeRate: currentRate,
           };
 
-          logger.info(`Got exchange rate for ${symbol}: ${currentRate}`);
+          info(`Got exchange rate for ${symbol}: ${currentRate}`);
         }
 
         // Sleep to avoid rate limiting
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (batchErr) {
-        logger.warn(`Error processing ${currentPair}: ${batchErr.message}`);
+        warn(`Error processing ${currentPair}: ${batchErr.message}`);
         continue;
       }
     }
@@ -533,34 +529,34 @@ async function updateForexData(currencies = null, days = 30) {
     // Save the data if we have any
     if (Object.keys(processedData).length > 0) {
       // Save to JSON file
-      logger.info(`Saving forex data to ${DEFAULT_FOREX_DATA_PATH}`);
+      info(`Saving forex data to ${DEFAULT_FOREX_DATA_PATH}`);
 
       // Make sure the directory exists
-      const dir = path.dirname(DEFAULT_FOREX_DATA_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      const dir = dirname(DEFAULT_FOREX_DATA_PATH);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
       }
 
-      fs.writeFileSync(
+      writeFileSync(
         DEFAULT_FOREX_DATA_PATH,
         JSON.stringify(processedData, null, 2)
       );
 
       // Create consolidated format
-      const outputPath = path.resolve(
-        path.dirname(DEFAULT_FOREX_DATA_PATH),
+      const outputPath = _resolve(
+        dirname(DEFAULT_FOREX_DATA_PATH),
         "consolidated_forex_data.json"
       );
-      fs.writeFileSync(outputPath, JSON.stringify(processedData, null, 2));
+      writeFileSync(outputPath, JSON.stringify(processedData, null, 2));
 
-      logger.info(`Saved consolidated forex data to ${outputPath}`);
+      info(`Saved consolidated forex data to ${outputPath}`);
       return true;
     } else {
-      logger.warn("No data to save after processing");
+      warn("No data to save after processing");
       return false;
     }
   } catch (e) {
-    logger.error(`Error updating forex data: ${e.message}`);
+    _error(`Error updating forex data: ${e.message}`);
     return false;
   }
 }
@@ -575,55 +571,55 @@ async function ensureFreshForexData() {
     let needUpdate = true;
 
     // See if we have existing data and check its timestamp
-    const forexPath = path.resolve(
-      path.dirname(DEFAULT_FOREX_DATA_PATH),
+    const forexPath = _resolve(
+      dirname(DEFAULT_FOREX_DATA_PATH),
       "consolidated_forex_data.json"
     );
 
-    if (fs.existsSync(forexPath)) {
+    if (existsSync(forexPath)) {
       try {
         // Check file modification time
-        const stats = fs.statSync(forexPath);
+        const stats = statSync(forexPath);
         const modTime = stats.mtime.getTime();
         const now = Date.now();
         const hoursOld = (now - modTime) / 3600000; // Convert milliseconds to hours
 
         // If data is less than 3 hours old, we don't need to update
         if (hoursOld < 3) {
-          logger.info(
+          info(
             `Forex data is ${hoursOld.toFixed(1)} hours old, still fresh`
           );
           needUpdate = false;
         } else {
-          logger.info(
+          info(
             `Forex data is ${hoursOld.toFixed(1)} hours old, needs refresh`
           );
         }
       } catch (e) {
-        logger.warn(`Error checking forex data age: ${e.message}`);
+        warn(`Error checking forex data age: ${e.message}`);
       }
     }
 
     // Update forex data if API key is available and update is needed
     if ((SERPAPI_KEY || SEARCHAPI_KEY) && needUpdate) {
-      logger.info("Attempting to update forex data with real-time data...");
+      info("Attempting to update forex data with real-time data...");
       const success = await updateForexData();
       if (success === true) {
-        logger.info("Successfully updated forex data with real-time rates");
+        info("Successfully updated forex data with real-time rates");
         return true;
       } else {
-        logger.warn("Failed to update forex data, using existing data");
+        warn("Failed to update forex data, using existing data");
         return false;
       }
     } else if ((SERPAPI_KEY || SEARCHAPI_KEY) && !needUpdate) {
       // We have fresh data and an API key
       return true;
     } else {
-      logger.warn("No API keys available, using existing forex data");
+      warn("No API keys available, using existing forex data");
       return false;
     }
   } catch (e) {
-    logger.error(`Error ensuring fresh forex data: ${e.message}`);
+    _error(`Error ensuring fresh forex data: ${e.message}`);
     return false;
   }
 }
@@ -636,7 +632,7 @@ async function fetchQuickForexData() {
   try {
     // Check if API key is available
     if (!SERPAPI_KEY && !SEARCHAPI_KEY) {
-      logger.warn("No API keys found. Cannot fetch forex data.");
+      warn("No API keys found. Cannot fetch forex data.");
       return {};
     }
 
@@ -668,7 +664,7 @@ async function fetchQuickForexData() {
           // Use cached data
           const rate = parseFloat(cachedData.rate || 0);
           results[yahooPair] = rate;
-          logger.info(`Using cached rate for ${yahooPair}: ${rate}`);
+          info(`Using cached rate for ${yahooPair}: ${rate}`);
           continue;
         }
 
@@ -698,7 +694,7 @@ async function fetchQuickForexData() {
             searchResults.quota_exceeded &&
             SEARCHAPI_KEY
           ) {
-            logger.warn(
+            warn(
               `SerpAPI quota exceeded for ${googlePair}, trying SearchAPI`
             );
 
@@ -747,7 +743,7 @@ async function fetchQuickForexData() {
         ) {
           const rate = parseFloat(searchResults.summary.extracted_price);
           results[yahooPair] = rate;
-          logger.info(`Got rate for ${yahooPair}: ${rate}`);
+          info(`Got rate for ${yahooPair}: ${rate}`);
 
           // Cache the result
           await cacheForexData(
@@ -763,14 +759,14 @@ async function fetchQuickForexData() {
         // Sleep to avoid rate limiting
         await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (e) {
-        logger.warn(`Could not get data for ${googlePair}: ${e.message}`);
+        warn(`Could not get data for ${googlePair}: ${e.message}`);
         continue;
       }
     }
 
     return results;
   } catch (e) {
-    logger.error(`Error fetching quick forex data: ${e.message}`);
+    _error(`Error fetching quick forex data: ${e.message}`);
     return {};
   }
 }
@@ -798,7 +794,7 @@ function calculateBestExecutionPrice(tradeDirection, execPrices) {
  * @returns {Promise<Object>} - Exchange rate data
  */
 async function getExchangeRates(fromCurrency, toCurrency, apiKey = null) {
-  logger.info(`Getting exchange rates for ${fromCurrency} to ${toCurrency}`);
+  info(`Getting exchange rates for ${fromCurrency} to ${toCurrency}`);
 
   try {
     // If no API key is provided, use the environment ones
@@ -806,7 +802,7 @@ async function getExchangeRates(fromCurrency, toCurrency, apiKey = null) {
 
     // If neither API key is available, use synthetic data
     if (!serpApiKey && !SEARCHAPI_KEY) {
-      logger.warn("No API keys available, returning synthetic data");
+      warn("No API keys available, returning synthetic data");
 
       // Generate synthetic data
       return {
@@ -848,13 +844,13 @@ async function getExchangeRates(fromCurrency, toCurrency, apiKey = null) {
           String(results.error).toLowerCase().includes("quota") &&
           SEARCHAPI_KEY
         ) {
-          logger.warn("SerpAPI quota exceeded, trying SearchAPI as fallback");
+          warn("SerpAPI quota exceeded, trying SearchAPI as fallback");
           throw new Error("SerpAPI quota exceeded");
         }
       } catch (serpError) {
         // If SerpAPI failed and we have SearchAPI, try that as fallback
         if (SEARCHAPI_KEY) {
-          logger.warn(
+          warn(
             `SerpAPI failed: ${serpError.message}, trying SearchAPI`
           );
 
@@ -898,7 +894,7 @@ async function getExchangeRates(fromCurrency, toCurrency, apiKey = null) {
     }
 
     if (results && results.error) {
-      logger.error(`API error: ${results.error}`);
+      _error(`API error: ${results.error}`);
       return { error: results.error, source: apiUsed };
     }
 
@@ -927,7 +923,7 @@ async function getExchangeRates(fromCurrency, toCurrency, apiKey = null) {
       source: apiUsed,
     };
   } catch (e) {
-    logger.error(`Error getting exchange rates: ${e.message}`);
+    _error(`Error getting exchange rates: ${e.message}`);
     return {
       error: e.message,
       type: e.constructor.name,
@@ -946,11 +942,11 @@ function getServiceStatus() {
     const searchapiStatus = SEARCHAPI_KEY ? "available" : "missing";
 
     // Get cache stats
-    const cacheDir = path.dirname(DEFAULT_FOREX_DATA_PATH);
+    const cacheDir = dirname(DEFAULT_FOREX_DATA_PATH);
 
     let cacheFiles = [];
-    if (fs.existsSync(cacheDir)) {
-      cacheFiles = fs.readdirSync(cacheDir).filter((f) => f.endsWith(".json"));
+    if (existsSync(cacheDir)) {
+      cacheFiles = readdirSync(cacheDir).filter((f) => f.endsWith(".json"));
     }
 
     // Get the most recent file modification time
@@ -958,7 +954,7 @@ function getServiceStatus() {
     if (cacheFiles.length > 0) {
       const mostRecent = Math.max(
         ...cacheFiles.map((f) =>
-          fs.statSync(path.join(cacheDir, f)).mtime.getTime()
+          statSync(join(cacheDir, f)).mtime.getTime()
         )
       );
       cacheFreshness = new Date(mostRecent).toISOString();
@@ -973,7 +969,7 @@ function getServiceStatus() {
       timestamp: new Date().toISOString(),
     };
   } catch (e) {
-    logger.error(`Error getting service status: ${e.message}`);
+    _error(`Error getting service status: ${e.message}`);
     return {
       error: e.message,
       type: e.constructor.name,
@@ -981,7 +977,7 @@ function getServiceStatus() {
   }
 }
 
-module.exports = {
+export default {
   getExchangeRate,
   updateForexData,
   ensureFreshForexData,

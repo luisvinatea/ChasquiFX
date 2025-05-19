@@ -29,7 +29,7 @@ async function connectToDatabase() {
 }
 
 // Export the wrapper functions for CommonJS usage
-module.exports = {
+export default {
   connectToDatabase,
   importMongodbModule,
 };
