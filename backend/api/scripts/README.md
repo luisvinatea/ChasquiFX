@@ -4,6 +4,11 @@ This directory contains utility scripts for managing the MongoDB cache implement
 
 ## Available Scripts
 
+### Primary Scripts
+
+- **final-mongodb-import.js** - Main script for importing all data into MongoDB collections
+- **verify-mongodb-data.js** - Verifies imported data in collections with sample document output
+
 ### Migration Scripts
 
 - **migrate-data.js** - Migrates existing JSON files to MongoDB
@@ -45,3 +50,12 @@ For shell scripts:
 ## Documentation
 
 For more comprehensive documentation, see `/docs/mongodb-migration.md`.
+
+## Maintenance
+
+- **cleanup-scripts.sh** - Script to clean up problematic MongoDB scripts and back them up
+- **MONGODB_SCRIPTS_SUMMARY.md** - Provides a summary of the current MongoDB scripts and import status
+
+Previous script versions with issues have been moved to backup directories:
+
+- `mongodb_scripts_backup_*` - Contains backup of problematic scripts that were replaced by more robust solutions

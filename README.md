@@ -10,6 +10,7 @@ ChasquiFX uses a hybrid architecture with clear separation of concerns:
 
 - **Node.js Backend**: Handles all API endpoints, authentication, and user-facing operations
 - **Python Backend**: Specialized data processing engine that works through Node.js integration
+- **MongoDB**: Provides robust caching for forex, flights, and geo data
 
 This architecture represents a complete migration from the original Python API implementation to Node.js, with Python now serving as a specialized processing component rather than an API layer.
 
@@ -29,6 +30,7 @@ This architecture represents a complete migration from the original Python API i
 - Modern React frontend for improved reliability and user experience
 - Robust API error handling with retry mechanisms
 - Standardized data file naming and organization
+- MongoDB-based caching for improved performance and reliability
 - Automated JSON to Parquet format conversion
 
 ## User Interface
