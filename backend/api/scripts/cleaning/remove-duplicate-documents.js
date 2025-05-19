@@ -104,15 +104,26 @@ const client = new MongoClient(uri, {
 
 // Define unique fields for each collection
 const COLLECTION_UNIQUE_FIELDS = {
+  // Original cache collections
   ForexCache: "cacheKey",
   FlightCache: "cacheKey",
   ApiCallLog: "fingerprint", // Use fingerprint field if available
+  
+  // Actual collections from MongoDB Atlas connection test
+  forex: "_source",  // Using the source filename as unique identifier
+  flights: "_source", // Using the source filename as unique identifier
+  geo: "_id", // Using the MongoDB _id field
 };
 
 // For collections without a natural unique field, define composite keys
 const COLLECTION_COMPOSITE_KEYS = {
   // Fallback for older logs without fingerprint field
   ApiCallLog: ["endpoint", "timestamp", "userId"],
+  
+  // Alternative composite keys for imported data
+  forex: ["currency_pair", "date_imported"],
+  flights: ["route", "date_imported"],
+  geo: ["name", "country", "iata_code"], // For airports with multiple identifiers
 };
 
 // Parse command line arguments
