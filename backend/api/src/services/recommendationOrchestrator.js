@@ -23,9 +23,9 @@ import {
   getAirportCountryMap,
 } from "../services/geoService.js";
 import {
-  fetchMultipleFares,
-  estimateFlightFare,
-} from "../services/flightService.js";
+  getMultipleFares,
+  estimateFlightPrice,
+} from "../services/flightService-v2.js";
 
 // Initialize logger
 const logger = getLogger("recommendation-orchestrator");
@@ -105,12 +105,14 @@ export async function generateRecommendations(params) {
         // Get or estimate flight fare
         let flightFare;
         if (outboundDate && returnDate) {
-          flightFare = await estimateFlightFare(
+          flightFare = await estimateFlightPrice(
             departureAirport,
             destinationAirport,
-            outboundDate,
-            returnDate,
-            apiKey
+            {
+              outboundDate,
+              returnDate,
+              apiKey
+            }
           );
         } else {
           // Use average fare if dates not provided
