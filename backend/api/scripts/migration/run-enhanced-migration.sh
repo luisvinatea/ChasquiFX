@@ -28,7 +28,9 @@ fi
 
 # Pass any arguments (like --dry-run) to the migration script
 echo "Starting migration to enhanced schema..."
-NODE_DEBUG=module node scripts/migration/migrate-to-enhanced-schema.js "$@"
+
+# Run the script with Node.js
+node scripts/migration/migrate-to-enhanced-schema.js "$@"
 
 # Check the exit status
 if [ $? -eq 0 ]; then
