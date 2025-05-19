@@ -63,6 +63,164 @@ const flightCacheSchema = new mongoose.Schema({
   },
 });
 
+// Enhanced schema for flight data with detailed structure
+const flightSchema = new mongoose.Schema({
+  // Source file information
+  _source: {
+    type: String,
+    required: true,
+  },
+  route: {
+    type: String,
+    required: true,
+    index: true,
+  },
+  date_imported: {
+    type: Date,
+    default: Date.now,
+  },
+  raw_data_available: {
+    type: Boolean,
+    default: true,
+  },
+
+  // Search metadata
+  search_metadata: {
+    id: String,
+    status: String,
+    json_endpoint: String,
+    created_at: String,
+    processed_at: String,
+    google_flights_url: String,
+    raw_html_file: String,
+    prettify_html_file: String,
+    total_time_taken: Number,
+  },
+
+  // Search parameters
+  search_parameters: {
+    engine: String,
+    hl: String,
+    gl: String,
+    departure_id: String,
+    arrival_id: String,
+    outbound_date: String,
+    return_date: String,
+    currency: String,
+  },
+
+  // Route details
+  route_info: {
+    departure_airport: {
+      type: String,
+      index: true,
+    },
+    arrival_airport: {
+      type: String,
+      index: true,
+    },
+    outbound_date: {
+      type: String,
+      index: true,
+    },
+    return_date: {
+      type: String,
+      index: true,
+    },
+  },
+
+  // Best flights summary (for quick access to most important data)
+  best_flights_summary: [
+    {
+      price: Number,
+      type: String,
+      total_duration: Number,
+      airline: String,
+      carbon_emissions: {
+        amount: Number,
+        compared_to_typical: Number,
+      },
+      layover_count: Number,
+      departure_time: String,
+      arrival_time: String,
+    },
+  ],
+
+  // Complete best flights data
+  best_flights: [
+    {
+      flights: [
+        {
+          departure_airport: {
+            name: String,
+            id: String,
+            time: String,
+          },
+          arrival_airport: {
+            name: String,
+            id: String,
+            time: String,
+          },
+          duration: Number,
+          airplane: String,
+          airline: String,
+          airline_logo: String,
+          travel_class: String,
+          flight_number: String,
+          legroom: String,
+          extensions: [String],
+          overnight: Boolean,
+          often_delayed_by_over_30_min: Boolean,
+        },
+      ],
+      layovers: [
+        {
+          duration: Number,
+          name: String,
+          id: String,
+        },
+      ],
+      total_duration: Number,
+      carbon_emissions: {
+        this_flight: Number,
+        typical_for_this_route: Number,
+        difference_percent: Number,
+      },
+      price: {
+        type: Number,
+        index: true,
+      },
+      type: String,
+      airline_logo: String,
+      departure_token: String,
+    },
+  ],
+
+  // Other flights count
+  other_flights_count: Number,
+
+  // Price range
+  price_range: {
+    min: {
+      type: Number,
+      index: true,
+    },
+    max: {
+      type: Number,
+      index: true,
+    },
+  },
+});
+
+// Add indexes for common query patterns
+flightSchema.index({
+  "route_info.departure_airport": 1,
+  "route_info.arrival_airport": 1,
+});
+flightSchema.index({ "price_range.min": 1 });
+flightSchema.index({ "best_flights_summary.total_duration": 1 });
+flightSchema.index({ "best_flights_summary.carbon_emissions.amount": 1 });
+
 // Schema for API call logs
 const apiCallLogSchema = new mongoose.Schema({
   endpoint: {
@@ -94,9 +252,11 @@ const apiCallLogSchema = new mongoose.Schema({
 const ForexCache = mongoose.model("ForexCache", forexCacheSchema);
 const FlightCache = mongoose.model("FlightCache", flightCacheSchema);
 const ApiCallLog = mongoose.model("ApiCallLog", apiCallLogSchema);
+const Flight = mongoose.model("Flight", flightSchema);
 
 module.exports = {
   ForexCache,
   FlightCache,
   ApiCallLog,
+  Flight,
 };

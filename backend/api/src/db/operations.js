@@ -375,6 +375,133 @@ async function logApiCall({
   }
 }
 
+/**
+ * Get flight data with the enhanced schema
+ * @param {Object} params - Flight search parameters
+ * @returns {Promise<Object>} - Flight data
+ */
+async function getEnhancedFlightData(params) {
+  await ensureDbConnection();
+  const { Flight } = require("./schemas");
+
+  const { departure_id, arrival_id, outbound_date, return_date } = params;
+
+  // Build query
+  const query = {
+    "route_info.departure_airport": departure_id,
+    "route_info.arrival_airport": arrival_id,
+  };
+
+  // Add dates if provided
+  if (outbound_date) {
+    query["route_info.outbound_date"] = outbound_date;
+  }
+
+  if (return_date) {
+    query["route_info.return_date"] = return_date;
+  }
+
+  const flightData = await Flight.findOne(query);
+  return flightData;
+}
+
+/**
+ * Find flights by price range
+ * @param {Object} params - Search parameters
+ * @param {number} params.minPrice - Minimum price
+ * @param {number} params.maxPrice - Maximum price
+ * @returns {Promise<Array>} - Flight data matching the price range
+ */
+async function findFlightsByPriceRange({ minPrice, maxPrice }) {
+  await ensureDbConnection();
+  const { Flight } = require("./schemas");
+
+  const query = {};
+
+  if (minPrice !== undefined) {
+    query["price_range.min"] = { $gte: minPrice };
+  }
+
+  if (maxPrice !== undefined) {
+    query["price_range.max"] = { $lte: maxPrice };
+  }
+
+  return Flight.find(query).select(
+    "route route_info price_range best_flights_summary"
+  );
+}
+
+/**
+ * Find flights by route and filter for best carbon emissions
+ * @param {Object} params - Search parameters
+ * @param {string} params.departure_id - Departure airport IATA code
+ * @param {string} params.arrival_id - Arrival airport IATA code
+ * @param {boolean} [params.lowCarbon=true] - If true, sort by lowest carbon emissions
+ * @returns {Promise<Array>} - Flight data matching the criteria
+ */
+async function findEcoFriendlyFlights({
+  departure_id,
+  arrival_id,
+  lowCarbon = true,
+}) {
+  await ensureDbConnection();
+  const { Flight } = require("./schemas");
+
+  const query = {
+    "route_info.departure_airport": departure_id,
+    "route_info.arrival_airport": arrival_id,
+  };
+
+  // Find flights and sort by carbon emissions
+  const sortDirection = lowCarbon ? 1 : -1; // 1 for ascending (low carbon), -1 for descending
+
+  return Flight.find(query)
+    .sort({ "best_flights_summary.carbon_emissions.amount": sortDirection })
+    .select("route route_info best_flights_summary");
+}
+
+/**
+ * Get flight stats for analytics
+ * @returns {Promise<Object>} - Stats about flights in the database
+ */
+async function getFlightStats() {
+  await ensureDbConnection();
+  const { Flight } = require("./schemas");
+
+  // Get total count
+  const totalFlights = await Flight.countDocuments();
+
+  // Get average price
+  const priceAggregation = await Flight.aggregate([
+    {
+      $group: {
+        _id: null,
+        avgMinPrice: { $avg: "$price_range.min" },
+        avgMaxPrice: { $avg: "$price_range.max" },
+        lowestPrice: { $min: "$price_range.min" },
+        highestPrice: { $max: "$price_range.max" },
+      },
+    },
+  ]);
+
+  // Get top airlines
+  const airlinesAggregation = await Flight.aggregate([
+    { $unwind: "$best_flights_summary" },
+    { $group: { _id: "$best_flights_summary.airline", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 5 },
+  ]);
+
+  return {
+    totalFlights,
+    priceStats: priceAggregation[0] || {},
+    topAirlines: airlinesAggregation.map((item) => ({
+      airline: item._id,
+      count: item.count,
+    })),
+  };
+}
+
 module.exports = {
   getCachedFlightData,
   cacheFlightData,
@@ -384,4 +511,8 @@ module.exports = {
   generateFlightCacheKey,
   generateForexCacheKey,
   isCacheSimilarEnough,
+  getEnhancedFlightData,
+  findFlightsByPriceRange,
+  findEcoFriendlyFlights,
+  getFlightStats,
 };
