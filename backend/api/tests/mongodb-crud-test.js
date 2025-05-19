@@ -92,10 +92,14 @@ async function testDirectClientOperations() {
     const deleteResult = await collection.deleteOne({ _id: testId });
     console.log(`Deleted ${deleteResult.deletedCount} document(s)`);
 
-    console.log("✅ Direct client CRUD operations test completed successfully");
+    console.log(
+      "✅ Direct client CRUD operations test completed successfully"
+    );
     return true;
   } catch (error) {
-    console.error(`❌ Error during direct client operations: ${error.message}`);
+    console.error(
+      `❌ Error during direct client operations: ${error.message}`
+    );
     console.error(error);
     return false;
   } finally {

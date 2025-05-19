@@ -87,7 +87,9 @@ async function getFlightData(params, fetchCallback) {
     );
 
     if (cachedData) {
-      logger.info(`Using cached flight data for ${departure_id}-${arrival_id}`);
+      logger.info(
+        `Using cached flight data for ${departure_id}-${arrival_id}`
+      );
       return { data: cachedData, source: "cache" };
     }
 

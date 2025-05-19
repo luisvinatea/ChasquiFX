@@ -196,7 +196,11 @@ function getExchangeRate(baseCurrency, quoteCurrency) {
  * @param {number} initialDelay - Initial delay in seconds between retries
  * @returns {Promise<Object>} - API results or error information
  */
-async function executeSerpApiRequest(params, maxRetries = 3, initialDelay = 2) {
+async function executeSerpApiRequest(
+  params,
+  maxRetries = 3,
+  initialDelay = 2
+) {
   let delay = initialDelay * 1000; // Convert to milliseconds
   let quotaLimitReached = false;
 
@@ -850,7 +854,9 @@ async function getExchangeRates(fromCurrency, toCurrency, apiKey = null) {
       } catch (serpError) {
         // If SerpAPI failed and we have SearchAPI, try that as fallback
         if (SEARCHAPI_KEY) {
-          logger.warn(`SerpAPI failed: ${serpError.message}, trying SearchAPI`);
+          logger.warn(
+            `SerpAPI failed: ${serpError.message}, trying SearchAPI`
+          );
 
           // Prepare SearchAPI request
           const searchParams = {

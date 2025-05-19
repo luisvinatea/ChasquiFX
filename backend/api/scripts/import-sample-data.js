@@ -82,7 +82,9 @@ function identifyDataType(filePath, data) {
     return "forex";
   }
 
-  if (fileName.match(/[A-Z]{3}_[A-Z]{3}_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}/)) {
+  if (
+    fileName.match(/[A-Z]{3}_[A-Z]{3}_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}/)
+  ) {
     return "flight";
   }
 
@@ -219,7 +221,9 @@ async function importFile(filePath) {
         // Check if the document already exists
         const existing = await ForexCache.findOne({ cacheKey });
         if (existing) {
-          logger.warn(`Document with key ${cacheKey} already exists, skipping`);
+          logger.warn(
+            `Document with key ${cacheKey} already exists, skipping`
+          );
           return true;
         }
 
@@ -234,7 +238,9 @@ async function importFile(filePath) {
         // Check if the document already exists
         const existing = await FlightCache.findOne({ cacheKey });
         if (existing) {
-          logger.warn(`Document with key ${cacheKey} already exists, skipping`);
+          logger.warn(
+            `Document with key ${cacheKey} already exists, skipping`
+          );
           return true;
         }
 

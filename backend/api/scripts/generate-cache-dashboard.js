@@ -1,36 +1,36 @@
 /**
  * Cache Dashboard Generator
- * 
+ *
  * Generates a dashboard for monitoring cache usage
  * Run with: node generate-cache-dashboard.js [--html] [--output path/to/output]
  */
 
-require('dotenv').config();
-const fs = require('fs').promises;
-const path = require('path');
-const mongoose = require('mongoose');
-const { connectToDatabase } = require('../src/db/mongodb');
-const { ForexCache, FlightCache, ApiCallLog } = require('../src/db/schemas');
+require("dotenv").config();
+const fs = require("fs").promises;
+const path = require("path");
+const mongoose = require("mongoose");
+const { connectToDatabase } = require("../src/db/mongodb");
+const { ForexCache, FlightCache, ApiCallLog } = require("../src/db/schemas");
 
 // Parse command line arguments
 const args = process.argv.slice(2);
 let outputHtml = false;
-let outputPath = 'cache-dashboard.json';
+let outputPath = "cache-dashboard.json";
 
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--html') {
+  if (args[i] === "--html") {
     outputHtml = true;
-    outputPath = 'cache-dashboard.html';
-  } else if (args[i] === '--output' && i + 1 < args.length) {
+    outputPath = "cache-dashboard.html";
+  } else if (args[i] === "--output" && i + 1 < args.length) {
     outputPath = args[i + 1];
     i++;
-  } else if (args[i] === '--help') {
-    console.log('Cache Dashboard Generator');
-    console.log('Usage: node generate-cache-dashboard.js [options]');
-    console.log('Options:');
-    console.log('  --html            Generate HTML output instead of JSON');
-    console.log('  --output PATH     Specify output file path');
-    console.log('  --help            Show this help message');
+  } else if (args[i] === "--help") {
+    console.log("Cache Dashboard Generator");
+    console.log("Usage: node generate-cache-dashboard.js [options]");
+    console.log("Options:");
+    console.log("  --html            Generate HTML output instead of JSON");
+    console.log("  --output PATH     Specify output file path");
+    console.log("  --help            Show this help message");
     process.exit(0);
   }
 }
@@ -42,52 +42,60 @@ for (let i = 0; i < args.length; i++) {
  */
 async function getCollectionStats(collection) {
   const total = await collection.countDocuments();
-  
+
   // Group by expiration status
   const now = new Date();
   const active = await collection.countDocuments({ expiresAt: { $gt: now } });
-  const expired = await collection.countDocuments({ expiresAt: { $lte: now } });
-  
+  const expired = await collection.countDocuments({
+    expiresAt: { $lte: now },
+  });
+
   // Get the oldest and newest documents
   const oldest = await collection.findOne().sort({ importedAt: 1 }).limit(1);
   const newest = await collection.findOne().sort({ importedAt: -1 }).limit(1);
-  
+
   // Calculate average document size
-  const avgSize = await collection.aggregate([
-    {
-      $sample: { size: Math.min(total, 100) } // Sample up to 100 documents
-    },
-    {
-      $project: {
-        size: { $bsonSize: "$$ROOT" }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        avgSize: { $avg: "$size" }
-      }
-    }
-  ]).exec();
-  
+  const avgSize = await collection
+    .aggregate([
+      {
+        $sample: { size: Math.min(total, 100) }, // Sample up to 100 documents
+      },
+      {
+        $project: {
+          size: { $bsonSize: "$$ROOT" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          avgSize: { $avg: "$size" },
+        },
+      },
+    ])
+    .exec();
+
   const averageSize = avgSize.length > 0 ? avgSize[0].avgSize : 0;
-  
+
   return {
     total,
     active,
     expired,
-    oldestDocument: oldest ? {
-      cacheKey: oldest.cacheKey,
-      importedAt: oldest.importedAt,
-      expiresAt: oldest.expiresAt
-    } : null,
-    newestDocument: newest ? {
-      cacheKey: newest.cacheKey,
-      importedAt: newest.importedAt,
-      expiresAt: newest.expiresAt
-    } : null,
+    oldestDocument: oldest
+      ? {
+          cacheKey: oldest.cacheKey,
+          importedAt: oldest.importedAt,
+          expiresAt: oldest.expiresAt,
+        }
+      : null,
+    newestDocument: newest
+      ? {
+          cacheKey: newest.cacheKey,
+          importedAt: newest.importedAt,
+          expiresAt: newest.expiresAt,
+        }
+      : null,
     averageDocumentSize: averageSize,
-    totalSizeEstimate: averageSize * total
+    totalSizeEstimate: averageSize * total,
   };
 }
 
@@ -97,21 +105,21 @@ async function getCollectionStats(collection) {
  */
 async function getApiCallStats() {
   const total = await ApiCallLog.countDocuments();
-  
+
   // Get API calls by endpoint
   const endpointStats = await ApiCallLog.aggregate([
     {
       $group: {
         _id: "$endpoint",
         count: { $sum: 1 },
-        averageStatus: { $avg: "$responseStatus" }
-      }
+        averageStatus: { $avg: "$responseStatus" },
+      },
     },
     {
-      $sort: { count: -1 }
-    }
+      $sort: { count: -1 },
+    },
   ]).exec();
-  
+
   // Get API calls by day
   const dayStats = await ApiCallLog.aggregate([
     {
@@ -119,13 +127,13 @@ async function getApiCallStats() {
         _id: {
           year: { $year: "$timestamp" },
           month: { $month: "$timestamp" },
-          day: { $dayOfMonth: "$timestamp" }
+          day: { $dayOfMonth: "$timestamp" },
         },
-        count: { $sum: 1 }
-      }
+        count: { $sum: 1 },
+      },
     },
     {
-      $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 }
+      $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 },
     },
     {
       $project: {
@@ -136,21 +144,21 @@ async function getApiCallStats() {
               $dateFromParts: {
                 year: "$_id.year",
                 month: "$_id.month",
-                day: "$_id.day"
-              }
-            }
-          }
+                day: "$_id.day",
+              },
+            },
+          },
         },
         count: 1,
-        _id: 0
-      }
-    }
+        _id: 0,
+      },
+    },
   ]).exec();
-  
+
   return {
     total,
     byEndpoint: endpointStats,
-    byDay: dayStats
+    byDay: dayStats,
   };
 }
 
@@ -160,24 +168,26 @@ async function getApiCallStats() {
  */
 async function generateDashboardData() {
   try {
-    console.log('Generating cache dashboard data...');
-    
+    console.log("Generating cache dashboard data...");
+
     // Connect to MongoDB
     await connectToDatabase();
-    console.log('Connected to MongoDB');
-    
+    console.log("Connected to MongoDB");
+
     // Get collection statistics
     const forexStats = await getCollectionStats(ForexCache);
     const flightStats = await getCollectionStats(FlightCache);
     const apiCallStats = await getApiCallStats();
-    
+
     // Get overall database statistics
     const dbStats = await mongoose.connection.db.stats();
-    
+
     // Calculate cache hit rates (this is an estimate based on active vs expired ratio)
-    const forexHitRate = forexStats.active / (forexStats.active + forexStats.expired) || 0;
-    const flightHitRate = flightStats.active / (flightStats.active + flightStats.expired) || 0;
-    
+    const forexHitRate =
+      forexStats.active / (forexStats.active + forexStats.expired) || 0;
+    const flightHitRate =
+      flightStats.active / (flightStats.active + flightStats.expired) || 0;
+
     // Compile dashboard data
     const dashboardData = {
       generatedAt: new Date().toISOString(),
@@ -185,28 +195,28 @@ async function generateDashboardData() {
         dataSize: dbStats.dataSize,
         storageSize: dbStats.storageSize,
         totalCollections: dbStats.collections,
-        totalDocuments: dbStats.objects
+        totalDocuments: dbStats.objects,
       },
       cacheStats: {
         forex: {
           ...forexStats,
-          hitRate: forexHitRate
+          hitRate: forexHitRate,
         },
         flights: {
           ...flightStats,
-          hitRate: flightHitRate
-        }
+          hitRate: flightHitRate,
+        },
       },
-      apiCalls: apiCallStats
+      apiCalls: apiCallStats,
     };
-    
+
     // Close MongoDB connection
     await mongoose.connection.close();
-    console.log('MongoDB connection closed');
-    
+    console.log("MongoDB connection closed");
+
     return dashboardData;
   } catch (error) {
-    console.error('Failed to generate dashboard:', error.message);
+    console.error("Failed to generate dashboard:", error.message);
     try {
       await mongoose.connection.close();
     } catch (e) {
@@ -223,22 +233,22 @@ async function generateDashboardData() {
  */
 function generateHtmlDashboard(data) {
   const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
-  
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString();
   };
-  
+
   const formatPercentage = (value) => {
-    return (value * 100).toFixed(2) + '%';
+    return (value * 100).toFixed(2) + "%";
   };
-  
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -381,7 +391,9 @@ function generateHtmlDashboard(data) {
     
     <h3>Cache Hit Rate</h3>
     <div class="progress-bar">
-      <div class="progress-bar-fill" style="width: ${formatPercentage(data.cacheStats.forex.hitRate)}">
+      <div class="progress-bar-fill" style="width: ${formatPercentage(
+        data.cacheStats.forex.hitRate
+      )}">
         ${formatPercentage(data.cacheStats.forex.hitRate)}
       </div>
     </div>
@@ -396,14 +408,18 @@ function generateHtmlDashboard(data) {
       </tr>
       <tr>
         <td>Oldest Document</td>
-        <td>${data.cacheStats.forex.oldestDocument?.cacheKey || 'N/A'}</td>
-        <td>${formatDate(data.cacheStats.forex.oldestDocument?.importedAt)}</td>
+        <td>${data.cacheStats.forex.oldestDocument?.cacheKey || "N/A"}</td>
+        <td>${formatDate(
+          data.cacheStats.forex.oldestDocument?.importedAt
+        )}</td>
         <td>${formatDate(data.cacheStats.forex.oldestDocument?.expiresAt)}</td>
       </tr>
       <tr>
         <td>Newest Document</td>
-        <td>${data.cacheStats.forex.newestDocument?.cacheKey || 'N/A'}</td>
-        <td>${formatDate(data.cacheStats.forex.newestDocument?.importedAt)}</td>
+        <td>${data.cacheStats.forex.newestDocument?.cacheKey || "N/A"}</td>
+        <td>${formatDate(
+          data.cacheStats.forex.newestDocument?.importedAt
+        )}</td>
         <td>${formatDate(data.cacheStats.forex.newestDocument?.expiresAt)}</td>
       </tr>
     </table>
@@ -432,7 +448,9 @@ function generateHtmlDashboard(data) {
     
     <h3>Cache Hit Rate</h3>
     <div class="progress-bar">
-      <div class="progress-bar-fill" style="width: ${formatPercentage(data.cacheStats.flights.hitRate)}">
+      <div class="progress-bar-fill" style="width: ${formatPercentage(
+        data.cacheStats.flights.hitRate
+      )}">
         ${formatPercentage(data.cacheStats.flights.hitRate)}
       </div>
     </div>
@@ -447,15 +465,23 @@ function generateHtmlDashboard(data) {
       </tr>
       <tr>
         <td>Oldest Document</td>
-        <td>${data.cacheStats.flights.oldestDocument?.cacheKey || 'N/A'}</td>
-        <td>${formatDate(data.cacheStats.flights.oldestDocument?.importedAt)}</td>
-        <td>${formatDate(data.cacheStats.flights.oldestDocument?.expiresAt)}</td>
+        <td>${data.cacheStats.flights.oldestDocument?.cacheKey || "N/A"}</td>
+        <td>${formatDate(
+          data.cacheStats.flights.oldestDocument?.importedAt
+        )}</td>
+        <td>${formatDate(
+          data.cacheStats.flights.oldestDocument?.expiresAt
+        )}</td>
       </tr>
       <tr>
         <td>Newest Document</td>
-        <td>${data.cacheStats.flights.newestDocument?.cacheKey || 'N/A'}</td>
-        <td>${formatDate(data.cacheStats.flights.newestDocument?.importedAt)}</td>
-        <td>${formatDate(data.cacheStats.flights.newestDocument?.expiresAt)}</td>
+        <td>${data.cacheStats.flights.newestDocument?.cacheKey || "N/A"}</td>
+        <td>${formatDate(
+          data.cacheStats.flights.newestDocument?.importedAt
+        )}</td>
+        <td>${formatDate(
+          data.cacheStats.flights.newestDocument?.expiresAt
+        )}</td>
       </tr>
     </table>
   </div>
@@ -476,13 +502,17 @@ function generateHtmlDashboard(data) {
         <th>Count</th>
         <th>Average Status</th>
       </tr>
-      ${data.apiCalls.byEndpoint.map(endpoint => `
+      ${data.apiCalls.byEndpoint
+        .map(
+          (endpoint) => `
       <tr>
         <td>${endpoint._id}</td>
         <td>${endpoint.count.toLocaleString()}</td>
         <td>${endpoint.averageStatus.toFixed(2)}</td>
       </tr>
-      `).join('')}
+      `
+        )
+        .join("")}
     </table>
     
     <h3>API Calls by Day</h3>
@@ -501,10 +531,10 @@ function generateHtmlDashboard(data) {
     new Chart(apiCallCtx, {
       type: 'line',
       data: {
-        labels: ${JSON.stringify(data.apiCalls.byDay.map(day => day.date))},
+        labels: ${JSON.stringify(data.apiCalls.byDay.map((day) => day.date))},
         datasets: [{
           label: 'API Calls',
-          data: ${JSON.stringify(data.apiCalls.byDay.map(day => day.count))},
+          data: ${JSON.stringify(data.apiCalls.byDay.map((day) => day.count))},
           borderColor: '#007bff',
           backgroundColor: 'rgba(0, 123, 255, 0.1)',
           tension: 0.4,
@@ -540,21 +570,25 @@ function generateHtmlDashboard(data) {
  */
 async function main() {
   try {
-    console.log('Generating cache dashboard...');
-    
+    console.log("Generating cache dashboard...");
+
     // Generate dashboard data
     const dashboardData = await generateDashboardData();
-    
+
     // Output format
     if (outputHtml) {
       const htmlContent = generateHtmlDashboard(dashboardData);
-      await fs.writeFile(outputPath, htmlContent, 'utf8');
+      await fs.writeFile(outputPath, htmlContent, "utf8");
       console.log(`HTML dashboard written to ${outputPath}`);
     } else {
-      await fs.writeFile(outputPath, JSON.stringify(dashboardData, null, 2), 'utf8');
+      await fs.writeFile(
+        outputPath,
+        JSON.stringify(dashboardData, null, 2),
+        "utf8"
+      );
       console.log(`JSON dashboard written to ${outputPath}`);
     }
-    
+
     process.exit(0);
   } catch (error) {
     console.error(`Dashboard generation failed: ${error.message}`);

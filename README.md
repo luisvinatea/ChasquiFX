@@ -9,19 +9,15 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 ChasquiFX uses a hybrid architecture with clear separation of concerns:
 
 - **Node.js Backend**: Handles all API endpoints, authentication, and user-facing operations
-- **Python Backend**: Specialized data processing engine that works through Node.js integration
-- **MongoDB**: Provides robust caching for forex, flights, and geo data
+- **MongoDB**: Provides caching for forex, flights, and geo data
 
 This architecture represents a complete migration from the original Python API implementation to Node.js, with Python now serving as a specialized processing component rather than an API layer.
-
-> **Note:** See [Migration Notes](backend/MIGRATION_NOTES.md) for details on the completed Python to Node.js migration.
 
 ## Features
 
 - Find destinations with favorable exchange rates
-- View flight routes and fare information (via SerpAPI integration)
+- View flight routes and fare information (via SerpAPI or SearchAPI integration)
 - Compare destinations with interactive visualizations
-- User authentication with Supabase
 - Secure storage of API keys in user accounts
 - Database logging of recommendations and API usage
 - Cached forex and flight data to reduce API calls
@@ -31,7 +27,6 @@ This architecture represents a complete migration from the original Python API i
 - Robust API error handling with retry mechanisms
 - Standardized data file naming and organization
 - MongoDB-based caching for improved performance and reliability
-- Automated JSON to Parquet format conversion
 
 ## User Interface
 

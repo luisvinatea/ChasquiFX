@@ -107,13 +107,15 @@ export async function saveUserRecommendation(req, res) {
     }
 
     // Save to user's recommendations history
-    const { error } = await supabaseClient.from("user_recommendations").insert([
-      {
-        user_id: user.id,
-        recommendation_data: recommendation,
-        notes: req.body.notes || null,
-      },
-    ]);
+    const { error } = await supabaseClient
+      .from("user_recommendations")
+      .insert([
+        {
+          user_id: user.id,
+          recommendation_data: recommendation,
+          notes: req.body.notes || null,
+        },
+      ]);
 
     if (error) throw error;
 
