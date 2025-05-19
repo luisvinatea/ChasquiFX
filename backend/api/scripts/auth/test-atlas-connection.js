@@ -111,7 +111,14 @@ function fixJsonString(content) {
   // Replace problematic control characters
   fixedContent = fixedContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
 
-  // Ensure date format is consistent
+  // Convert the specific datetime format that's causing issues (at position ~122)
+  // Format: "created_at": "2025-05-12 18:59:00 UTC" -> "created_at": "2025-05-12T18:59:00Z"
+  fixedContent = fixedContent.replace(
+    /"(created_at|processed_at)":\s*"(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) UTC"/g,
+    '"$1": "$2T$3Z"'
+  );
+
+  // Ensure any other date formats are also consistent
   fixedContent = fixedContent.replace(
     /"(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) ([A-Z]+)"/g,
     '"$1T$2 $3"'
@@ -161,116 +168,178 @@ async function fixAndLoadJson(filePath) {
 // Special handling for Flight data
 async function importFlightData(db, filePath, fileName) {
   try {
-    // Known structure of flight data - we can create a document manually
+    // Read the raw content of the file
     const rawContent = fs.readFileSync(filePath, "utf8");
 
-    // Try to parse the JSON directly first
+    // Apply the specific date fix that works for all flight files
+    const fixedContent = rawContent.replace(
+      /"(created_at|processed_at)":\s*"(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) UTC"/g,
+      '"$1": "$2T$3Z"'
+    );
+
+    // Try to parse the fixed JSON
     let flightData;
     try {
-      // Apply fixes to JSON string before parsing
-      const fixedContent = fixJsonString(rawContent);
       flightData = JSON.parse(fixedContent);
+      console.log(`Successfully parsed flight data for ${fileName}`);
+
+      // Extract route information from filename
+      const routeParts = fileName.split(".")[0].split("_");
+      const [departureAirport, arrivalAirport, outboundDate, returnDate] =
+        routeParts;
+
+      // Create a comprehensive flight document
+      const enhancedFlightDoc = {
+        _source: fileName,
+        route: fileName.split(".")[0],
+        date_imported: new Date().toISOString(),
+        raw_data_available: true,
+
+        // Search metadata
+        search_metadata: flightData.search_metadata || {},
+
+        // Search parameters
+        search_parameters: flightData.search_parameters || {},
+
+        // Route details
+        route_info: {
+          departure_airport: departureAirport,
+          arrival_airport: arrivalAirport,
+          outbound_date: outboundDate,
+          return_date: returnDate,
+        },
+
+        // Best flights summary (for quick access to most important data)
+        best_flights_summary: flightData.best_flights
+          ? flightData.best_flights.map((flight) => ({
+              price: flight.price,
+              type: flight.type,
+              total_duration: flight.total_duration,
+              airline:
+                flight.flights && flight.flights[0]
+                  ? flight.flights[0].airline
+                  : null,
+              carbon_emissions: flight.carbon_emissions
+                ? {
+                    amount: flight.carbon_emissions.this_flight,
+                    compared_to_typical:
+                      flight.carbon_emissions.difference_percent,
+                  }
+                : null,
+              layover_count: flight.layovers ? flight.layovers.length : 0,
+              departure_time:
+                flight.flights &&
+                flight.flights[0] &&
+                flight.flights[0].departure_airport
+                  ? flight.flights[0].departure_airport.time
+                  : null,
+              arrival_time:
+                flight.flights &&
+                flight.flights[flight.flights.length - 1] &&
+                flight.flights[flight.flights.length - 1].arrival_airport
+                  ? flight.flights[flight.flights.length - 1].arrival_airport
+                      .time
+                  : null,
+            }))
+          : [],
+
+        // Complete best flights data (all details)
+        best_flights: flightData.best_flights || [],
+
+        // Other flights summary
+        other_flights_count: flightData.other_flights
+          ? flightData.other_flights.length
+          : 0,
+
+        // Include price range
+        price_range:
+          flightData.best_flights && flightData.best_flights.length > 0
+            ? {
+                min: Math.min(
+                  ...flightData.best_flights.map((f) => f.price || Infinity)
+                ),
+                max: Math.max(
+                  ...flightData.best_flights.map((f) => f.price || 0)
+                ),
+              }
+            : null,
+      };
+
+      // Insert the enhanced document
+      await db.collection("flights").insertOne(enhancedFlightDoc);
+      console.log(
+        `Imported flight document for ${fileName} with complete schema`
+      );
+      return true;
     } catch (parseError) {
-      console.error(`Error parsing flight JSON: ${parseError.message}`);
-      
-      // Fall back to regex approach if JSON parsing fails
+      console.error(
+        `Error parsing flight JSON after date fix: ${parseError.message}`
+      );
+      console.error(`Problem location in file: ${fileName}`);
+
+      // Fall back to the extraction method for any files that still fail
+      console.log(`Attempting fallback parsing approach for ${fileName}`);
+
+      // Extract main sections using regex
       const searchMetadataMatch = rawContent.match(
-        /"search_metadata":\s*\{([^}]+)\}/
+        /"search_metadata":\s*\{([^}]+)\}/s
       );
       const searchParametersMatch = rawContent.match(
-        /"search_parameters":\s*\{([^}]+)\}/
+        /"search_parameters":\s*\{([^}]+)\}/s
       );
-      const bestFlightsMatch = rawContent.match(/"best_flights":\s*\[(.*?)\]/s);
-      
-      // Create basic document with limited information
+
+      // Check if there are "best_flights" available by looking for the keyword
+      const hasBestFlights = rawContent.indexOf('"best_flights"') !== -1;
+
+      // Try to extract price info if available
+      let minPrice = null;
+      let maxPrice = null;
+
+      const priceMatch = rawContent.match(/"price":\s*(\d+)/g);
+      if (priceMatch && priceMatch.length > 0) {
+        const prices = priceMatch.map((p) => parseInt(p.match(/\d+/)[0]));
+        minPrice = Math.min(...prices);
+        maxPrice = Math.max(...prices);
+      }
+
+      // Extract route information from filename
+      const routeParts = fileName.split(".")[0].split("_");
+      const [departureAirport, arrivalAirport, outboundDate, returnDate] =
+        routeParts;
+
+      // Create basic document with extracted information
       const flightDoc = {
         _source: fileName,
-        route: fileName.split(".")[0], // Extract route from filename (e.g., JFK_AMM_2025-08-10_2025-08-17)
+        route: fileName.split(".")[0],
         date_imported: new Date().toISOString(),
-        has_flights: bestFlightsMatch ? true : false,
-        search_parameters: searchParametersMatch
-          ? JSON.parse(`{${searchParametersMatch[1]}}`)
-          : null,
+        has_flights: hasBestFlights,
         raw_data_available: true,
+        parse_method: "fallback",
+
+        // Route details
+        route_info: {
+          departure_airport: departureAirport,
+          arrival_airport: arrivalAirport,
+          outbound_date: outboundDate,
+          return_date: returnDate,
+        },
+
+        // Add price info if available
+        price_range: minPrice !== null ? { min: minPrice, max: maxPrice } : null,
+
+        // Try to extract search parameters if available
+        search_parameters: searchParametersMatch
+          ? extractJsonObject(searchParametersMatch[0])
+          : null,
       };
-      
-      // Insert the document with limited data
+
+      // Insert the document with extracted data
       await db.collection("flights").insertOne(flightDoc);
       console.log(
-        `Imported basic flight document for ${fileName} (JSON parsing failed)`
+        `Imported flight document for ${fileName} using fallback extraction method`
       );
       return true;
     }
-    
-    // Successfully parsed JSON - create enhanced document
-    
-    // Extract route information from filename
-    const routeParts = fileName.split(".")[0].split("_");
-    const [departureAirport, arrivalAirport, outboundDate, returnDate] = routeParts;
-
-    // Create a comprehensive flight document
-    const enhancedFlightDoc = {
-      _source: fileName,
-      route: fileName.split(".")[0],
-      date_imported: new Date().toISOString(),
-      raw_data_available: true,
-      
-      // Search metadata
-      search_metadata: flightData.search_metadata || {},
-      
-      // Search parameters
-      search_parameters: flightData.search_parameters || {},
-      
-      // Route details
-      route_info: {
-        departure_airport: departureAirport,
-        arrival_airport: arrivalAirport,
-        outbound_date: outboundDate,
-        return_date: returnDate
-      },
-      
-      // Best flights summary (for quick access to most important data)
-      best_flights_summary: flightData.best_flights ? flightData.best_flights.map(flight => ({
-        price: flight.price,
-        type: flight.type,
-        total_duration: flight.total_duration,
-        airline: flight.flights && flight.flights[0] ? flight.flights[0].airline : null,
-        carbon_emissions: flight.carbon_emissions 
-          ? {
-              amount: flight.carbon_emissions.this_flight,
-              compared_to_typical: flight.carbon_emissions.difference_percent
-            }
-          : null,
-        layover_count: flight.layovers ? flight.layovers.length : 0,
-        departure_time: flight.flights && flight.flights[0] && flight.flights[0].departure_airport 
-          ? flight.flights[0].departure_airport.time 
-          : null,
-        arrival_time: flight.flights && flight.flights[flight.flights.length-1] && flight.flights[flight.flights.length-1].arrival_airport
-          ? flight.flights[flight.flights.length-1].arrival_airport.time
-          : null
-      })) : [],
-      
-      // Complete best flights data (all details)
-      best_flights: flightData.best_flights || [],
-      
-      // Other flights summary
-      other_flights_count: flightData.other_flights ? flightData.other_flights.length : 0,
-      
-      // Include price range
-      price_range: flightData.best_flights && flightData.best_flights.length > 0
-        ? {
-            min: Math.min(...flightData.best_flights.map(f => f.price || Infinity)),
-            max: Math.max(...flightData.best_flights.map(f => f.price || 0))
-          }
-        : null
-    };
-
-    // Insert the enhanced document
-    await db.collection("flights").insertOne(enhancedFlightDoc);
-    console.log(
-      `Imported enhanced flight document for ${fileName} with complete schema`
-    );
-    return true;
   } catch (error) {
     console.error(`Error importing flight data ${fileName}:`, error);
     return false;
