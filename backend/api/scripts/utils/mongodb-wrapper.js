@@ -1,6 +1,6 @@
 /**
  * MongoDB compatibility wrapper module
- * 
+ *
  * This module provides a compatibility layer to use the ES module mongodb.js
  * with CommonJS require statements in our scripts.
  */
@@ -9,10 +9,10 @@
 async function importMongodbModule() {
   try {
     // Dynamic import of ES module
-    const module = await import('../../src/db/mongodb.js');
+    const module = await import("../../src/db/mongodb.js");
     return module;
   } catch (error) {
-    console.error('Error importing mongodb module:', error.message);
+    console.error("Error importing mongodb module:", error.message);
     throw error;
   }
 }
@@ -23,7 +23,7 @@ async function connectToDatabase() {
     const { connectToDatabase: originalConnect } = await importMongodbModule();
     return await originalConnect();
   } catch (error) {
-    console.error('Connection to database failed:', error.message);
+    console.error("Connection to database failed:", error.message);
     throw error;
   }
 }
@@ -31,5 +31,5 @@ async function connectToDatabase() {
 // Export the wrapper functions for CommonJS usage
 module.exports = {
   connectToDatabase,
-  importMongodbModule
+  importMongodbModule,
 };
