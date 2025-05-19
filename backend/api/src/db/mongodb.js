@@ -78,7 +78,4 @@ async function connectToDatabase() {
 }
 
 // Export mongoose and connectToDatabase function
-module.exports = {
-  mongoose,
-  connectToDatabase,
-};
+export { mongoose, connectToDatabase };

@@ -5,10 +5,10 @@
  * Run with: node test-atlas-connection.js
  */
 
-require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const mongoose = require("mongoose");
-const { connectToDatabase } = require("../src/db/mongodb");
+import "dotenv/config";
+import { MongoClient, ServerApiVersion } from "mongodb";
+import mongoose from "mongoose";
+import { connectToDatabase } from "../src/db/mongodb.js";
 
 // Colors for terminal output
 const colors = {
