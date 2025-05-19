@@ -10,7 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configure dotenv with path from ENV_PATH if available, otherwise use default
-const envPath = process.env.ENV_PATH || path.resolve(__dirname, "../.env");
+// The script is in backend/api/scripts/auth, so we need to go up 2 directories to get to backend/api
+const envPath = process.env.ENV_PATH || path.resolve(__dirname, "../../.env");
 dotenv.config({ path: envPath });
 console.log("ENV Path:", envPath);
 
@@ -35,11 +36,13 @@ if (!username || !password) {
 const encodedUsername = encodeURIComponent(username);
 const encodedPassword = encodeURIComponent(password);
 
-// Use the correct host
-const host = "chasquifx.ymxb5bs.mongodb.net";
-const dbName = "chasquifx";
+// Get host and database name from environment variables with defaults
+const host = process.env.MONGODB_HOST || "chasquifx.ymxb5bs.mongodb.net";
+const dbName = process.env.MONGODB_DBNAME || "chasquifx";
 
 // Build the URI
+console.log("MongoDB Host:", host);
+console.log("Database Name:", dbName);
 const uri = `mongodb+srv://${encodedUsername}:${encodedPassword}@${host}/${dbName}?retryWrites=true&w=majority&appName=ChasquiFX`;
 console.log("Connection URI:", uri.replace(encodedPassword, "****"));
 

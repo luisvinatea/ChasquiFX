@@ -77,13 +77,18 @@ const username = encodeURIComponent(process.env.MONGODB_USER);
 const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
 
 // Check for credentials
+// Check for required credentials
 if (!username || !password) {
   logger.error("MongoDB credentials missing in environment variables");
+  process.exit(1);
 }
 
-// Use the correct host from .env
-const host = "chasquifx.ymxb5bs.mongodb.net";
-const dbName = "chasquifx";
+// Use host and dbName from environment variables or provide defaults
+const host = process.env.MONGODB_HOST || "chasquifx.ymxb5bs.mongodb.net";
+const dbName = process.env.MONGODB_DBNAME || "chasquifx";
+
+logger.debug(`Using MongoDB host: ${host}`);
+logger.debug(`Using database name: ${dbName}`);
 
 // Build the URI
 const uri = `mongodb+srv://${username}:${password}@${host}/${dbName}?retryWrites=true&w=majority&appName=ChasquiFX`;
