@@ -322,8 +322,8 @@ async function fetchFlightFare(
             // Handle string price format
             const priceStr = priceValue
               .replace(currency, "")
-              .replace("$", "")
-              .replace(",", "")
+              .replace(/\$/g, "")
+              .replace(/,/g, "")
               .trim();
             priceValue = parseFloat(priceStr);
           } catch (e) {
