@@ -1,6 +1,6 @@
 #!/bin/bash
-# Run MongoDB Atlas connection test
-# This script runs the test-atlas-connection.js file to verify MongoDB Atlas connectivity
+# Run MongoDB Atlas connection test v2 (modular version)
+# This script runs the test-atlas-connection-v2.js file to verify MongoDB Atlas connectivity
 
 # Set colors
 GREEN='\033[0;32m'
@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 ENV_FILE="$(dirname "$(dirname "$(pwd)")")/.env"
 
 echo -e "${BLUE}================================================${NC}"
-echo -e "${BLUE}     MongoDB Atlas Connection Test      ${NC}"
+echo -e "${BLUE}     MongoDB Atlas Connection Test (v2)      ${NC}"
 echo -e "${BLUE}============================================${NC}"
 
 # Check if .env file exists in specified path
@@ -38,7 +38,7 @@ fi
 echo -e "${BLUE}Running connection test...${NC}"
 # Use full path to the JS file to ensure we're running the right one
 SCRIPT_DIR="$(dirname "$0")"
-ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/test-atlas-connection.js"
+ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/test-atlas-connection-v2.js"
 
 # Check the exit code
 if [ $? -eq 0 ]; then
