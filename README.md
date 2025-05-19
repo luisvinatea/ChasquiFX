@@ -74,7 +74,6 @@ ChasquiFX uses a hybrid architecture with the following components:
 ### Prerequisites
 
 - Node.js 18+ and npm for frontend development
-- Python 3.9+ for backend development
 - MongoDB account (free tier available)
 - SerpAPI account (free trial available)
 - SearchAPI account (free trial available)
