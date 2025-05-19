@@ -32,6 +32,7 @@ Thumbs.db
 .idea/
 *.sublime-workspace
 *.sublime-project
+*.hintrc
 
 # Ignore logs and temporary files
 *.log
