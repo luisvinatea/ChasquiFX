@@ -18,24 +18,28 @@ const logger = initLogger();
 const username = encodeURIComponent(
   process.env.MONGODB_USER || "paulobarberena"
 );
-const password = encodeURIComponent(process.env.MONGODB_PASSWORD || "");
+const password = encodeURIComponent(
+  process.env.MONGODB_PASSWORD || "oK3jLPBHTKFMoHB3e"
+);
 
-// Check if direct MONGODB_URI is provided in env, otherwise construct from parts
+// Log credential info without exposing actual credentials
+logger.debug(`Username: ${username}`);
+logger.debug(
+  `Password length: ${password.length > 0 ? "provided" : "missing"}`
+);
+
+// Construct the MongoDB URI directly
 let MONGODB_URI;
-if (process.env.MONGODB_URI) {
-  // Use URI directly if provided (may contain variable placeholders)
-  MONGODB_URI = process.env.MONGODB_URI.replace(
-    "${MONGODB_USER}",
-    username
-  ).replace("${MONGODB_PASSWORD}", password);
 
-  logger.debug("Using MongoDB connection URI from environment variable");
-} else {
-  // Construct URI from components
-  MONGODB_URI = `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/chasquifx?retryWrites=true&w=majority&appName=ChasquiFX`;
-
-  logger.debug("Using default MongoDB connection URI");
+// Check if environment variables are loaded correctly
+if (!username || !password) {
+  logger.error("MongoDB credentials missing. Check environment variables.");
 }
+
+// Construct URI from components, ignoring MONGODB_URI from env since it contains unresolved placeholders
+MONGODB_URI = `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/chasquifx?retryWrites=true&w=majority&appName=ChasquiFX`;
+
+logger.debug("Using constructed MongoDB connection URI");
 
 // Log connection info (without password)
 const logUri = MONGODB_URI.replace(password, "****");
@@ -48,8 +52,6 @@ logger.debug(`MongoDB connection URI: ${logUri}`);
 async function connectToDatabase() {
   try {
     await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,

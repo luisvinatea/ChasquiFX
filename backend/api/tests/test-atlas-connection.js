@@ -31,7 +31,18 @@ async function testDirectConnection() {
   const username = encodeURIComponent(
     process.env.MONGODB_USER || "paulobarberena"
   );
-  const password = encodeURIComponent(process.env.MONGODB_PASSWORD || "");
+  const password = encodeURIComponent(
+    process.env.MONGODB_PASSWORD || "oK3jLPBHTKFMoHB3e"
+  );
+
+  // Debug connection info
+  console.log(`${colors.yellow}Username: ${username}${colors.reset}`);
+  console.log(
+    `${colors.yellow}Password length: ${
+      password.length > 0 ? "provided" : "missing"
+    }${colors.reset}`
+  );
+
   const uri = `mongodb+srv://${username}:${password}@chasquifx.2akcifh.mongodb.net/?retryWrites=true&w=majority&appName=ChasquiFX`;
 
   // Create MongoDB client
@@ -44,6 +55,13 @@ async function testDirectConnection() {
   });
 
   try {
+    console.log(
+      `${colors.yellow}Attempting to connect with URI: ${uri.replace(
+        password,
+        "****"
+      )}${colors.reset}`
+    );
+
     // Connect the client to the server
     await client.connect();
 
