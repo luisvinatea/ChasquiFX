@@ -1,5 +1,10 @@
 /**
- * Enhanced Flight Service for ChasquiFX
+ * Eimport { FlightFare } from '../models/FlightFare.js';
+import { 
+  getCachedFlightFare, 
+  cacheFlightFare as dbCacheFlightFare,
+  logApiCall
+} from '../db/flight-db.js';anced Flight Service for ChasquiFX
  *
  * Provides flight data operations and fare estimations with improved modularity and error handling
  */
@@ -285,7 +290,7 @@ export async function getFlightFare(
     }
 
     // Then check database cache
-    let fare = await getFlightFareFromDatabase(
+    let fare = await getCachedFlightFare(
       departureAirport,
       arrivalAirport,
       outboundDate,
@@ -676,56 +681,14 @@ async function getFlightFareFromDatabase(
   returnDate,
   currency
 ) {
-  try {
-    const { db } = await initMongoDB();
-    const cacheCollection = db.collection("flightCache");
-
-    // Create cache key
-    const cacheKey = `${departureAirport}_${arrivalAirport}_${outboundDate}_${returnDate}`;
-
-    // Find the cache entry
-    const cacheEntry = await cacheCollection.findOne({
-      cacheKey,
-      expiresAt: { $gt: new Date() },
-    });
-
-    if (cacheEntry && cacheEntry.data) {
-      logger.info(
-        `Found valid cache entry for ${departureAirport}-${arrivalAirport}`
-      );
-
-      try {
-        // Convert possibly single airline string to list for consistency
-        let airlines = cacheEntry.data.airlines || [];
-        if (typeof airlines === "string") {
-          airlines = [airlines];
-        } else if (!airlines.length && cacheEntry.data.airline) {
-          airlines = [cacheEntry.data.airline || "Unknown"];
-        }
-
-        return new FlightFare({
-          price: cacheEntry.data.price || 0.0,
-          currency: cacheEntry.data.currency || currency,
-          airlines,
-          duration: cacheEntry.data.duration || "",
-          outboundDate,
-          returnDate,
-          carbonEmissions: cacheEntry.data.carbon_emissions,
-        });
-      } catch (error) {
-        logger.warn(`Error parsing cached flight data: ${error.message}`);
-        return null;
-      }
-    }
-
-    logger.debug(
-      `No valid cache found for ${departureAirport}-${arrivalAirport}`
-    );
-    return null;
-  } catch (error) {
-    logger.error(`Error retrieving cached flight data: ${error.message}`);
-    return null;
-  }
+  // Use the database module function instead
+  return await getCachedFlightFare(
+    departureAirport,
+    arrivalAirport,
+    outboundDate,
+    returnDate,
+    currency
+  );
 }
 
 /**
@@ -748,45 +711,16 @@ async function cacheFlightFare(
   currency,
   expiryHours = 24
 ) {
-  try {
-    const { db } = await initMongoDB();
-    const cacheCollection = db.collection("flightCache");
-
-    // Create cache key
-    const cacheKey = `${departureAirport}_${arrivalAirport}_${outboundDate}_${returnDate}`;
-
-    // Calculate expiry date
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + expiryHours);
-
-    // Create or update the cache entry
-    await cacheCollection.updateOne(
-      { cacheKey },
-      {
-        $set: {
-          cacheKey,
-          searchParameters: {
-            departure_id: departureAirport,
-            arrival_id: arrivalAirport,
-            outbound_date: outboundDate,
-            return_date: returnDate,
-            currency,
-          },
-          data: fare,
-          expiresAt,
-        },
-      },
-      { upsert: true }
-    );
-
-    logger.info(
-      `Cached flight fare for ${departureAirport}-${arrivalAirport}`
-    );
-    return true;
-  } catch (error) {
-    logger.error(`Error caching flight fare: ${error.message}`);
-    return false;
-  }
+  // Use the database module function instead
+  return await dbCacheFlightFare(
+    departureAirport,
+    arrivalAirport,
+    outboundDate,
+    returnDate,
+    fare,
+    currency,
+    expiryHours
+  );
 }
 
 /**
