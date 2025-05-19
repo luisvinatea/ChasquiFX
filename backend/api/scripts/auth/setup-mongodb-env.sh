@@ -19,12 +19,12 @@ echo
 
 # Check if .env already exists
 if [ -f ".env" ]; then
-  echo "A .env file already exists. Do you want to overwrite it? (y/n)"
-  read -r overwrite
-  if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
-    echo "Setup canceled. Your .env file was not modified."
-    exit 0
-  fi
+    echo "A .env file already exists. Do you want to overwrite it? (y/n)"
+    read -r overwrite
+    if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
+        echo "Setup canceled. Your .env file was not modified."
+        exit 0
+    fi
 fi
 
 # Get MongoDB connection details
@@ -33,19 +33,19 @@ echo "Please provide your MongoDB connection details:"
 echo
 
 # Get username with default
-read -p "MongoDB Username [chasquifx_user]: " MONGODB_USER
+read -r -p "MongoDB Username [chasquifx_user]: " MONGODB_USER
 MONGODB_USER=${MONGODB_USER:-chasquifx_user}
 
 # Get password (hidden input)
-read -s -p "MongoDB Password: " MONGODB_PASSWORD
+read -r -s -p "MongoDB Password: " MONGODB_PASSWORD
 echo
 
 # Get host with default
-read -p "MongoDB Host [chasquifx.ymxb5bs.mongodb.net]: " MONGODB_HOST
+read -r -p "MongoDB Host [chasquifx.ymxb5bs.mongodb.net]: " MONGODB_HOST
 MONGODB_HOST=${MONGODB_HOST:-chasquifx.ymxb5bs.mongodb.net}
 
 # Get database name with default
-read -p "MongoDB Database Name [chasquifx]: " MONGODB_DBNAME
+read -r -p "MongoDB Database Name [chasquifx]: " MONGODB_DBNAME
 MONGODB_DBNAME=${MONGODB_DBNAME:-chasquifx}
 
 # Additional environment variables for the application
@@ -55,21 +55,21 @@ read -r additional
 ADDITIONAL_ENV=""
 
 if [[ "$additional" == "y" || "$additional" == "Y" ]]; then
-  echo
-  echo "Enter additional environment variables (KEY=VALUE format, empty line to finish):"
-  while true; do
-    read -r line
-    if [ -z "$line" ]; then
-      break
-    fi
-    ADDITIONAL_ENV="${ADDITIONAL_ENV}${line}\n"
-  done
+    echo
+    echo "Enter additional environment variables (KEY=VALUE format, empty line to finish):"
+    while true; do
+        read -r line
+        if [ -z "$line" ]; then
+            break
+        fi
+        ADDITIONAL_ENV="${ADDITIONAL_ENV}${line}\n"
+    done
 fi
 
 # Create .env file
 echo
 echo "Creating .env file..."
-cat > .env << EOF
+cat >.env <<EOF
 # MongoDB Connection
 MONGODB_USER=${MONGODB_USER}
 MONGODB_PASSWORD=${MONGODB_PASSWORD}

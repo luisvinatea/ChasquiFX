@@ -11,15 +11,89 @@
  */
 
 import mongoose from "mongoose";
-import { connectToDatabase } from "../src/db/mongodb.js";
-import { initLogger } from "../src/utils/logger.js";
 import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+import { MongoClient, ServerApiVersion } from "mongodb";
+import { fileURLToPath } from "url";
 
-// Initialize environment variables
-dotenv.config();
+// Setup environment variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize environment variables from the parent directory's .env file or from ENV_PATH
+let envPath;
+if (process.env.ENV_PATH && fs.existsSync(process.env.ENV_PATH)) {
+  envPath = process.env.ENV_PATH;
+} else {
+  // Default to parent directory .env if ENV_PATH not provided
+  envPath = path.join(process.cwd(), "..", ".env");
+  if (!fs.existsSync(envPath)) {
+    console.error(`Warning: .env file not found at ${envPath}`);
+  }
+}
+
+dotenv.config({ path: envPath });
 
 // Initialize logger
-const logger = initLogger();
+const logLevels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+};
+
+const logLevel = logLevels[process.env.LOG_LEVEL || "info"];
+
+const logger = {
+  error: (...args) => {
+    const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+    console.error(`${date} error :`, ...args);
+  },
+  warn: (...args) => {
+    if (logLevel >= logLevels.warn) {
+      const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+      console.warn(`${date} warn  :`, ...args);
+    }
+  },
+  info: (...args) => {
+    if (logLevel >= logLevels.info) {
+      const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+      console.info(`${date} info  :`, ...args);
+    }
+  },
+  debug: (...args) => {
+    if (logLevel >= logLevels.debug) {
+      const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+      console.debug(`${date} debug :`, ...args);
+    }
+  },
+};
+
+// Get credentials from env
+const username = encodeURIComponent(process.env.MONGODB_USER);
+const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
+
+// Check for credentials
+if (!username || !password) {
+  logger.error("MongoDB credentials missing in environment variables");
+}
+
+// Use the correct host from .env
+const host = "chasquifx.2akcifh.mongodb.net";
+const dbName = "chasquifx";
+
+// Build the URI
+const uri = `mongodb+srv://${username}:${password}@${host}/${dbName}?retryWrites=true&w=majority&appName=ChasquiFX`;
+
+// Create a new MongoClient with MongoDB Atlas recommended options
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
 
 // Define unique fields for each collection
 const COLLECTION_UNIQUE_FIELDS = {
@@ -39,6 +113,18 @@ const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const collectionArg = args.find((arg) => arg.startsWith("--collection="));
 const specificCollection = collectionArg ? collectionArg.split("=")[1] : null;
+
+// Connect to MongoDB Atlas
+async function connectToDatabase() {
+  try {
+    await client.connect();
+    logger.info("Connected to MongoDB Atlas");
+    return client.db(dbName);
+  } catch (error) {
+    logger.error(`Failed to connect to MongoDB Atlas: ${error.message}`);
+    throw error;
+  }
+}
 
 /**
  * Find duplicates in a collection based on a unique field
@@ -96,8 +182,8 @@ async function findDuplicates() {
   try {
     // Connect to the database
     logger.info("Connecting to MongoDB...");
-    const connection = await connectToDatabase();
-    const db = mongoose.connection.db;
+    logger.info(`Using environment from: ${envPath}`);
+    const db = await connectToDatabase();
 
     // Get all collections or the specified one
     const collections = specificCollection
@@ -195,7 +281,7 @@ async function findDuplicates() {
     }
 
     // Close the database connection
-    await mongoose.connection.close();
+    await client.close();
     logger.info("MongoDB connection closed");
   } catch (error) {
     logger.error(`Error: ${error.message}`);
@@ -203,7 +289,7 @@ async function findDuplicates() {
 
     // Close the database connection
     try {
-      await mongoose.connection.close();
+      await client.close();
     } catch (err) {
       // Ignore errors during connection closing
     }

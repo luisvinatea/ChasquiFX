@@ -12,10 +12,20 @@ set -e
 # Change to the script directory
 cd "$(dirname "$0")"
 
+# Define parent directory for .env file
+PARENT_DIR="$(dirname "$(pwd)")"
+ENV_FILE="${PARENT_DIR}/.env"
+
+# Check if .env file exists in parent directory
+if [ ! -f "${ENV_FILE}" ]; then
+    echo "Error: .env file not found in parent directory: ${ENV_FILE}"
+    exit 1
+fi
+
 # Check if --dry-run flag should be passed
 if [ "$1" == "--dry-run" ]; then
     echo "Running in dry-run mode (will not remove any documents)"
-    node remove-duplicate-documents.js --dry-run
+    ENV_PATH="${ENV_FILE}" node remove-duplicate-documents.js --dry-run
 elif [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
     echo "MongoDB Duplicate Document Finder and Remover"
     echo ""
@@ -30,5 +40,5 @@ elif [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
     echo "  --help, -h                - Show this help message"
 else
     echo "Running duplicate document check and removal..."
-    node remove-duplicate-documents.js "$@"
+    ENV_PATH="${ENV_FILE}" node remove-duplicate-documents.js "$@"
 fi

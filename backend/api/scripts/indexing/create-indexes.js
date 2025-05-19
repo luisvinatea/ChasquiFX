@@ -6,8 +6,8 @@
  */
 
 import mongoose from "mongoose";
-import { connectToDatabase } from "../src/db/mongodb.js";
-import { initLogger } from "../src/utils/logger.js";
+import { connectToDatabase } from "../../src/db/mongodb.js";
+import { initLogger } from "../../src/utils/logger.js";
 import dotenv from "dotenv";
 
 // Initialize environment variables

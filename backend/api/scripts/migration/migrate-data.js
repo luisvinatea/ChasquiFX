@@ -15,12 +15,12 @@ require("dotenv").config();
 const fs = require("fs").promises;
 const path = require("path");
 const mongoose = require("mongoose");
-const { connectToDatabase } = require("../src/db/mongodb");
-const { ForexCache, FlightCache } = require("../src/db/schemas");
+const { connectToDatabase } = require("../../src/db/mongodb");
+const { ForexCache, FlightCache } = require("../../src/db/schemas");
 const {
   standardizeFlightFilename,
   standardizeForexFilename,
-} = require("../src/services/fileStandardizationService");
+} = require("../../src/services/fileStandardizationService");
 
 // Configuration
 const FLIGHTS_DATA_DIR = path.resolve(__dirname, "../../assets/data/flights");

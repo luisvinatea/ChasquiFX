@@ -51,11 +51,3 @@ For shell scripts:
 
 For more comprehensive documentation, see `/docs/mongodb-migration.md`.
 
-## Maintenance
-
-- **cleanup-scripts.sh** - Script to clean up problematic MongoDB scripts and back them up
-- **MONGODB_SCRIPTS_SUMMARY.md** - Provides a summary of the current MongoDB scripts and import status
-
-Previous script versions with issues have been moved to backup directories:
-
-- `mongodb_scripts_backup_*` - Contains backup of problematic scripts that were replaced by more robust solutions

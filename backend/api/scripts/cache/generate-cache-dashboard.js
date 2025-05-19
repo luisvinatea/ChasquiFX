@@ -9,8 +9,8 @@ require("dotenv").config();
 const fs = require("fs").promises;
 const path = require("path");
 const mongoose = require("mongoose");
-const { connectToDatabase } = require("../src/db/mongodb");
-const { ForexCache, FlightCache, ApiCallLog } = require("../src/db/schemas");
+const { connectToDatabase } = require("../../src/db/mongodb");
+const { ForexCache, FlightCache, ApiCallLog } = require("../../src/db/schemas");
 
 // Parse command line arguments
 const args = process.argv.slice(2);

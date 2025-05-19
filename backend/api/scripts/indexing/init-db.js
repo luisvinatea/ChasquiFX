@@ -6,8 +6,8 @@
 
 require("dotenv").config();
 const mongoose = require("mongoose");
-const { connectToDatabase } = require("../src/db/mongodb");
-const schemas = require("../src/db/schemas");
+const { connectToDatabase } = require("../../src/db/mongodb");
+const schemas = require("../../src/db/schemas");
 
 // Set up logger
 const logger = {
