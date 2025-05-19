@@ -55,8 +55,8 @@ const client = new MongoClient(uri, {
   },
 });
 
-// Base directory for data files
-const dataDir = path.join(__dirname, "../../assets/data");
+// Base directory for data files - going up one more directory to reach backend/assets/data
+const dataDir = path.join(__dirname, "../../../assets/data");
 
 // Function to connect to MongoDB
 async function connectToMongoDB() {
