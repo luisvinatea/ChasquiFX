@@ -1,8 +1,16 @@
 // Import required modules
-require("dotenv").config({ path: "../.env" });
-const fs = require("fs");
-const path = require("path");
-const { MongoClient } = require("mongodb");
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { MongoClient } from "mongodb";
+import { fileURLToPath } from "url";
+
+// Configure dotenv
+dotenv.config({ path: "../.env" });
+
+// Get directory name (equivalent to __dirname in CommonJS)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Database connection string
 const uri = process.env.MONGODB_URI;
@@ -121,7 +129,6 @@ async function importData(db) {
 
 // Main function
 async function main() {
-  let client;
   try {
     const db = await connectToMongoDB();
     await setupCollections(db);
@@ -130,8 +137,10 @@ async function main() {
   } catch (error) {
     console.error("Error in main process:", error);
   } finally {
-    await client.close();
-    console.log("MongoDB connection closed");
+    if (client) {
+      await client.close();
+      console.log("MongoDB connection closed");
+    }
   }
 }
 
