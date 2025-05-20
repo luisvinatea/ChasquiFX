@@ -38,7 +38,7 @@ This architecture represents a complete migration from the original Python API i
 
 - Enhanced performance and reliability
 - Better handling of API requests
-- User authentication with Supabase
+- User authentication with MongoDB
 - Responsive design for mobile and desktop
 - Cached API results for better performance
 

@@ -30,6 +30,7 @@ import ApiKeysManager from "./components/ApiKeysManager";
 import ApiConnectionStatus from "./components/ApiConnectionStatus";
 import Auth from "./components/Auth";
 import chasquiApi from "./services/chasquiApi";
+// DEPRECATED: Using compatibility layer for transition from Supabase to MongoDB
 import {
   getSession,
   signOutUser,
@@ -319,8 +320,14 @@ function App() {
         </Tabs>
 
         {/* API Connection Status */}
-        <ApiConnectionStatus onStatusChange={(status) => setApiStatus(status.status === 'healthy' || status.status === 'limited')} />
-        
+        <ApiConnectionStatus
+          onStatusChange={(status) =>
+            setApiStatus(
+              status.status === "healthy" || status.status === "limited"
+            )
+          }
+        />
+
         {/* Main content */}
         {activeTab === 0 && (
           <Grid container spacing={3}>

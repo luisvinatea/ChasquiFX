@@ -21,6 +21,13 @@ export const signInUser = async (email, password) => {
       email,
       password,
     });
+
+    // Store the auth token in localStorage for later use
+    if (response.data.token) {
+      localStorage.setItem("authToken", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+    }
+
     return {
       user: response.data.user,
       session: response.data.session,
@@ -32,6 +39,23 @@ export const signInUser = async (email, password) => {
       user: null,
       session: null,
       error: error.response?.data?.message || "Failed to sign in",
+    };
+  }
+};
+
+/**
+ * Sign out the current user
+ * @returns {Promise} - Sign out response
+ */
+export const signOutUser = async () => {
+  try {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    return { error: null };
+  } catch (error) {
+    console.error("Sign out error:", error);
+    return {
+      error: "Failed to sign out",
     };
   }
 };
@@ -89,5 +113,25 @@ export const getUserApiKey = async (userId, keyType) => {
       error: error.response?.data?.message || "Failed to retrieve API key",
       data: null,
     };
+  }
+};
+
+/**
+ * Get user recommendations history
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} - Array of user recommendations
+ */
+export const getUserRecommendations = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/user/recommendations`, {
+      params: { userId },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+      },
+    });
+    return response.data.recommendations || [];
+  } catch (error) {
+    console.error("Error retrieving user recommendations:", error);
+    return [];
   }
 };

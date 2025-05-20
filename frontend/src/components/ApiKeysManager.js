@@ -35,7 +35,7 @@ const ApiKeysManager = ({ open, onClose, user }) => {
     if (open && user) {
       setLoading(true);
 
-      // Fetch API key from Supabase
+      // Fetch API key from MongoDB
       getUserApiKey(user.id)
         .then((apiKey) => {
           if (apiKey) {
