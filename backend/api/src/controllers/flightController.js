@@ -41,7 +41,7 @@ export async function getFare(req, res) {
     } = req.query;
 
     // Validate required parameters
-    if (!departure_airport || !arrival_airport) {
+    if (!departure_airport || !arrival_airport || typeof departure_airport !== 'string' || typeof arrival_airport !== 'string') {
       logger.warn(
         "Missing required parameters: departure_airport and arrival_airport"
       );

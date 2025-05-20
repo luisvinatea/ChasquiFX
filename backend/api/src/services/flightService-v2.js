@@ -767,6 +767,11 @@ function generateSimulatedFlightFare(
   currency = "USD"
 ) {
   try {
+    // Validate input types
+    if (typeof departureAirport !== 'string' || typeof arrivalAirport !== 'string') {
+      throw new Error("Invalid input: departureAirport and arrivalAirport must be strings");
+    }
+
     // Simulated fare data generation based on airport codes
     const basePrice =
       (departureAirport.charCodeAt(0) + arrivalAirport.charCodeAt(0)) * 2.5;
