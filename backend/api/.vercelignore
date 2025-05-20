@@ -21,6 +21,7 @@ docs/
 .eslintrc
 .prettierrc
 
+
 # Scripts directory - scripts are for local development only
 scripts/auth/*.sh
 scripts/cache/*.sh
