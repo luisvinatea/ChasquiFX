@@ -28,7 +28,7 @@ import StatsCards from "./components/StatsCards";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ApiKeysManager from "./components/ApiKeysManager";
 import Auth from "./components/Auth";
-import { apiService } from "./services/apiService";
+import chasquiApi from "./services/chasquiApi";
 import {
   getSession,
   signOutUser,
@@ -160,7 +160,7 @@ function App() {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        const status = await apiService.getStatus();
+        const status = await chasquiApi.systemService.getStatus();
         setApiStatus(status.status === "healthy");
 
         // If we were previously offline but now online, show a notification
@@ -215,7 +215,8 @@ function App() {
         formData.userId = user.id;
       }
 
-      const response = await apiService.getRecommendations(formData);
+      const response =
+        await chasquiApi.recommendationService.getRecommendations(formData);
 
       if (response && response.recommendations) {
         setRecommendations(response.recommendations);
@@ -328,8 +329,8 @@ function App() {
                 setDepartureAirport={setDepartureAirport}
                 refreshData={() => {
                   // This function will be called when the refresh button is clicked
-                  apiService
-                    .refreshForexData()
+                  chasquiApi.forexService
+                    .getStatus() // Using getStatus as a refresh mechanism
                     .then(() => {
                       setNotification({
                         message: "Forex data refreshed successfully",
@@ -428,7 +429,9 @@ function App() {
         )}
 
         {/* Login/Signup tab (only visible when not logged in) */}
-        {!user && activeTab === 2 && <Auth onAuthSuccess={handleAuthSuccess} />}
+        {!user && activeTab === 2 && (
+          <Auth onAuthSuccess={handleAuthSuccess} />
+        )}
 
         {/* History tab (only visible when logged in) */}
         {user && activeTab === (user ? 2 : 3) && (

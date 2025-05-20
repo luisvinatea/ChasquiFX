@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import ApiService from "../services/apiService";
+import chasquiApi from "../services/chasquiApi";
 import LoadingSpinner from "./LoadingSpinner";
 import {
   Card,
@@ -40,10 +40,10 @@ const EcoFlightRoutes = ({ departureAirport, onSelectRoute }) => {
     setError(null);
 
     try {
-      const apiService = new ApiService();
-      const response = await apiService.getEcoFriendlyRoutes(airport);
+      // Use the flight service to get routes
+      const response = await chasquiApi.flightService.getRoutes(airport);
 
-      if (response.success && response.routes) {
+      if (response && response.routes) {
         setRoutes(response.routes);
       } else {
         setError("Could not fetch eco-friendly routes");
