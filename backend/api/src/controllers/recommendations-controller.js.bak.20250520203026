@@ -5,7 +5,6 @@
  */
 
 import { getLogger } from "../utils/logger.js";
-import { connectToDatabase } from "../db/mongodb-vercel.js";
 import {
   generateRecommendations,
   saveUserRecommendation as saveRecommendationToDatabase,
@@ -24,16 +23,6 @@ const logger = getLogger("recommendations-controller");
  */
 export async function getRecommendations(req, res) {
   try {
-    logger.info("Starting recommendations request");
-    
-    // Ensure database connection is established first
-    const { db, client } = await connectToDatabase().catch(error => {
-      logger.error(`Database connection error: ${error.message}`);
-      throw new Error(`Failed to connect to database: ${error.message}`);
-    });
-    
-    logger.info("Database connection successful");
-
     const {
       base_currency,
       departure_airport,
@@ -42,37 +31,21 @@ export async function getRecommendations(req, res) {
       apiKey,
     } = req.query;
 
-    logger.info(`Request params: departure=${departure_airport}, dates=${outbound_date}-${return_date}`);
-
-    if (!departure_airport) {
-      logger.warn("Missing required parameter: departure_airport");
+    if (!base_currency || !departure_airport) {
       return res.status(400).json({
         status: "error",
-        message: "departure_airport parameter is required",
+        message: "base_currency and departure_airport parameters are required",
       });
     }
 
-    // Use default base currency if not provided
-    const baseCurrency = base_currency || "USD";
-
     // First check the cache
-    const cacheKey = `${baseCurrency}_${departure_airport}_${
+    const cacheKey = `${base_currency}_${departure_airport}_${
       outbound_date || ""
     }_${return_date || ""}`;
-    
-    logger.info(`Checking cache with key: ${cacheKey}`);
-    let cachedData;
-    
-    try {
-      cachedData = await getCachedRecommendations(cacheKey);
-    } catch (cacheError) {
-      logger.warn(`Cache check failed: ${cacheError.message}`);
-      // Continue execution even if cache fails
-    }
+    const cachedData = await getCachedRecommendations(cacheKey);
 
     // Check if we have fresh cached data (less than 6 hours old)
     if (cachedData) {
-      logger.info("Cache hit - returning cached recommendations");
       return res.json({
         status: "success",
         data: cachedData.recommendations,
@@ -81,48 +54,31 @@ export async function getRecommendations(req, res) {
       });
     }
 
-    logger.info("Cache miss - generating new recommendations");
-    
     // No cache hit, generate new recommendations
     const recommendationParams = {
-      baseCurrency,
+      baseCurrency: base_currency,
       departureAirport: departure_airport,
       outboundDate: outbound_date,
       returnDate: return_date,
       apiKey: apiKey,
-      db  // Pass the database connection
     };
 
-    try {
-      const recommendations = await generateRecommendations(
-        recommendationParams
-      );
+    const recommendations = await generateRecommendations(
+      recommendationParams
+    );
 
-      // Cache the results
-      try {
-        await cacheRecommendations(cacheKey, recommendations);
-        logger.info("Recommendations cached successfully");
-      } catch (cacheError) {
-        logger.warn(`Failed to cache recommendations: ${cacheError.message}`);
-        // Continue even if caching fails
-      }
+    // Cache the results
+    await cacheRecommendations(cacheKey, recommendations);
 
-      logger.info("Successfully generated recommendations");
-      
-      // Return the recommendations
-      return res.json({
-        status: "success",
-        data: recommendations.recommendations || recommendations, // Handle different response formats
-        source: "fresh",
-        generated_at: new Date().toISOString(),
-      });
-    } catch (genError) {
-      logger.error(`Recommendation generation failed: ${genError.message}`);
-      throw genError;
-    }
+    // Return the recommendations
+    return res.json({
+      status: "success",
+      data: recommendations.recommendations,
+      source: "fresh",
+      generated_at: new Date().toISOString(),
+    });
   } catch (err) {
     logger.error(`Error getting recommendations: ${err.message}`);
-    logger.error(err.stack);
     return res.status(500).json({
       status: "error",
       message: "Failed to get recommendations",
@@ -138,9 +94,6 @@ export async function getRecommendations(req, res) {
  */
 export async function handleSaveUserRecommendation(req, res) {
   try {
-    // Ensure database connection is established first
-    const { db } = await connectToDatabase();
-    
     const { user } = req;
     const recommendation = req.body;
 
@@ -161,8 +114,7 @@ export async function handleSaveUserRecommendation(req, res) {
     // Save recommendation using the orchestrator service
     const savedRecommendation = await saveRecommendationToDatabase(
       user.id,
-      recommendation,
-      db
+      recommendation
     );
 
     return res.json({
@@ -187,11 +139,7 @@ export async function handleSaveUserRecommendation(req, res) {
  */
 export async function getUserHistory(req, res) {
   try {
-    // Ensure database connection is established first
-    const { db } = await connectToDatabase();
-    
     const { user } = req;
-    const { limit = 10, offset = 0 } = req.query;
 
     if (!user || !user.id) {
       return res.status(401).json({
@@ -200,18 +148,13 @@ export async function getUserHistory(req, res) {
       });
     }
 
-    // Now that we have the database connection, we can query user history
-    const history = await db
-      .collection("user_recommendations")
-      .find({ user_id: user.id })
-      .sort({ created_at: -1 })
-      .skip(parseInt(offset, 10))
-      .limit(parseInt(limit, 10))
-      .toArray();
+    // This would be implemented with database access
+    // For now, return an empty array as placeholder
+    const history = [];
 
     return res.json({
       status: "success",
-      data: history || [],
+      data: history,
     });
   } catch (err) {
     logger.error(`Error getting user history: ${err.message}`);
