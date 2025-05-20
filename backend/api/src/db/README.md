@@ -55,7 +55,7 @@ async function main() {
 
 The following scripts have been refactored to use the modular approach:
 
-1. **test-atlas-connection-v2.js** - Tests MongoDB Atlas connectivity
+1. **mongodb-atlas-connection-test.js** - Tests MongoDB Atlas connectivity
 
    - Uses modular database connection
    - Imports sample data if available

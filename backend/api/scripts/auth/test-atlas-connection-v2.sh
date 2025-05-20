@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run MongoDB Atlas connection test v2 (modular version)
-# This script runs the test-atlas-connection-v2.js file to verify MongoDB Atlas connectivity
+# This script runs the mongodb-atlas-connection-test.js file to verify MongoDB Atlas connectivity
 
 # Set colors
 GREEN='\033[0;32m'
@@ -40,7 +40,7 @@ echo -e "${BLUE}Running connection test...${NC}"
 SCRIPT_DIR="$(dirname "$0")"
 
 # Run the command and check exit code directly
-if ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/test-atlas-connection-v2.js"; then
+if ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/mongodb-atlas-connection-test.js"; then
     echo -e "${GREEN}Connection test completed successfully.${NC}"
 else
     echo -e "${RED}Connection test failed. Please check your MongoDB Atlas credentials.${NC}"
