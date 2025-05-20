@@ -3,7 +3,9 @@
  * Manages cache operations and MongoDB interactions
  */
 
-import { info, error as _error } from "../utils/logger";
+import loggerUtility from "../utils/logger";
+const { info } = loggerUtility;
+const _error = loggerUtility.error;
 import {
   getCachedFlightData,
   cacheFlightData,
