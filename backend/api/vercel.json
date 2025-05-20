@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "name": "chasquifx-api",
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "src/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/v2/forex/rates",
+      "dest": "/api/forex?rates=true"
+    },
+    {
+      "src": "/api/v2/forex/status",
+      "dest": "/api/forex"
+    },
+    {
+      "src": "/health",
+      "dest": "/api/health"
+    },
+    {
+      "src": "/api/db-status",
+      "dest": "/api/db-status"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/index.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "regions": ["cdg1"]
+}

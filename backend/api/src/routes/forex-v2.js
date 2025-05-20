@@ -3,7 +3,7 @@ import {
   getForexRates,
   getForexStatus,
   resetQuotaStatus,
-} from "../controllers/forex.js";
+} from "../controllers/forex-mongodb.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
@@ -29,4 +29,4 @@ router.get("/status", getForexStatus);
  */
 router.post("/reset_quota_status", authMiddleware, resetQuotaStatus);
 
-export const forexRoutes = router;
+export const forexRoutesV2 = router;

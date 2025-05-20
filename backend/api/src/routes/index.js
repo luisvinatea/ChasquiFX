@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { forexRoutes } from "./forex.js";
+import { forexRoutesV2 } from "./forex-v2.js";
 import { recommendationRoutes } from "./recommendations.js";
 import { recommendationsRoutesV2 } from "./recommendations-v2.js";
 import flightRoutes from "./flights.js";
@@ -19,7 +20,7 @@ export function setupRoutes(app) {
   const apiRouterV2 = Router();
 
   // Mount v2 route modules
-  apiRouterV2.use("/forex", forexRoutes); // Reuse v1 forex routes for now
+  apiRouterV2.use("/forex", forexRoutesV2); // Use MongoDB implementation
   apiRouterV2.use("/recommendations", recommendationsRoutesV2);
   apiRouterV2.use("/flights", flightRoutes);
 
