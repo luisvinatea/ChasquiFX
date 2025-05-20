@@ -3,7 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
-import { setupRoutes } from "./routes/index.js";
+import { setupRoutes } from "./routes/route-setup.js";
 import { initLogger } from "./utils/logger.js";
 
 // Load environment variables

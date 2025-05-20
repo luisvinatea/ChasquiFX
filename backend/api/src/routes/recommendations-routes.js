@@ -3,7 +3,7 @@ import {
   getRecommendations,
   handleSaveUserRecommendation,
   getUserHistory,
-} from "../controllers/recommendations-v2.js";
+} from "../controllers/recommendations-controller.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();

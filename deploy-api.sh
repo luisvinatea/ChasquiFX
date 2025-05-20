@@ -65,7 +65,36 @@ fi
 # Ensure Vercel CLI is installed
 if ! command -v vercel &>/dev/null; then
     echo -e "${YELLOW}⚠️ Vercel CLI is not installed. Installing it now...${NC}"
-    npm install -g vercel
+    
+    # Try with npm and handle permission errors
+    if ! npm install -g vercel; then
+        echo -e "${YELLOW}Permission issue detected. Trying with npm with sudo...${NC}"
+        echo -e "${YELLOW}You may be prompted for your password.${NC}"
+        
+        # Ask for confirmation before using sudo
+        read -p "Do you want to install Vercel CLI with sudo? (y/N) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            sudo npm install -g vercel
+        else
+            echo -e "${YELLOW}Alternative: Installing Vercel CLI locally in the project...${NC}"
+            npm install vercel --save-dev
+        fi
+    fi
+fi
+
+# Check if Vercel is available now
+if command -v vercel &>/dev/null; then
+    VERCEL_CMD="vercel"
+elif [ -f "./node_modules/.bin/vercel" ]; then
+    VERCEL_CMD="./node_modules/.bin/vercel"
+else
+    echo -e "${RED}❌ Unable to install or find Vercel CLI${NC}"
+    echo -e "${YELLOW}Please install Vercel CLI manually with:${NC}"
+    echo -e "${YELLOW}  npm install -g vercel${NC}"
+    echo -e "${YELLOW}  or${NC}"
+    echo -e "${YELLOW}  npm install vercel --save-dev${NC}"
+    exit 1
 fi
 
 echo "✅ Vercel CLI is ready"
@@ -95,11 +124,11 @@ else
 fi
 
 # Login to Vercel if not already logged in
-vercel whoami &>/dev/null || vercel login
+$VERCEL_CMD whoami &>/dev/null || $VERCEL_CMD login
 
 # Deploy to production
 echo -e "${BLUE}🔄 Deploying to Vercel...${NC}"
-vercel --prod
+$VERCEL_CMD --prod
 
 echo -e "${GREEN}✅ Deployment completed!${NC}"
 echo -e "${GREEN}🌐 Your API should now be accessible from: https://chasquifx-api.vercel.app${NC}"

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { forexRoutesV2 } from "./forex-v2.js";
-import { recommendationsRoutesV2 } from "./recommendations-v2.js";
+import { recommendationsRoutesV2 } from "./recommendations-routes.js";
 import flightRoutes from "./flights.js";
 
 export function setupRoutes(app) {
