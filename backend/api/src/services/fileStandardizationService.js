@@ -8,7 +8,11 @@
 
 import { promises as fs } from "fs";
 import { extname, resolve, join } from "path";
-import { error as _error, warning, info } from "../utils/logger";
+import loggerUtility from "../utils/logger.js";
+
+const info = (message) => loggerUtility.info(message);
+const _error = (message) => loggerUtility.error(message);
+const warning = (message) => loggerUtility.warn(message);
 
 /**
  * Extract specific metadata from a JSON file or object
