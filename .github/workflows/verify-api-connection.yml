@@ -1,4 +1,6 @@
 name: Verify API Connection
+permissions:
+  contents: read
 
 on:
   workflow_run:
