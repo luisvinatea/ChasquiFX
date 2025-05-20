@@ -4,6 +4,11 @@
 
 ChasquiFX is a tool that integrates flight route data with foreign exchange data to provide destination recommendations based on favorable exchange rates and available flight routes.
 
+## Deployment
+
+- Frontend: https://chasquifx-web.vercel.app
+- Backend API: https://chasquifx-api.vercel.app
+
 ## Architecture
 
 ChasquiFX uses a hybrid architecture with clear separation of concerns:

@@ -1,6 +1,10 @@
-# Getting Started with Create React App
+# ChasquiFX Web Frontend
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Deployment
+
+The frontend is automatically deployed to Vercel at https://chasquifx-web.vercel.app whenever changes are pushed to the main branch. The deployment is configured to use the frontend subdirectory as the project root.
 
 ## Available Scripts
 
