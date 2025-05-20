@@ -6,12 +6,9 @@
 import loggerUtility from "../utils/logger.js";
 import { connectToDatabase } from "./mongodb.js";
 import { ForexCache, FlightCache, ApiCallLog } from "./schemas.js";
-import {
-  generateCacheKey,
-  standardizeFlightFilename,
-  standardizeForexFilename,
-} from "../services/fileStandardizationService.js";
+import fileStandardizationService from "../services/fileStandardizationService.js";
 
+const { generateCacheKey, standardizeFlightFilename, standardizeForexFilename } = fileStandardizationService;
 const logger = loggerUtility;
 
 // Ensure database connection is established before operations
