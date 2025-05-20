@@ -4,6 +4,24 @@
 
 ChasquiFX is a tool that integrates flight route data with foreign exchange data to provide destination recommendations based on favorable exchange rates and available flight routes.
 
+## Recent Updates
+
+### May 20, 2025: CORS Configuration Fix
+
+Fixed CORS configuration to allow proper communication between the frontend and backend:
+
+- Updated `vercel.json` to use wildcard (\*) for Access-Control-Allow-Origin
+- Added proper CORS headers to all serverless function files
+- Created testing scripts to verify CORS configuration
+- Updated CORS configuration documentation
+
+To deploy the CORS fix:
+
+1. Run `./deploy-api-cors-fix.sh` from the project root
+2. After deployment completes, verify with `./test-cors-config.sh`
+
+For details, see [CORS Configuration Guide](backend/api/docs/cors-configuration-guide.md) and [CORS Update Documentation](backend/api/docs/cors-update-may-2025.md).
+
 ## Deployment
 
 - Frontend: https://chasquifx-web.vercel.app

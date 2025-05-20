@@ -43,7 +43,7 @@ In `backend/api/vercel.json`, we also add CORS headers to ensure Vercel properly
     "source": "/(.*)",
     "headers": [
       { "key": "Access-Control-Allow-Credentials", "value": "true" },
-      { "key": "Access-Control-Allow-Origin", "value": "https://chasquifx-web.vercel.app" },
+      { "key": "Access-Control-Allow-Origin", "value": "*" },
       { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
       {
         "key": "Access-Control-Allow-Headers",
@@ -54,14 +54,45 @@ In `backend/api/vercel.json`, we also add CORS headers to ensure Vercel properly
 ]
 ```
 
+### 3. Serverless Function CORS Headers
+
+In addition to the Express middleware and Vercel.json configuration, each serverless function file in the `/api` directory sets its own CORS headers. This is important for endpoints accessed directly through Vercel's serverless function routes:
+
+```javascript
+// Example from /api/health.js, /api/forex.js, and other serverless endpoints
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader("Access-Control-Allow-Credentials", true);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Serpapi-Key, X-Search-Api-Key, X-Exchange-Api-Key"
+  );
+
+  // Handle OPTIONS requests
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  // Rest of handler code...
+}
+```
+
 ## Troubleshooting CORS Issues
 
 If you encounter CORS errors:
 
 1. Check that the frontend domain is included in the `origin` array in `backend/api/src/index.js`
-2. Ensure the `Access-Control-Allow-Origin` header in `vercel.json` includes the frontend domain
-3. Verify that the necessary headers are allowed in both configurations
-4. Redeploy the backend API after making changes
+2. Verify that the `Access-Control-Allow-Origin` header in `vercel.json` is set to `"*"` or includes the specific frontend domain
+3. Check that all serverless function files in the `/api` directory have the correct CORS headers
+4. Ensure that all necessary headers (especially authorization and API key headers) are included in the `Access-Control-Allow-Headers` list
+5. Test with the `test-cors-config.sh` script to diagnose specific CORS issues
+6. Remember to redeploy the backend API after making changes using the `deploy-api-cors-fix.sh` script
 
 ## Adding New Frontend Domains
 

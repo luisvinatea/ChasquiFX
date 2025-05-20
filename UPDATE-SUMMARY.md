@@ -2,7 +2,21 @@
 
 ## Issues Fixed
 
-### 1. File Naming Conflicts
+### 1. CORS Configuration Issue (May 20, 2025)
+
+- **Issue**: CORS errors when frontend tried to access backend API endpoints
+- **Error**: `Access to XMLHttpRequest at 'https://chasquifx-api.vercel.app/api/v2/forex/status' from origin 'https://chasquifx-web.vercel.app' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.`
+- **Resolution**:
+  - Updated `vercel.json` to use wildcard (\*) for the `Access-Control-Allow-Origin` header
+  - Added missing headers to serverless function files in `/api` directory:
+    - Authorization
+    - X-Serpapi-Key
+    - X-Search-Api-Key
+    - X-Exchange-Api-Key
+  - Created test and deployment scripts: `test-cors-config.sh` and `deploy-api-cors-fix.sh`
+  - Updated CORS documentation with detailed configuration information
+
+### 2. File Naming Conflicts
 
 - **Issue**: Vercel deployment failed due to file naming conflicts
 - **Error**: `Two or more files have conflicting paths or names. Please make sure path segments and filenames, without their extension, are unique.`
@@ -27,6 +41,18 @@
 - Created documentation on Vercel file naming requirements
 
 ## Added or Modified Files
+
+### CORS Fix (May 20, 2025)
+
+- **backend/api/vercel.json**: Updated CORS headers to use wildcard (\*) for Access-Control-Allow-Origin
+- **backend/api/api/forex.js**: Added missing headers for CORS
+- **backend/api/api/health.js**: Added missing headers for CORS
+- **backend/api/api/db-status.js**: Added missing headers for CORS
+- **backend/api/docs/cors-configuration-guide.md**: Updated with improved CORS documentation
+- **backend/api/docs/cors-update-may-2025.md**: New documentation about CORS changes
+- **test-cors-config.sh**: New script to test CORS configuration
+- **deploy-api-cors-fix.sh**: New script to deploy API with CORS fixes
+- **README.md**: Updated with information about CORS fix
 
 ### Scripts
 
