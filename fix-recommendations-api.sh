@@ -39,7 +39,7 @@ if [ -f "src/controllers/recommendations.js" ]; then
 else
     echo -e "${RED}❌ Recommendations controller not found${NC}"
     echo -e "${YELLOW}Searching for possible controllers...${NC}"
-    find src/controllers -type f | xargs head -n 1
+    find src/controllers -type f -print0 | xargs -0 head -n 1
 fi
 
 # Check API logs if they exist
