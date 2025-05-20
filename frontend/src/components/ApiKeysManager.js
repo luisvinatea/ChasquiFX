@@ -17,11 +17,11 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ApiIcon from "@mui/icons-material/Api";
-import { storeUserApiKey, getUserApiKey } from "../services/supabaseClient";
+import { storeUserApiKey, getUserApiKey } from "../services/mongoDbClient";
 
 /**
  * Component to manage API keys for external services
- * Stores keys securely in Supabase database with user account
+ * Stores keys securely in MongoDB database with user account
  */
 const ApiKeysManager = ({ open, onClose, user }) => {
   const [apiKey, setApiKey] = useState("");
@@ -165,7 +165,8 @@ const ApiKeysManager = ({ open, onClose, user }) => {
             <Divider sx={{ my: 2 }} />
 
             <Typography variant="body2" color="info.main">
-              Your API key is stored securely and never shared with other users.
+              Your API key is stored securely and never shared with other
+              users.
             </Typography>
           </>
         )}

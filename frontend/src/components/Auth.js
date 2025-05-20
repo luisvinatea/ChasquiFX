@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { signInUser } from "../services/supabaseClient";
+import { signInUser } from "../services/mongoDbClient";
 
 /**
  * Authentication component for login and signup
