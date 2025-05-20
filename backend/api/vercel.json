@@ -11,6 +11,7 @@
       "use": "@vercel/node"
     }
   ],
+  "ignoreCommand": "find . -name \"*.sh\" -type f >> .vercelignore",
   "routes": [
     {
       "src": "/api/v2/forex/rates",
