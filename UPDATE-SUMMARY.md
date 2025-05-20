@@ -11,7 +11,16 @@
   - Updated shell script to reference the renamed file
   - Updated documentation references
 
-### 2. Vercel Deployment Configuration
+### 2. Mixed Routing Properties in vercel.json
+
+- **Issue**: Vercel deployment failed due to mixing old and new routing formats
+- **Error**: `Mixed Routing Properties - You are using both new and legacy routing properties.`
+- **Resolution**:
+  - Converted all `routes` entries to the newer `rewrites` format
+  - Changed property names from `src`/`dest` to `source`/`destination`
+  - Ensured consistent use of modern Vercel configuration format
+
+### 3. Vercel Deployment Configuration
 
 - Added `.vercelignore` file to exclude shell scripts and other files not needed for production
 - Updated `vercel.json` with improved configuration to handle file conflicts
@@ -21,7 +30,7 @@
 
 ### Scripts
 
-- **deploy-api.sh**: Enhanced with conflict detection before deployment
+- **deploy-api.sh**: Enhanced with conflict detection and vercel.json validation
 - **commit-and-push.sh**: Added to simplify GitHub updates
 
 ### Backend API
@@ -29,11 +38,12 @@
 - **mongodb-atlas-connection-test.js**: Renamed from test-atlas-connection-v2.js
 - **test-atlas-connection-v2.sh**: Updated to reference the renamed JS file
 - **.vercelignore**: Added to exclude files not needed for deployment
-- **vercel.json**: Updated with improved CORS and build configuration
+- **vercel.json**: Updated with proper routing format and improved CORS configuration
 
 ### Documentation
 
 - **backend/api/docs/vercel-file-naming-requirements.md**: New documentation on Vercel file naming requirements
+- **backend/api/docs/vercel-deployment-summary.md**: Updated with information about resolved issues
 - **backend/api/src/db/README.md**: Updated file references
 
 ## Next Steps
@@ -49,3 +59,4 @@
 2. Organize files by type and purpose in separate directories
 3. Use the deployment script's conflict detection before every deployment
 4. Update the `.vercelignore` file as new non-essential files are added to the project
+5. Always use the modern Vercel configuration format with `rewrites` instead of `routes`
