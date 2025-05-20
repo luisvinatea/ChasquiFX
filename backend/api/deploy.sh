@@ -34,9 +34,13 @@ fi
 # Login to Vercel if not already logged in
 $VERCEL_CMD whoami &>/dev/null || $VERCEL_CMD login
 
-# Deploy to production
+# Deploy to production with debug output
 echo -e "${BLUE}🔄 Deploying to Vercel...${NC}"
-$VERCEL_CMD --prod
+$VERCEL_CMD --prod --debug || {
+    echo -e "${RED}❌ Deployment failed with error code $?${NC}"
+    echo -e "${YELLOW}Trying again with build command to see detailed errors...${NC}"
+    $VERCEL_CMD build --prod --debug
+}
 
 echo -e "${GREEN}✅ Deployment completed!${NC}"
 echo -e "${GREEN}🌐 Your API should now be accessible from: https://chasquifx-api.vercel.app${NC}"
