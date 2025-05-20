@@ -67,7 +67,7 @@ start_backend() {
     # Start the server in the background
     echo -e "${YELLOW}Starting Node.js server...${NC}"
     export PORT=3001
-    node src/index.js >../logs/integration-test-backend.log 2>&1 &
+    node src/index.js >$REPO_ROOT/backend/logs/integration-test-backend.log 2>&1 &
     BACKEND_PID=$!
     echo $BACKEND_PID >/tmp/chasquifx-backend.pid
 
