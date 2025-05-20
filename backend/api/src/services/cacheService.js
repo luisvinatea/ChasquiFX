@@ -309,4 +309,9 @@ export default {
   standardizeSearchParams,
   getCachedRecommendations,
   cacheRecommendations,
+  getCachedForexData: getForexData,
+  cacheForexData: async (q, data) => {
+    // This is a wrapper for getForexData to maintain compatibility
+    return await cacheForexData(q, data);
+  }
 };

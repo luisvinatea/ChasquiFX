@@ -5,7 +5,8 @@
  */
 
 import { getLogger } from "../utils/logger.js";
-import { getCachedForexData, cacheForexData } from "./cacheService.js";
+import cacheService from "./cacheService.js";
+const { getCachedForexData, cacheForexData } = cacheService;
 import axios from "axios";
 
 // Initialize logger
