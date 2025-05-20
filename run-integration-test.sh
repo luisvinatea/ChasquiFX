@@ -154,7 +154,7 @@ cleanup() {
     if [ -f /tmp/chasquifx-backend.pid ]; then
         BACKEND_PID=$(cat /tmp/chasquifx-backend.pid)
         echo -e "${YELLOW}Stopping backend server (PID: $BACKEND_PID)...${NC}"
-        kill $BACKEND_PID 2>/dev/null
+        kill "$BACKEND_PID" 2>/dev/null
         rm /tmp/chasquifx-backend.pid
     fi
 
@@ -162,7 +162,7 @@ cleanup() {
     if [ -f /tmp/chasquifx-frontend.pid ]; then
         FRONTEND_PID=$(cat /tmp/chasquifx-frontend.pid)
         echo -e "${YELLOW}Stopping frontend server (PID: $FRONTEND_PID)...${NC}"
-        kill $FRONTEND_PID 2>/dev/null
+        kill "$FRONTEND_PID" 2>/dev/null
         rm /tmp/chasquifx-frontend.pid
     fi
 
