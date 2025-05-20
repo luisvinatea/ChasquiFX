@@ -63,7 +63,7 @@ ChasquiFX uses a hybrid architecture with the following components:
    - Provides RESTful endpoints with Express.js
    - Optimizes asynchronous operations
 
-4. **Mongo DB Cluster**:
+3. **Mongo DB Cluster**:
    - NoSQL database for storing user data and API logs
    - Authentication service
    - Cache layer for API responses
@@ -87,7 +87,7 @@ ChasquiFX uses a hybrid architecture with the following components:
    cd chasquifx
    ```
 
-3. **Node.js backend setup**
+2. **Node.js backend setup**
 
    ```bash
    cd backend/node
@@ -95,7 +95,7 @@ ChasquiFX uses a hybrid architecture with the following components:
    cp .env.template .env
    ```
 
-4. **Frontend setup**
+3. **Frontend setup**
 
    ```bash
    cd frontend
@@ -105,7 +105,7 @@ ChasquiFX uses a hybrid architecture with the following components:
    cp .env.template .env.local
    ```
 
-5. **MongoDB setup**
+4. **MongoDB setup**
 
    - Create a new project in [MongoDB](https://www.mongodb.com/)
    - Use the js script in `backend/api/src/db/operations.js` to create the collections and indexes
@@ -117,9 +117,18 @@ ChasquiFX uses a hybrid architecture with the following components:
 
    Connect your GitHub repository to Vercel and enable automatic deployments from the backend subdirectory as the vercel project root.
 
+   For detailed instructions, see [Vercel Deployment Guide](backend/api/docs/vercel-deployment-guide.md).
+
 2. **Frontend deployment to GitHub Pages**
 
    Use the included GitHub Actions workflow by configuring the necessary secrets in your repository.
+
+   ```bash
+   # Workflow is triggered automatically on push to the main branch
+   # You can also trigger it manually from the Actions tab
+   ```
+
+   For detailed instructions, see [Frontend Deployment Guide](docs/frontend-deployment-guide.md).
 
 ## API Key Setup
 

@@ -1,0 +1,56 @@
+name: Verify API Connection
+
+on:
+  workflow_run:
+    workflows: ["Deploy Frontend to GitHub Pages"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  test-api-connection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Test API Health Endpoint
+        run: |
+          echo "Testing API health endpoint..."
+          response=$(curl -s -o response.txt -w "%{http_code}" ${{ secrets.REACT_APP_API_URL }}/health)
+          if [ "$response" -eq 200 ]; then
+            echo "✅ API health endpoint is working!"
+            cat response.txt
+          else
+            echo "❌ API health endpoint returned status $response"
+            cat response.txt
+            exit 1
+          fi
+
+      - name: Test Forex Status Endpoint
+        run: |
+          echo "Testing forex status endpoint..."
+          response=$(curl -s -o response.txt -w "%{http_code}" ${{ secrets.REACT_APP_API_URL }}/api/v2/forex/status)
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Forex status endpoint is working!"
+            cat response.txt
+          else
+            echo "❌ Forex status endpoint returned status $response"
+            cat response.txt
+            exit 1
+          fi
+
+      - name: Test DB Status Endpoint
+        run: |
+          echo "Testing database status endpoint..."
+          response=$(curl -s -o response.txt -w "%{http_code}" ${{ secrets.REACT_APP_API_URL }}/api/db-status)
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Database status endpoint is working!"
+            cat response.txt
+          else
+            echo "❌ Database status endpoint returned status $response"
+            cat response.txt
+            # Not failing the workflow as this might be acceptable
+            echo "Warning: Database connection issue"
+          fi

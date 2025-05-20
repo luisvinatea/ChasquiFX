@@ -20,6 +20,16 @@ For local development, you can switch to:
 REACT_APP_API_URL=http://localhost:3001
 ```
 
+### GitHub Pages Deployment
+
+When deploying to GitHub Pages, the API URL is provided through a GitHub secret:
+
+1. The CI/CD workflow uses the `REACT_APP_API_URL` secret during the build process
+2. This ensures the built application points to the production API
+3. No environment files are committed to the repository for security
+
+See the [Frontend Deployment Guide](/docs/frontend-deployment-guide.md) for detailed setup instructions.
+
 ### API Services
 
 The API is organized into these main service categories:
