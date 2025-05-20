@@ -8,7 +8,6 @@
       "runtime": "@vercel/node@latest"
     }
   },
-  "ignoreCommand": "find . -name \"*.sh\" -type f >> .vercelignore",
   "rewrites": [
     {
       "source": "/api/v2/forex/rates",
