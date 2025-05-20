@@ -3,7 +3,7 @@
  * Defines the schemas for caching API responses
  */
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 // Schema for forex data cache
 const forexCacheSchema = new mongoose.Schema({
@@ -254,9 +254,4 @@ const FlightCache = mongoose.model("FlightCache", flightCacheSchema);
 const ApiCallLog = mongoose.model("ApiCallLog", apiCallLogSchema);
 const Flight = mongoose.model("Flight", flightSchema);
 
-module.exports = {
-  ForexCache,
-  FlightCache,
-  ApiCallLog,
-  Flight,
-};
+export { ForexCache, FlightCache, ApiCallLog, Flight };

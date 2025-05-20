@@ -3,14 +3,16 @@
  * MongoDB implementation for caching API responses
  */
 
-const logger = require("../utils/logger");
-const { connectToDatabase } = require("./mongodb");
-const { ForexCache, FlightCache, ApiCallLog } = require("./schemas");
-const {
+import loggerUtility from "../utils/logger.js";
+import { connectToDatabase } from "./mongodb.js";
+import { ForexCache, FlightCache, ApiCallLog } from "./schemas.js";
+import {
   generateCacheKey,
   standardizeFlightFilename,
   standardizeForexFilename,
-} = require("../services/fileStandardizationService").default;
+} from "../services/fileStandardizationService.js";
+
+const logger = loggerUtility;
 
 // Ensure database connection is established before operations
 let dbInitialized = false;
@@ -502,7 +504,7 @@ async function getFlightStats() {
   };
 }
 
-module.exports = {
+export {
   getCachedFlightData,
   cacheFlightData,
   getCachedForexData,
