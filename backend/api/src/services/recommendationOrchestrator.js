@@ -9,10 +9,8 @@
  */
 
 import { getLogger } from "../utils/logger.js";
-import {
-  getCachedForexData,
-  cacheForexData,
-} from "../services/cacheService.js";
+import cacheService from "../services/cacheService.js";
+const { getCachedForexData, cacheForexData } = cacheService;
 import {
   calculateTrend,
   getExchangeRate,
