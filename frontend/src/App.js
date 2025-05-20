@@ -27,6 +27,7 @@ import RecommendationsList from "./components/RecommendationsList";
 import StatsCards from "./components/StatsCards";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ApiKeysManager from "./components/ApiKeysManager";
+import ApiConnectionStatus from "./components/ApiConnectionStatus";
 import Auth from "./components/Auth";
 import chasquiApi from "./services/chasquiApi";
 import {
@@ -317,6 +318,9 @@ function App() {
           {user && <Tab label="History" />}
         </Tabs>
 
+        {/* API Connection Status */}
+        <ApiConnectionStatus onStatusChange={(status) => setApiStatus(status.status === 'healthy' || status.status === 'limited')} />
+        
         {/* Main content */}
         {activeTab === 0 && (
           <Grid container spacing={3}>

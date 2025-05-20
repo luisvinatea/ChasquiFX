@@ -17,7 +17,27 @@ const app = express();
 
 // Setup middleware
 app.use(helmet()); // Security headers
-app.use(cors()); // Enable CORS
+
+// Configure CORS with specific options
+app.use(
+  cors({
+    origin: [
+      "https://chasquifx.github.io", // GitHub Pages deployment
+      "http://localhost:3000", // Local React development
+      /\.vercel\.app$/, // Any Vercel preview deployments
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Serpapi-Key",
+      "X-Search-Api-Key",
+      "X-Exchange-Api-Key",
+    ],
+    credentials: true,
+    maxAge: 86400, // Cache preflight requests for 24 hours
+  })
+);
 app.use(express.json()); // Parse JSON bodies
 app.use(
   morgan("combined", {

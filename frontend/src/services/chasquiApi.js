@@ -9,7 +9,7 @@ import axios from "axios";
 // Use environment variable if available, fallback to Vercel deployment, finally use local development server
 const API_BASE_URL =
   process.env.REACT_APP_API_URL ||
-  "https://chasquifx.vercel.app" ||
+  "https://chasquifx-api.vercel.app" ||
   "http://localhost:3001";
 
 // Helper function to get API keys from localStorage
@@ -63,13 +63,43 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle unauthorized errors
-    if (error.response && error.response.status === 401) {
-      // Clear token and redirect to login
-      localStorage.removeItem("supabaseToken");
-      window.location.href = "/login";
+    // Format the error details
+    const errorDetails = {
+      message: error.message || 'Unknown error occurred',
+      status: error.response?.status || 0,
+      data: error.response?.data || null,
+    };
+
+    // Log the error
+    console.error('API Error:', errorDetails);      // Handle specific error codes
+    switch (errorDetails.status) {
+      case 401:
+        // Unauthorized - clear token and redirect to login
+        localStorage.removeItem("supabaseToken");
+        window.location.href = "/login";
+        break;
+      
+      case 403:
+        // Forbidden - likely an API key issue
+        console.error('API Key Issue: Access forbidden', errorDetails);
+        // Could dispatch an event or update a global state
+        document.dispatchEvent(new CustomEvent('chasquifx:api-key-error'));
+        break;
+      
+      case 429:
+        // Too many requests - API rate limit
+        console.error('API Rate Limit Exceeded', errorDetails);
+        document.dispatchEvent(new CustomEvent('chasquifx:api-limit-exceeded'));
+        break;
+      
+      default:
+        // For all other errors, dispatch a general error event
+        document.dispatchEvent(new CustomEvent('chasquifx:api-error', { 
+          detail: errorDetails 
+        }));
     }
-    return Promise.reject(error);
+    
+    return Promise.reject(errorDetails);
   }
 );
 
