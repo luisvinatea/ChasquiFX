@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   getRecommendations,
-  saveUserRecommendation,
+  handleSaveUserRecommendation,
   getUserHistory,
 } from "../controllers/recommendations-v2.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -27,6 +27,6 @@ router.get("/history", authMiddleware, getUserHistory);
  * @description Save a recommendation to user's history
  * @access Private
  */
-router.post("/save", authMiddleware, saveUserRecommendation);
+router.post("/save", authMiddleware, handleSaveUserRecommendation);
 
 export const recommendationsRoutesV2 = router;

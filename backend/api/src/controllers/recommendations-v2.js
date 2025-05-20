@@ -7,7 +7,7 @@
 import { getLogger } from "../utils/logger.js";
 import {
   generateRecommendations,
-  saveUserRecommendation,
+  saveUserRecommendation as saveRecommendationToDatabase,
 } from "../services/recommendationOrchestrator.js";
 import {
   getCachedRecommendations,
@@ -92,7 +92,7 @@ export async function getRecommendations(req, res) {
  * @param {Object} req - Express request
  * @param {Object} res - Express response
  */
-export async function saveUserRecommendation(req, res) {
+export async function handleSaveUserRecommendation(req, res) {
   try {
     const { user } = req;
     const recommendation = req.body;
@@ -112,7 +112,7 @@ export async function saveUserRecommendation(req, res) {
     }
 
     // Save recommendation using the orchestrator service
-    const savedRecommendation = await saveUserRecommendation(
+    const savedRecommendation = await saveRecommendationToDatabase(
       user.id,
       recommendation
     );

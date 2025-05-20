@@ -17,11 +17,11 @@ import {
   calculateTrend,
   getExchangeRate,
   loadConsolidatedForexData,
-} from "../services/forexService.js";
+} from "../services/forexService-v2.js";
 import {
   getRoutesForAirport,
   getAirportCountryMap,
-} from "../services/geoService.js";
+} from "../services/geoService-v2.js";
 import {
   getMultipleFares,
   estimateFlightPrice,
@@ -111,7 +111,7 @@ export async function generateRecommendations(params) {
             {
               outboundDate,
               returnDate,
-              apiKey
+              apiKey,
             }
           );
         } else {
