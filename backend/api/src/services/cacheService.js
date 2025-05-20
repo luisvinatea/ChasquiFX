@@ -12,7 +12,7 @@ import {
   getCachedForexData,
   cacheForexData,
 } from "../db/operations.js";
-import { writeStandardizedFile } from "./fileStandardizationService.js";
+import fileStandardizationService from "./fileStandardizationService.js";
 
 /**
  * Format date to YYYY-MM-DD format
@@ -109,7 +109,7 @@ async function getFlightData(params, fetchCallback) {
       );
 
       // Write to filesystem with standardized filename
-      await writeStandardizedFile(apiData, "flight");
+      await fileStandardizationService.standardizeFilename(apiData, "flight");
 
       return { data: apiData, source: "api" };
     }
@@ -161,7 +161,7 @@ async function getForexData(params, fetchCallback) {
       await cacheForexData(q, apiData);
 
       // Write to filesystem with standardized filename
-      await writeStandardizedFile(apiData, "forex");
+      await fileStandardizationService.standardizeFilename(apiData, "forex");
 
       return { data: apiData, source: "api" };
     }
