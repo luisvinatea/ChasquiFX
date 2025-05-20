@@ -2,10 +2,10 @@
   "version": 2,
   "functions": {
     "api/**/*.js": {
-      "runtime": "@vercel/node"
+      "runtime": "@vercel/node@2.0.0"
     },
     "src/index.js": {
-      "runtime": "@vercel/node"
+      "runtime": "@vercel/node@2.0.0"
     }
   },
   "rewrites": [
@@ -41,10 +41,5 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "regions": ["cdg1"],
-  "build": {
-    "env": {
-      "NODE_VERSION": "18.x"
-    }
-  }
+  "regions": ["cdg1"]
 }
