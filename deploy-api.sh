@@ -14,7 +14,10 @@ echo -e "${BLUE}🚀 Starting ChasquiFX API deployment...${NC}"
 
 # Navigate to the backend API directory
 cd "$(dirname "$0")" || exit
-cd backend/api || exit
+# Make sure we only cd into backend/api if not already in the api directory
+if [ "$(basename "$(pwd)")" != "api" ]; then
+    cd backend/api || exit
+fi
 
 # Check for file conflicts that might cause deployment issues
 echo -e "${BLUE}🔍 Checking for potential file conflicts...${NC}"
@@ -128,7 +131,10 @@ $VERCEL_CMD whoami &>/dev/null || $VERCEL_CMD login
 
 # Deploy to production
 echo -e "${BLUE}🔄 Deploying to Vercel...${NC}"
-$VERCEL_CMD --prod
+# Make sure we're in the right directory for deployment
+CURRENT_DIR=$(pwd)
+echo -e "${BLUE}Deploying from: ${CURRENT_DIR}${NC}"
+$VERCEL_CMD --prod --cwd "$CURRENT_DIR"
 
 echo -e "${GREEN}✅ Deployment completed!${NC}"
 echo -e "${GREEN}🌐 Your API should now be accessible from: https://chasquifx-api.vercel.app${NC}"
