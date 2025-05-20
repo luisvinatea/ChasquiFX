@@ -3,9 +3,6 @@
   "functions": {
     "api/**/*.js": {
       "runtime": "@vercel/node@2.0.0"
-    },
-    "src/index.js": {
-      "runtime": "@vercel/node@2.0.0"
     }
   },
   "rewrites": [
@@ -16,7 +13,7 @@
     { "source": "/api/v2/forex/status", "destination": "/api/forex" },
     { "source": "/health", "destination": "/api/health" },
     { "source": "/api/db-status", "destination": "/api/db-status" },
-    { "source": "/(.*)", "destination": "/src/index.js" }
+    { "source": "/(.*)", "destination": "/api/index.js" }
   ],
   "headers": [
     {
