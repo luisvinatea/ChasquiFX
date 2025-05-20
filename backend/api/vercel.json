@@ -2,10 +2,10 @@
   "version": 2,
   "functions": {
     "api/**/*.js": {
-      "runtime": "@vercel/node@latest"
+      "runtime": "@vercel/node@18"
     },
     "src/index.js": {
-      "runtime": "@vercel/node@latest"
+      "runtime": "@vercel/node@18"
     }
   },
   "rewrites": [
