@@ -44,9 +44,27 @@ check_conflicts() {
     return $CONFLICTS
 }
 
+# Check for Mixed Routing Properties in vercel.json
+echo -e "${BLUE}🔍 Checking vercel.json configuration...${NC}"
+if grep -q '"routes":' vercel.json && (grep -q '"rewrites":' vercel.json || grep -q '"headers":' vercel.json); then
+    echo -e "${RED}⚠️ Mixed Routing Properties detected in vercel.json!${NC}"
+    echo -e "${YELLOW}Error: You are using both new and legacy routing properties.${NC}"
+    echo -e "${YELLOW}Please use only the modern format with 'rewrites', 'headers', etc.${NC}"
+    echo -e "${YELLOW}See https://vercel.com/docs/errors/error-list#mixed-routing-properties${NC}"
+
+    read -p "Do you want to continue with deployment anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${RED}Deployment aborted.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✅ vercel.json routing properties look good${NC}"
+fi
+
 # Ensure Vercel CLI is installed
 if ! command -v vercel &>/dev/null; then
-    echo "⚠️ Vercel CLI is not installed. Installing it now..."
+    echo -e "${YELLOW}⚠️ Vercel CLI is not installed. Installing it now...${NC}"
     npm install -g vercel
 fi
 

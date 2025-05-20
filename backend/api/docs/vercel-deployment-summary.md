@@ -17,6 +17,7 @@ The ChasquiFX API has been prepared for deployment to Vercel as serverless funct
    - Created API route handlers in `/api` directory
    - Updated `vercel.json` with optimized routing
    - Added environment variable templates
+   - Fixed mixed routing properties error by using consistent modern format
 
 3. **API Endpoints**
 
@@ -27,6 +28,47 @@ The ChasquiFX API has been prepared for deployment to Vercel as serverless funct
 4. **Deployment Automation**
    - Created GitHub Actions workflow for automatic deployment
    - Added deployment documentation
+
+## Deployment Issues Resolved
+
+### 1. File Naming Conflicts
+
+Fixed conflicts between files with the same base name but different extensions:
+
+- Renamed `test-atlas-connection-v2.js` to `mongodb-atlas-connection-test.js`
+- Added `.vercelignore` file to exclude shell scripts and non-production files
+- Created documentation about Vercel file naming requirements
+
+### 2. Mixed Routing Properties
+
+The deployment was failing due to mixing old and new routing formats in `vercel.json`. This was fixed by:
+
+- Converting all `routes` entries to the newer `rewrites` format
+- Updating property names from `src`/`dest` to `source`/`destination`
+- Ensuring consistent use of the modern routing property format
+
+Before:
+
+```json
+"routes": [
+  { "src": "/api/v2/forex/rates", "dest": "/api/forex?rates=true" }
+]
+```
+
+After:
+
+```json
+"rewrites": [
+  { "source": "/api/v2/forex/rates", "destination": "/api/forex?rates=true" }
+]
+```
+
+### 3. CORS Configuration
+
+Added proper CORS configuration to allow requests from the frontend domain:
+
+- Updated Express CORS middleware to include `https://chasquifx-web.vercel.app`
+- Added CORS headers directly in Vercel configuration
 
 ## Next Steps
 
