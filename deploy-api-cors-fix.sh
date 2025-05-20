@@ -28,6 +28,6 @@ vercel whoami || vercel login
 echo -e "${BLUE}Deploying to production...${NC}"
 vercel --prod
 
-echo -e "\n${BLUE}Deployment process completed!${NC}"
-echo -e "${BLUE}It may take a few minutes for the changes to propagate.${NC}"
-echo -e "${BLUE}After deployment, run ./test-cors-config.sh to verify CORS is working correctly.${NC}"
+echo -e "\n${GREEN}Deployment process completed!${NC}"
+echo -e "${GREEN}It may take a few minutes for the changes to propagate.${NC}"
+echo -e "${GREEN}After deployment, run ./test-cors-config.sh to verify CORS is working correctly.${NC}"
