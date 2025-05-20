@@ -24,6 +24,7 @@ app.use(
     origin: [
       "https://chasquifx.github.io", // GitHub Pages deployment
       "http://localhost:3000", // Local React development
+      "https://chasquifx-web.vercel.app", // Vercel production frontend
       /\.vercel\.app$/, // Any Vercel preview deployments
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
