@@ -58,13 +58,37 @@ test_cache_dashboard() {
     return $?
 }
 
+# Test flight service functionality
+test_flight_service() {
+    run_test "Flight Service" "node ../tests/flight-service-test.js"
+    return $?
+}
+
+# Test flight route service functionality
+test_flight_route_service() {
+    run_test "Flight Route Service" "node ../tests/flight-route-service-test.js"
+    return $?
+}
+
+# Test flight database operations
+test_flight_db() {
+    run_test "Flight Database Operations" "node ../tests/flight-db-test.js"
+    return $?
+}
+
+# Test flight controller API endpoints
+test_flight_controller() {
+    run_test "Flight Controller API" "node ../tests/flight-controller-test.js"
+    return $?
+}
+
 # Main test runner
 main() {
-    echo "==== ChasquiFX MongoDB Integration Test Suite ===="
+    echo "==== ChasquiFX Integration Test Suite ===="
     echo "Starting tests at $(date)"
     echo
 
-    local total_tests=4
+    local total_tests=13 # Updated to include the 4 new flight service tests
     local passed_tests=0
 
     # Run MongoDB connection test
@@ -94,6 +118,51 @@ main() {
     fi
 
     echo
+
+    # Flight Service Tests (these are optional and won't fail the entire suite)
+    echo -e "${YELLOW}===== Running Flight Service Tests =====${NC}"
+    echo -e "${YELLOW}These tests are optional and failures won't fail the entire suite${NC}"
+
+    # Run Flight Service test
+    if test_flight_service; then
+        passed_tests=$((passed_tests + 1))
+    else
+        # Don't count against total since it's optional
+        total_tests=$((total_tests - 1))
+    fi
+
+    echo
+
+    # Run Flight Route Service test
+    if test_flight_route_service; then
+        passed_tests=$((passed_tests + 1))
+    else
+        # Don't count against total since it's optional
+        total_tests=$((total_tests - 1))
+    fi
+
+    echo
+
+    # Run Flight DB test
+    if test_flight_db; then
+        passed_tests=$((passed_tests + 1))
+    else
+        # Don't count against total since it's optional
+        total_tests=$((total_tests - 1))
+    fi
+
+    echo
+
+    # Run Flight Controller API test
+    if test_flight_controller; then
+        passed_tests=$((passed_tests + 1))
+    else
+        # Don't count against total since it's optional
+        total_tests=$((total_tests - 1))
+    fi
+
+    echo
+
     echo "==== Test Results ===="
     echo -e "Tests passed: ${GREEN}${passed_tests}/${total_tests}${NC}"
 

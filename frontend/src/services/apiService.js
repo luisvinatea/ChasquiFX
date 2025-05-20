@@ -23,6 +23,53 @@ const getApiKeys = () => {
   }
 };
 
+// Helper function to get authentication headers
+const buildAuthHeaders = () => {
+  try {
+    const apiKeys = getApiKeys();
+    const headers = {};
+
+    if (apiKeys.serpApi) {
+      headers["X-Serpapi-Key"] = apiKeys.serpApi;
+    }
+    if (apiKeys.exchangeApi) {
+      headers["X-Exchange-Api-Key"] = apiKeys.exchangeApi;
+    }
+
+    return headers;
+  } catch (error) {
+    console.error("Failed to build auth headers:", error);
+    return {};
+  }
+};
+
+// Helper function for standardized API error handling
+const handleApiError = (error) => {
+  if (error.response) {
+    // The server responded with a status code outside the 2xx range
+    const message =
+      error.response.data?.message ||
+      error.response.data?.error ||
+      "API Error";
+    const status = error.response.status;
+    return { message, status, originalError: error };
+  } else if (error.request) {
+    // The request was made but no response was received
+    return {
+      message: "No response from server. Please check your connection.",
+      status: 0,
+      originalError: error,
+    };
+  } else {
+    // Something happened in setting up the request
+    return {
+      message: error.message || "Unknown error occurred",
+      status: 0,
+      originalError: error,
+    };
+  }
+};
+
 // API Service class
 class ApiService {
   // Check if the API server is running
@@ -243,6 +290,190 @@ class ApiService {
     } catch (error) {
       console.error("Failed to get available currencies:", error);
       return ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF"]; // Default currencies on error
+    }
+  }
+
+  /**
+   * Flight Service API endpoints
+   */
+
+  // Get flight service status
+  async getFlightServiceStatus() {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/status`,
+        {
+          timeout: 5000,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error getting flight service status:", error);
+      throw error;
+    }
+  }
+
+  // Get flight fare for a specific route and dates
+  async getFlightFare(
+    departureAirport,
+    arrivalAirport,
+    outboundDate,
+    returnDate,
+    currency = "USD"
+  ) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/v2/flights/fare`, {
+        timeout: 10000,
+        params: {
+          departure_airport: departureAirport,
+          arrival_airport: arrivalAirport,
+          outbound_date: outboundDate,
+          return_date: returnDate,
+          currency,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error getting flight fare:", error);
+      throw error;
+    }
+  }
+
+  // Get flight fares for multiple destinations
+  async getMultiFlightFares(
+    departureAirport,
+    arrivalAirports,
+    outboundDate,
+    returnDate,
+    currency = "USD"
+  ) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/multi-fares`,
+        {
+          timeout: 10000,
+          headers: buildAuthHeaders(),
+          params: {
+            departure_airport: departureAirport,
+            arrival_airports: Array.isArray(arrivalAirports)
+              ? arrivalAirports.join(",")
+              : arrivalAirports,
+            outbound_date: outboundDate,
+            return_date: returnDate,
+            currency,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error getting multiple flight fares:", error);
+      throw handleApiError(error);
+    }
+  }
+
+  // Get routes from a departure airport
+  async getRoutesFromAirport(departureAirport) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/routes/${departureAirport}`,
+        {
+          timeout: 8000,
+          headers: buildAuthHeaders(),
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting routes from ${departureAirport}:`, error);
+      throw handleApiError(error);
+    }
+  }
+
+  // Get popular flight routes
+  async getPopularRoutes(limit = 10) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/routes/popular`,
+        {
+          timeout: 8000,
+          headers: buildAuthHeaders(),
+          params: { limit },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error getting popular routes:", error);
+      throw handleApiError(error);
+    }
+  }
+
+  // Get cheapest routes from a departure airport
+  async getCheapestRoutes(
+    departureAirport,
+    outboundDate,
+    returnDate,
+    currency = "USD",
+    limit = 5
+  ) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/cheapest/${departureAirport}`,
+        {
+          timeout: 10000,
+          headers: buildAuthHeaders(),
+          params: {
+            outbound_date: outboundDate,
+            return_date: returnDate,
+            currency,
+            limit,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Error getting cheapest routes from ${departureAirport}:`,
+        error
+      );
+      throw handleApiError(error);
+    }
+  }
+
+  // Get eco-friendly routes from a departure airport
+  async getEcoFriendlyRoutes(departureAirport, limit = 5) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/eco-friendly/${departureAirport}`,
+        {
+          timeout: 10000,
+          params: { limit },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Error getting eco-friendly routes from ${departureAirport}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  // Get emissions data for a specific route
+  async getRouteEmissions(departureAirport, arrivalAirport) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/v2/flights/emissions/${departureAirport}/${arrivalAirport}`,
+        {
+          timeout: 5000,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Error getting emissions for route ${departureAirport}-${arrivalAirport}:`,
+        error
+      );
+      throw error;
     }
   }
 }
