@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Serpapi-Key, X-Search-Api-Key, X-Exchange-Api-Key"
   );
 
   // Handle OPTIONS requests
