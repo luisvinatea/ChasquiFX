@@ -3,9 +3,19 @@
  * Combines forex and flight data to provide destination recommendations.
  */
 
-import { warning, error, info } from "../utils/logger";
-import { DestinationRecommendation, RecommendationsResponse } from "../models/schemas";
-import { getExchangeRate, ensureFreshForexData, loadConsolidatedForexData } from "./forexService";
+import loggerUtility from "../utils/logger.js";
+const warning = (message) => loggerUtility.warn(message);
+const error = (message) => loggerUtility.error(message);
+const info = (message) => loggerUtility.info(message);
+import {
+  DestinationRecommendation,
+  RecommendationsResponse,
+} from "../models/schemas";
+import {
+  getExchangeRate,
+  ensureFreshForexData,
+  loadConsolidatedForexData,
+} from "./forexService";
 import { getRoutesForAirport, getAirportCountryMap } from "./geoService";
 import { fetchMultipleFares } from "./flightService";
 
@@ -61,9 +71,7 @@ function calculateTrend(forexData, currencyPair, days = 30) {
     );
 
     if (yValues.some((v) => v === undefined)) {
-      warning(
-        "Neither ExchangeRate nor Close found in some data points"
-      );
+      warning("Neither ExchangeRate nor Close found in some data points");
       return 0.0;
     }
 
@@ -260,9 +268,7 @@ function getExchangeRateWithTrend(forexData, baseCurrency, quoteCurrency) {
         return [rate, 0.0];
       }
 
-      warning(
-        `Exchange rate not found for ${baseCurrency}/${quoteCurrency}`
-      );
+      warning(`Exchange rate not found for ${baseCurrency}/${quoteCurrency}`);
       return [1.0, 0.0];
     }
   } catch (e) {
@@ -321,9 +327,7 @@ async function getRecommendations(
   // Ensure we have fresh forex data before generating recommendations
   const updated = await ensureFreshForexData();
   if (updated) {
-    info(
-      "Using freshly updated real-time forex data from Google Finance"
-    );
+    info("Using freshly updated real-time forex data from Google Finance");
   } else {
     warning("Using existing forex data from filesystem");
   }
