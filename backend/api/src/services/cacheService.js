@@ -3,16 +3,16 @@
  * Manages cache operations and MongoDB interactions
  */
 
-import loggerUtility from "../utils/logger";
-const { info } = loggerUtility;
-const _error = loggerUtility.error;
+import loggerUtility from "../utils/logger.js";
+const info = (message) => loggerUtility.info(message);
+const _error = (message) => loggerUtility.error(message);
 import {
   getCachedFlightData,
   cacheFlightData,
   getCachedForexData,
   cacheForexData,
-} from "../db/operations";
-import { writeStandardizedFile } from "./fileStandardizationService";
+} from "../db/operations.js";
+import { writeStandardizedFile } from "./fileStandardizationService.js";
 
 /**
  * Format date to YYYY-MM-DD format
