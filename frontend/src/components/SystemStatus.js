@@ -13,7 +13,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import MemoryIcon from "@mui/icons-material/Memory";
 import StorageIcon from "@mui/icons-material/Storage";
-import { forexService } from "../services/api";
+import chasquiApi from "../services/chasquiApi";
 
 /**
  * SystemStatus component displays the status of both Node.js API and Python Data Processing backends
@@ -27,7 +27,7 @@ const SystemStatus = () => {
     const fetchStatus = async () => {
       try {
         setLoading(true);
-        const result = await forexService.getStatus();
+        const result = await chasquiApi.systemService.getStatus();
         setStatus(result);
         setError(null);
       } catch (err) {
