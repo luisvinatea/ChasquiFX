@@ -38,10 +38,9 @@ fi
 echo -e "${BLUE}Running connection test...${NC}"
 # Use full path to the JS file to ensure we're running the right one
 SCRIPT_DIR="$(dirname "$0")"
-ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/test-atlas-connection-v2.js"
 
-# Check the exit code
-if [ $? -eq 0 ]; then
+# Run the command and check exit code directly
+if ENV_PATH="${ENV_FILE}" node "${SCRIPT_DIR}/test-atlas-connection-v2.js"; then
     echo -e "${GREEN}Connection test completed successfully.${NC}"
 else
     echo -e "${RED}Connection test failed. Please check your MongoDB Atlas credentials.${NC}"
