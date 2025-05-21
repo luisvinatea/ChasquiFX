@@ -1,4 +1,4 @@
-import { supabaseClient } from "../services/supabase.js";
+import { verifyToken } from "../services/authService.js";
 import { getLogger } from "../utils/logger.js";
 
 const logger = getLogger("auth-middleware");
@@ -21,13 +21,10 @@ export async function authMiddleware(req, res, next) {
       });
     }
 
-    // Verify the token with Supabase
-    const {
-      data: { user },
-      error,
-    } = await supabaseClient.auth.getUser(token);
+    // Verify the token with our authentication service
+    const result = await verifyToken(token);
 
-    if (error || !user) {
+    if (!result.success || !result.user) {
       return res.status(401).json({
         status: "error",
         message: "Unauthorized: Invalid token",
@@ -35,7 +32,7 @@ export async function authMiddleware(req, res, next) {
     }
 
     // Set the user on the request object
-    req.user = user;
+    req.user = result.user;
 
     next();
   } catch (error) {
