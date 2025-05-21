@@ -2,7 +2,30 @@
 
 ## Issues Fixed
 
-### 1. CORS Configuration Issue (May 20, 2025)
+### 1. Security Improvement: Removed Hardcoded JWT Secret (May 20, 2025)
+
+- **Issue**: Hardcoded JWT secret in authentication service code
+- **Risk**: Potential security vulnerability if source code is exposed
+- **Resolution**:
+  - Implemented proper environment variable handling system
+  - Created utility for accessing environment variables securely
+  - Added validation to prevent using placeholder values in production
+  - Updated documentation with secure practices for credential handling
+  - Added comprehensive environment validation on application startup
+
+### 2. Frontend Migration from CRA to Vite (May 20, 2025)
+
+- **Issue**: Create React App provided increasingly slow development experience
+- **Resolution**:
+  - Successfully migrated frontend from Create React App to Vite
+  - Updated environment variables from REACT*APP* to VITE\_
+  - Created proper Vite configuration with optimizations
+  - Updated build output directory from build to dist
+  - Updated Vercel deployment configuration for Vite
+  - Created verification script to ensure proper Vite setup
+  - Documented migration process and benefits
+
+### 3. CORS Configuration Issue (May 20, 2025)
 
 - **Issue**: CORS errors when frontend tried to access backend API endpoints
 - **Error**: `Access to XMLHttpRequest at 'https://chasquifx-api.vercel.app/api/v2/forex/status' from origin 'https://chasquifx-web.vercel.app' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.`
@@ -16,7 +39,7 @@
   - Created test and deployment scripts: `test-cors-config.sh` and `deploy-api-cors-fix.sh`
   - Updated CORS documentation with detailed configuration information
 
-### 2. File Naming Conflicts
+### 4. File Naming Conflicts
 
 - **Issue**: Vercel deployment failed due to file naming conflicts
 - **Error**: `Two or more files have conflicting paths or names. Please make sure path segments and filenames, without their extension, are unique.`
@@ -25,7 +48,7 @@
   - Updated shell script to reference the renamed file
   - Updated documentation references
 
-### 2. Mixed Routing Properties in vercel.json
+### 5. Mixed Routing Properties in vercel.json
 
 - **Issue**: Vercel deployment failed due to mixing old and new routing formats
 - **Error**: `Mixed Routing Properties - You are using both new and legacy routing properties.`
@@ -34,7 +57,7 @@
   - Changed property names from `src`/`dest` to `source`/`destination`
   - Ensured consistent use of modern Vercel configuration format
 
-### 3. Vercel Deployment Configuration
+### 6. Vercel Deployment Configuration
 
 - Added `.vercelignore` file to exclude shell scripts and other files not needed for production
 - Updated `vercel.json` with improved configuration to handle file conflicts
