@@ -302,9 +302,17 @@ export async function resetPassword(email, token, newPassword) {
   try {
     await connectToDatabase();
 
+    // Validate email
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return {
+        success: false,
+        error: "Invalid email format",
+      };
+    }
+
     // Find user with matching email and token
     const user = await User.findOne({
-      email,
+      email: { $eq: email },
       "resetPasswordToken.token": token,
       "resetPasswordToken.expires": { $gt: new Date() }, // Token hasn't expired
     }).select("+salt");
