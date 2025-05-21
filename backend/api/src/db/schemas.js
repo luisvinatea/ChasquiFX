@@ -4,11 +4,6 @@
  */
 
 import mongoose from "mongoose";
-import { forexCacheSchema, flightCacheSchema, apiCallLogSchema } from "./mongodb-schemas.js";
-
-// Create models from schemas
-const ForexCache = mongoose.model("ForexCache", forexCacheSchema);
-const FlightCache = mongoose.model("FlightCache", flightCacheSchema);
-const ApiCallLog = mongoose.model("ApiCallLog", apiCallLogSchema);
+import { ForexCache, FlightCache, ApiCallLog } from "./mongodb-schemas.js";
 
 export { ForexCache, FlightCache, ApiCallLog };
