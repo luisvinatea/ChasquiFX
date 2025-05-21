@@ -62,6 +62,7 @@ For details, see [CORS Configuration Guide](backend/api/docs/cors-configuration-
 ChasquiFX uses a hybrid architecture with clear separation of concerns:
 
 - **Node.js Backend**: Handles all API endpoints, authentication, and user-facing operations
+
 - **MongoDB**: Provides caching for forex, flights, and geo data
 
 This architecture represents a complete migration from the original Python API implementation to Node.js, with Python now serving as a specialized processing component rather than an API layer.
