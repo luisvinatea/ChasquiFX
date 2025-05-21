@@ -24,6 +24,50 @@ The following environment variables are required for the application:
 - `MONGODB_URI`: MongoDB connection string
 - `EMAIL_SERVICE_API_KEY`: Email service provider API key
 
+## Proper Handling of Example Files
+
+### Do's and Don'ts for Example Files
+
+When creating example files like `.env.example`:
+
+✅ **DO**:
+
+- Use clear placeholder text (e.g., `<REPLACE_WITH_YOUR_KEY>`)
+- Add comments explaining these are placeholders
+- Include warnings that these are not real credentials
+- Use obviously fake URLs and information
+
+❌ **DON'T**:
+
+- Use values that look like real credentials or URLs
+- Include actual hostnames, usernames, or database names
+- Use credentials that were ever valid, even if now expired
+- Use formats that could be mistaken for real secrets by security scanners
+
+### Example Format for Connection Strings
+
+For MongoDB connection strings, use this format in example files:
+
+```
+MONGODB_URI=mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/<DATABASE>
+```
+
+Instead of:
+
+```
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+```
+
+The second example may trigger security scanners even though it's just an example.
+
+### Security Scanning Considerations
+
+Many organizations use automated security scanning tools that look for patterns matching credentials. To avoid false positives:
+
+1. Format placeholder values with clear `<ANGLE_BRACKETS>`
+2. Add comments indicating these are examples/placeholders
+3. Consider using values like `YOUR_JWT_SECRET_HERE` instead of realistic-looking examples
+
 ## Setting Up Environment Variables
 
 ### Local Development

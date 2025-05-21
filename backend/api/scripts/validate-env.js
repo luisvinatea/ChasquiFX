@@ -32,11 +32,27 @@ console.log(`🌎 Environment: ${process.env.NODE_ENV || "development"}`);
 // Validate required variables
 let hasErrors = false;
 
+// Function to check if a value looks like a placeholder
+function isPlaceholder(value) {
+  const placeholderPatterns = [
+    /<[A-Z_]+>/i,                           // <PLACEHOLDER>
+    /your_[a-z_]+/i,                        // your_placeholder
+    /REPLACE_WITH_/i,                       // REPLACE_WITH_
+    /\$\{[A-Z_]+\}/i,                       // ${PLACEHOLDER}
+    /placeholder|example|dummy|test123/i,   // Common placeholder words
+  ];
+  
+  return placeholderPatterns.some(pattern => pattern.test(value));
+}
+
 // Check all environments required vars
 for (const varName of requiredVars) {
   if (!process.env[varName]) {
     console.error(`❌ Required environment variable missing: ${varName}`);
     hasErrors = true;
+  } else if (isPlaceholder(process.env[varName])) {
+    console.warn(`⚠️ ${varName} appears to be a placeholder value. Replace with a real value.`);
+    hasErrors = isProduction; // Only consider as error in production
   } else {
     console.log(`✅ ${varName} is set`);
   }
@@ -54,15 +70,28 @@ if (isProduction) {
   }
 }
 
-// Security check for JWT_SECRET
-if (
-  process.env.JWT_SECRET === "PLACEHOLDER_SECRET_DO_NOT_USE_IN_PRODUCTION" &&
-  isProduction
-) {
-  console.error(
-    "❌ JWT_SECRET is set to the placeholder value in production!"
-  );
-  hasErrors = true;
+// Security check for specific JWT_SECRET values
+if (isProduction) {
+  const insecureJwtSecrets = [
+    "PLACEHOLDER_SECRET_DO_NOT_USE_IN_PRODUCTION",
+    "your_strong_jwt_secret_here",
+    "<REPLACE_WITH_YOUR_SECRET>",
+    "chasquifx-default-jwt-secret-for-dev-use",
+    "test123",
+    "secret",
+    "jwt_secret",
+    "development",
+    "production"
+  ];
+  
+  if (insecureJwtSecrets.includes(process.env.JWT_SECRET)) {
+    console.error("❌ JWT_SECRET is set to an insecure placeholder value in production!");
+    hasErrors = true;
+  }
+  
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    console.warn("⚠️ JWT_SECRET is too short for production use. Consider using a longer, more secure value.");
+  }
 }
 
 // Exit with error if any required variables are missing
