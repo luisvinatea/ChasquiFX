@@ -38,6 +38,7 @@ echo -e "${YELLOW}Step 1: Running migrate-to-vite.sh...${NC}"
 ./migrate-to-vite.sh
 
 # Check if migration was successful
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: migrate-to-vite.sh failed${NC}"
     exit 1
@@ -47,6 +48,7 @@ echo -e "${YELLOW}Step 2: Running update-env-vars.sh...${NC}"
 ./update-env-vars.sh
 
 # Check if environment variables update was successful
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: update-env-vars.sh failed${NC}"
     exit 1
@@ -56,6 +58,7 @@ echo -e "${YELLOW}Step 3: Running update-app-jsx.sh...${NC}"
 ./update-app-jsx.sh
 
 # Check if App.jsx update was successful
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: update-app-jsx.sh failed${NC}"
     exit 1
@@ -65,7 +68,7 @@ fi
 echo -e "${YELLOW}Step 4: Running additional post-migration tasks...${NC}"
 
 # Navigate to frontend directory
-cd frontend
+cd frontend || exit
 
 # Update .gitignore for Vite specifics
 echo -e "${YELLOW}Updating .gitignore for Vite...${NC}"
@@ -188,6 +191,7 @@ echo -e "${YELLOW}Testing the build process...${NC}"
 npm run build
 
 # Check if build was successful
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Build process failed. Please check the errors and fix them manually.${NC}"
     cd ..
