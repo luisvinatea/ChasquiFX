@@ -19,7 +19,7 @@ if [ ! -d "frontend" ]; then
     exit 1
 fi
 
-cd frontend
+cd frontend || exit
 
 # Check for essential Vite files
 echo -e "${YELLOW}Checking for essential Vite files...${NC}"
