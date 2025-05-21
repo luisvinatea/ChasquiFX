@@ -23,11 +23,12 @@ if [ ! -d "backend" ] || [ ! -d "frontend" ]; then
 fi
 
 # Navigate to the api directory
-cd backend/api
+cd backend/api || exit
 
 # Backup any existing .env file
 if [ -f ".env" ]; then
     echo -e "${YELLOW}Found existing .env file. Creating backup...${NC}"
+    # shellcheck disable=SC2046
     cp .env .env.backup.$(date +%Y%m%d%H%M%S)
 fi
 
