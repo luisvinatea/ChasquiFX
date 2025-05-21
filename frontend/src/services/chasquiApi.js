@@ -8,7 +8,7 @@ import axios from "axios";
 // Define the API endpoint with fallback options
 // Use environment variable if available, fallback to Vercel deployment, finally use local development server
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL ||
+  import.meta.env.VITE_API_URL ||
   "https://chasquifx-api.vercel.app" ||
   "http://localhost:3001";
 

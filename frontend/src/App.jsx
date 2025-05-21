@@ -1,32 +1,3 @@
-#!/bin/bash
-
-# Script to update App.jsx for Vite compatibility
-# This script will create a Vite-compatible App.jsx file
-
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-echo -e "${BLUE}=====================================${NC}"
-echo -e "${BLUE}ChasquiFX App.jsx Vite Adaptation${NC}"
-echo -e "${BLUE}=====================================${NC}"
-
-# Check if frontend directory exists
-if [ ! -d "frontend" ]; then
-    echo -e "${RED}Error: frontend directory not found${NC}"
-    exit 1
-fi
-
-# Create a backup of App.js
-echo -e "${YELLOW}Creating backup of App.js...${NC}"
-cp frontend/src/App.js frontend/src/App.js.backup
-echo -e "${GREEN}✓ Backup created${NC}"
-
-# Create the Vite-compatible App.jsx
-echo -e "${YELLOW}Creating Vite-compatible App.jsx...${NC}"
-cat >frontend/src/App.jsx <<'EOL'
 import { useState, useEffect } from "react";
 import {
   CssBaseline,
@@ -494,44 +465,3 @@ function App() {
 }
 
 export default App;
-EOL
-
-echo -e "${GREEN}✓ Created Vite-compatible App.jsx${NC}"
-
-# Update environment variable references in App.jsx
-echo -e "${YELLOW}Updating environment variable references...${NC}"
-sed -i 's/process\.env\.REACT_APP_/import.meta.env.VITE_/g' frontend/src/App.jsx
-echo -e "${GREEN}✓ Updated environment variable references${NC}"
-
-# Create a vite config file
-echo -e "${YELLOW}Creating vite.config.js...${NC}"
-cat >frontend/vite.config.js <<'EOL'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 3000,
-    open: true,
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-  },
-  resolve: {
-    alias: {
-      // Add any path aliases here if needed
-    },
-  }
-})
-EOL
-
-echo -e "${GREEN}✓ Created vite.config.js${NC}"
-
-echo -e "${GREEN}✓ App.jsx adaptation complete!${NC}"
-echo -e "${YELLOW}Next steps:${NC}"
-echo -e "1. Review App.jsx for any component import paths that might need updating"
-echo -e "2. Update any SVG imports to use the ?react suffix for direct component imports"
-echo -e "3. Test the application to ensure all components render correctly"

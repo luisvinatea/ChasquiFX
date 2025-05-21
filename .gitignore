@@ -27,6 +27,8 @@ practice/
 # Ignore OS-generated files
 .DS_Store
 Thumbs.db
+frontend-backup-20250520221937/
+frontend-old/
 
 # Ignore IDE/editor-specific files
 .vscode/settings.json
