@@ -13,11 +13,15 @@ import {
   sendPasswordResetEmail,
 } from "./emailService.js";
 import { getLogger } from "../utils/logger.js";
+import { getRequiredEnv, getEnv } from "../utils/env.js";
 
 const logger = getLogger("auth-service");
-const JWT_SECRET =
-  process.env.JWT_SECRET || "chasquifx-default-jwt-secret-for-dev-use";
-const JWT_EXPIRY = process.env.JWT_EXPIRY || "7d"; // Token expiry, default 7 days
+// Using the environment utility to handle JWT secret securely
+const JWT_SECRET = getRequiredEnv(
+  "JWT_SECRET",
+  "PLACEHOLDER_SECRET_DO_NOT_USE_IN_PRODUCTION"
+);
+const JWT_EXPIRY = getEnv("JWT_EXPIRY", "7d"); // Token expiry, default 7 days
 
 /**
  * Generate a JWT token
@@ -303,7 +307,10 @@ export async function resetPassword(email, token, newPassword) {
     await connectToDatabase();
 
     // Validate email
-    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (
+      typeof email !== "string" ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
       return {
         success: false,
         error: "Invalid email format",

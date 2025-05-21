@@ -20,6 +20,18 @@ if [ "$(basename "$(pwd)")" != "api" ]; then
     exit 1
 fi
 
+# Validate environment variables before deployment
+echo -e "${BLUE}🔎 Validating environment variables...${NC}"
+NODE_ENV=production node scripts/validate-env.js
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Environment validation failed. Please check your environment variables.${NC}"
+    echo -e "${YELLOW}Make sure you have set the required environment variables in Vercel:${NC}"
+    echo -e "${YELLOW}- JWT_SECRET${NC}"
+    echo -e "${YELLOW}- MONGODB_URI${NC}"
+    echo -e "${YELLOW}- EMAIL_SERVICE_API_KEY${NC}"
+    exit 1
+fi
+
 # Check for vercel command
 if command -v vercel &>/dev/null; then
     VERCEL_CMD="vercel"

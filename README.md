@@ -6,6 +6,36 @@ ChasquiFX is a tool that integrates flight route data with foreign exchange data
 
 ## Recent Updates
 
+### May 20, 2025: Security Improvements & Vite Migration
+
+#### Security Improvements
+
+- Removed hardcoded JWT secrets from the codebase
+- Implemented proper environment variable handling with validation
+- Added documentation for securing environment variables
+- Enhanced deployment scripts to validate environment setup
+
+To apply security improvements:
+
+1. Copy `.env.example` to `.env` in the backend/api directory
+2. Set your JWT_SECRET and other required variables
+3. Run `npm run validate-env` to verify your setup
+
+See [Securing Environment Variables](docs/securing-environment-variables.md) for details.
+
+#### Frontend Migration to Vite
+
+- Migrated the frontend from Create React App to Vite
+- Improved build performance and developer experience
+- Updated environment variable handling for Vite compatibility
+
+To run the migrated frontend:
+
+1. Navigate to the frontend directory
+2. Run `npm install` followed by `npm run dev`
+
+See [React to Vite Migration](docs/react-to-vite-migration.md) for details.
+
 ### May 20, 2025: CORS Configuration Fix
 
 Fixed CORS configuration to allow proper communication between the frontend and backend:
