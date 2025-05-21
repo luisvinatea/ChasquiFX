@@ -128,10 +128,13 @@ export async function connectToDatabase() {
     maxPoolSize: 10, // Adjust based on expected concurrency
     minPoolSize: 0, // Start with no connections and scale as needed
     maxIdleTimeMS: 120000, // Close idle connections after 2 minutes
+    connectTimeoutMS: 15000, // Connect timeout after 15 seconds (increased from default)
+    socketTimeoutMS: 30000, // Socket timeout after 30 seconds (increased from default)
   });
 
   try {
     // Connect to the MongoDB database
+    logger.info("Attempting to connect to MongoDB Atlas...");
     await client.connect();
     logger.info("Connected to MongoDB Atlas");
 
@@ -149,6 +152,31 @@ export async function connectToDatabase() {
     };
   } catch (error) {
     logger.error(`Failed to connect to MongoDB: ${error.message}`);
+
+    // Enhanced error logging for specific issues
+    if (error.message.includes("authentication failed")) {
+      logger.error("Authentication failed - incorrect username or password");
+      logger.error("Please verify your MongoDB Atlas credentials");
+    } else if (error.message.includes("timed out")) {
+      logger.error(
+        "Connection timed out - possible network or firewall issue"
+      );
+      logger.error("Please check MongoDB Atlas Network Access settings");
+    } else if (
+      error.message.includes("ENOTFOUND") ||
+      error.message.includes("no such host")
+    ) {
+      logger.error("Host not found - incorrect MongoDB Atlas hostname");
+      logger.error(
+        `Configured host: ${
+          process.env.MONGODB_HOST || "chasquifx.ymxb5bs.mongodb.net"
+        }`
+      );
+    }
+
+    // Log stack trace in debug mode
+    logger.debug(`Error stack trace: ${error.stack}`);
+
     throw error;
   }
 }
