@@ -1,6 +1,9 @@
 {
   "name": "chasquifx-web",
   "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "public": true,
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
@@ -14,7 +17,7 @@
       ]
     },
     {
-      "source": "/static/(.*)",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
