@@ -22,13 +22,13 @@ import ApiIcon from "@mui/icons-material/Api";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import "./App.css";
-import Sidebar from "./components/Sidebar";
-import RecommendationsList from "./components/RecommendationsList";
-import StatsCards from "./components/StatsCards";
-import LoadingSpinner from "./components/LoadingSpinner";
-import ApiKeysManager from "./components/ApiKeysManager";
-import ApiConnectionStatus from "./components/ApiConnectionStatus";
-import Auth from "./components/Auth";
+import Sidebar from "./components/Sidebar.jsx";
+import RecommendationsList from "./components/RecommendationsList.jsx";
+import StatsCards from "./components/StatsCards.jsx";
+import LoadingSpinner from "./components/LoadingSpinner.jsx";
+import ApiKeysManager from "./components/ApiKeysManager.jsx";
+import ApiConnectionStatus from "./components/ApiConnectionStatus.jsx";
+import Auth from "./components/Auth.jsx";
 import chasquiApi from "./services/chasquiApi";
 // DEPRECATED: Using compatibility layer for transition from Supabase to MongoDB
 import {
