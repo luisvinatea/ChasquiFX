@@ -111,73 +111,102 @@ const RecommendationsList = ({
 
   // Check if we're using real-time forex data
   const checkForexDataStatus = () => {
-    const apiKeys = JSON.parse(localStorage.getItem("chasquiFxApiKeys") || "{}");
+    const apiKeys = JSON.parse(
+      localStorage.getItem("chasquiFxApiKeys") || "{}"
+    );
     if (apiKeys.serpApi) {
       return {
         isRealTime: true,
-        message: "Using real-time forex data from Google Finance"
+        message: "Using real-time forex data from Google Finance",
       };
     } else {
       return {
         isRealTime: false,
-        message: "Using synthetic forex data. Add SerpAPI key for real-time rates."
+        message:
+          "Using synthetic forex data. Add SerpAPI key for real-time rates.",
       };
     }
   };
-  
+
   const forexStatus = checkForexDataStatus();
-  
+
   return (
     <>
-      <Box 
-        sx={{ 
-          p: 1, 
-          mb: 2, 
-          borderRadius: 1,
-          backgroundColor: forexStatus.isRealTime ? "rgba(76, 175, 80, 0.1)" : "rgba(255, 152, 0, 0.1)",
-          border: `1px solid ${forexStatus.isRealTime ? "#4caf50" : "#ff9800"}`,
+      <Box
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 2,
+          backgroundColor: forexStatus.isRealTime
+            ? "rgba(76, 175, 80, 0.08)"
+            : "rgba(255, 152, 0, 0.08)",
+          border: `1px solid ${
+            forexStatus.isRealTime
+              ? "rgba(76, 175, 80, 0.3)"
+              : "rgba(255, 152, 0, 0.3)"
+          }`,
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
+          justifyContent: "center",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
         }}
       >
         <Typography
           variant="body2"
           color={forexStatus.isRealTime ? "success.main" : "warning.main"}
           align="center"
+          sx={{ fontWeight: 500 }}
         >
           {forexStatus.message}
         </Typography>
       </Box>
-      
-      <Grid container spacing={3}>
+
+      <Grid container spacing={3} className="staggered-fade-in">
         {recommendations.map((rec, index) => (
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            md={4}
-            key={index}
-          >
+          <Grid item xs={12} sm={6} md={4} key={index}>
             <Card
-              elevation={3}
+              elevation={2}
               sx={{
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
-                transition: "transform 0.2s",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                },
+                borderRadius: "16px",
+                overflow: "hidden",
+                background:
+                  "linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,1) 100%)",
               }}
+              className="fade-in card-hover-rise glossy-card"
             >
+              {/* Card Header with gradient */}
+              <Box
+                sx={{
+                  height: "8px",
+                  width: "100%",
+                  background: "linear-gradient(90deg, #3f51b5, #f50057)",
+                }}
+              />
+
               {/* Favorite button */}
               <IconButton
                 size="small"
                 color={favorites.includes(rec.city) ? "error" : "default"}
-                sx={{ position: "absolute", top: 8, right: 8 }}
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,1)",
+                  },
+                }}
                 onClick={() => toggleFavorite(rec.city)}
+                aria-label={
+                  favorites.includes(rec.city)
+                    ? "Remove from favorites"
+                    : "Add to favorites"
+                }
               >
                 {favorites.includes(rec.city) ? (
                   <FavoriteIcon />
@@ -186,52 +215,104 @@ const RecommendationsList = ({
                 )}
               </IconButton>
 
-              <CardContent sx={{ flexGrow: 1 }}>
+              <CardContent sx={{ flexGrow: 1, p: 3 }}>
                 <Box
                   display="flex"
                   justifyContent="space-between"
-                  alignItems="center"
+                  alignItems="flex-start"
                   mb={1}
                 >
-                  <Typography variant="h6" component="h2">
+                  <Typography
+                    variant="h5"
+                    component="h2"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "1.25rem",
+                      color: "primary.dark",
+                      lineHeight: 1.2,
+                    }}
+                  >
                     {rec.city}
                   </Typography>
+                  <Chip
+                    size="small"
+                    label={calculateBenefit(rec)}
+                    color={
+                      rec.savings
+                        ? "success"
+                        : rec.exchange_rate_trend > 0.05
+                        ? "primary"
+                        : "default"
+                    }
+                    sx={{
+                      fontWeight: 500,
+                      fontSize: "0.7rem",
+                      height: "22px",
+                      borderRadius: "12px",
+                    }}
+                  />
+                </Box>
+
+                <Box display="flex" alignItems="center" mb={1}>
                   <Chip
                     size="small"
                     label={rec.country}
                     variant="outlined"
                     icon={<PublicIcon fontSize="small" />}
+                    sx={{
+                      borderRadius: "16px",
+                      mr: 1,
+                      "& .MuiChip-icon": {
+                        color: "primary.main",
+                      },
+                    }}
                   />
-                </Box>
-
-                <Box display="flex" alignItems="center" mb={2}>
                   <Chip
                     size="small"
                     icon={<FlightIcon fontSize="small" />}
                     label={rec.airport_code}
                     color="primary"
                     variant="outlined"
-                    sx={{ mr: 1 }}
+                    sx={{
+                      mr: 1,
+                      borderRadius: "16px",
+                      "& .MuiChip-icon": {
+                        color: "primary.main",
+                      },
+                    }}
                   />
                   {rec.distance && (
-                    <Typography variant="body2" color="textSecondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "0.8rem" }}
+                    >
                       {rec.distance.toLocaleString()} km
                     </Typography>
                   )}
                 </Box>
 
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ my: 2, borderColor: "rgba(0, 0, 0, 0.06)" }} />
 
                 <Box mb={2}>
                   <Typography
                     variant="body2"
-                    color="textSecondary"
+                    color="text.secondary"
                     gutterBottom
+                    sx={{ fontWeight: 500, fontSize: "0.85rem" }}
                   >
                     Exchange Rate
                   </Typography>
                   <Box display="flex" alignItems="center">
-                    <Typography variant="h6" component="span">
+                    <Typography
+                      variant="h6"
+                      component="span"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "1.1rem",
+                        color: "text.primary",
+                      }}
+                    >
                       1 USD = {rec.exchange_rate.toFixed(2)} {rec.currency}
                     </Typography>
                     <Tooltip
@@ -250,8 +331,9 @@ const RecommendationsList = ({
                   <Box>
                     <Typography
                       variant="body2"
-                      color="textSecondary"
+                      color="text.secondary"
                       gutterBottom
+                      sx={{ fontWeight: 500, fontSize: "0.85rem" }}
                     >
                       Flight Cost
                     </Typography>
@@ -260,20 +342,40 @@ const RecommendationsList = ({
                       justifyContent="space-between"
                       alignItems="center"
                     >
-                      <Typography variant="h6">
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1.1rem",
+                          color:
+                            rec.fare_trend < 0
+                              ? "success.main"
+                              : rec.fare_trend > 0
+                              ? "error.main"
+                              : "text.primary",
+                        }}
+                      >
                         {formatCurrency(rec.fare.price, rec.fare.currency)}
                       </Typography>
                       <Chip
                         size="small"
                         label={rec.fare.duration}
-                        color="primary"
+                        color="secondary"
                         variant="outlined"
+                        sx={{
+                          borderRadius: "12px",
+                          fontSize: "0.7rem",
+                          "& .MuiChip-label": {
+                            px: 1,
+                          },
+                        }}
                       />
                     </Box>
                     <Typography
                       variant="caption"
-                      color="textSecondary"
+                      color="text.secondary"
                       display="block"
+                      sx={{ fontSize: "0.75rem", mt: 0.5 }}
                     >
                       {rec.fare.airlines.join(", ")}
                     </Typography>
@@ -282,16 +384,23 @@ const RecommendationsList = ({
               </CardContent>
 
               <CardActions
-                sx={{ justifyContent: "space-between", p: 2, pt: 0 }}
+                sx={{
+                  justifyContent: "flex-end",
+                  borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+                  padding: "12px 16px",
+                  backgroundColor: "rgba(0, 0, 0, 0.02)",
+                }}
               >
-                <Chip
-                  label={calculateBenefit(rec)}
-                  color={rec.exchange_rate_trend > 0 ? "success" : "default"}
-                  size="small"
-                />
                 <Button
                   size="small"
                   variant="outlined"
+                  color="primary"
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 500,
+                    px: 2,
+                  }}
                   onClick={() => handleViewDetails(rec)}
                 >
                   View Details

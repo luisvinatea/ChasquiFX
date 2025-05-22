@@ -1,54 +1,49 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Alert,
-  AlertTitle,
-  IconButton,
-  Collapse,
+  Chip,
   CircularProgress,
   Tooltip,
+  IconButton,
+  Collapse,
+  Alert,
+  AlertTitle,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
 import ErrorIcon from "@mui/icons-material/Error";
+import SyncIcon from "@mui/icons-material/Sync";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CloseIcon from "@mui/icons-material/Close";
 import chasquiApi from "../services/chasquiApi";
 
 /**
  * ApiConnectionStatus Component
  *
- * Displays the current connection status to the backend API
- * and allows users to refresh the status
+ * Displays the current connection status to the backend API in a compact badge format
+ * or detailed view depending on configuration
  */
-const ApiConnectionStatus = ({ onStatusChange = () => {} }) => {
-  const [open, setOpen] = useState(true);
-  const [status, setStatus] = useState("checking");
+const ApiConnectionStatus = ({
+  initialStatus,
+  onStatusChange = () => {},
+  compactMode = true,
+}) => {
+  const [status, setStatus] = useState(initialStatus || "checking");
   const [details, setDetails] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(true);
 
-  // Check API connection on component mount
   useEffect(() => {
-    checkApiConnection();
-    // Check connection every 5 minutes
-    const interval = setInterval(checkApiConnection, 300000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!initialStatus) {
+      checkApiConnection();
+    }
+  }, [initialStatus]);
 
-  // Function to check API connection status
   const checkApiConnection = async () => {
     setLoading(true);
     try {
-      const apiStatus = await chasquiApi.systemService.getStatus();
-
-      if (apiStatus.status === "healthy") {
-        setStatus("connected");
-      } else if (apiStatus.status === "limited" || apiStatus.quotaExceeded) {
-        setStatus("limited");
-      } else {
-        setStatus("error");
-      }
-
+      const apiStatus = await chasquiApi.checkConnection();
+      setStatus(apiStatus.status || "connected");
       setDetails(apiStatus);
       onStatusChange(apiStatus);
     } catch (error) {
@@ -61,10 +56,40 @@ const ApiConnectionStatus = ({ onStatusChange = () => {} }) => {
     }
   };
 
-  // Get alert properties based on status
+  // Get status properties for compact mode
+  const getStatusProps = () => {
+    if (status === true || status === "connected") {
+      return {
+        color: "success",
+        icon: <CheckCircleIcon sx={{ fontSize: "14px" }} />,
+        label: "API Online",
+      };
+    } else if (status === "limited") {
+      return {
+        color: "warning",
+        icon: <WarningIcon sx={{ fontSize: "14px" }} />,
+        label: "API Limited",
+      };
+    } else if (status === "checking") {
+      return {
+        color: "info",
+        icon: <CircularProgress size={14} />,
+        label: "Checking API",
+      };
+    } else {
+      return {
+        color: "error",
+        icon: <ErrorIcon sx={{ fontSize: "14px" }} />,
+        label: "API Offline",
+      };
+    }
+  };
+
+  // Get alert properties based on status for detailed mode
   const getAlertProps = () => {
     switch (status) {
       case "connected":
+      case true:
         return {
           severity: "success",
           icon: <CheckCircleIcon />,
@@ -82,6 +107,7 @@ const ApiConnectionStatus = ({ onStatusChange = () => {} }) => {
             "API connected with limited functionality (quota limits)",
         };
       case "error":
+      case false:
         return {
           severity: "error",
           icon: <ErrorIcon />,
@@ -99,8 +125,36 @@ const ApiConnectionStatus = ({ onStatusChange = () => {} }) => {
     }
   };
 
+  const statusProps = getStatusProps();
   const alertProps = getAlertProps();
 
+  // Render compact mode (chip)
+  if (compactMode) {
+    return (
+      <Tooltip title={statusProps.label} arrow>
+        <Chip
+          icon={statusProps.icon}
+          label="API"
+          color={statusProps.color}
+          variant="outlined"
+          size="small"
+          sx={{
+            borderRadius: "16px",
+            mr: 1,
+            height: "28px",
+            "& .MuiChip-label": {
+              px: 1,
+              fontWeight: 500,
+              fontSize: "0.75rem",
+            },
+          }}
+          onClick={checkApiConnection}
+        />
+      </Tooltip>
+    );
+  }
+
+  // Render detailed mode (collapsed alert)
   if (!open) {
     return (
       <Tooltip title="Show API status">
@@ -112,7 +166,7 @@ const ApiConnectionStatus = ({ onStatusChange = () => {} }) => {
             bottom: 20,
             right: 20,
             backgroundColor:
-              status === "connected"
+              status === "connected" || status === true
                 ? "success.main"
                 : status === "limited"
                 ? "warning.main"
@@ -120,7 +174,7 @@ const ApiConnectionStatus = ({ onStatusChange = () => {} }) => {
             color: "white",
             "&:hover": {
               backgroundColor:
-                status === "connected"
+                status === "connected" || status === true
                   ? "success.dark"
                   : status === "limited"
                   ? "warning.dark"

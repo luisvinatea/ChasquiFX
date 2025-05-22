@@ -1,9 +1,12 @@
-import { Box, Paper, Typography, Grid } from "@mui/material";
+import { Box, Paper, Typography, Grid, Divider } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import PublicIcon from "@mui/icons-material/Public";
 
 /**
- * Component to display forex statistics and summary info
+ * Component to display forex statistics and summary info with enhanced styling
  */
 const StatsCards = ({ recommendations }) => {
   // If no recommendations, return null

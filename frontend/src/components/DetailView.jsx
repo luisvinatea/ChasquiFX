@@ -52,18 +52,37 @@ const DetailView = ({ open, onClose, destination }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "16px",
+          overflow: "hidden",
+        },
+      }}
+    >
       <DialogTitle
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: "1px solid rgba(0,0,0,0.12)",
-          pb: 1,
+          borderBottom: "1px solid rgba(0,0,0,0.08)",
+          pb: 2,
+          pt: 2,
+          px: 3,
+          background:
+            "linear-gradient(to right, rgba(63, 81, 181, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
         }}
       >
         <Box display="flex" alignItems="center">
-          <Typography variant="h5" component="div">
+          <Typography
+            variant="h5"
+            component="div"
+            sx={{ fontWeight: 600, color: "primary.dark" }}
+          >
             {destination.city}, {destination.country}
           </Typography>
           <Chip
@@ -71,7 +90,17 @@ const DetailView = ({ open, onClose, destination }) => {
             label={destination.airport_code}
             color="primary"
             icon={<FlightIcon fontSize="small" />}
-            sx={{ ml: 2 }}
+            sx={{
+              ml: 2,
+              borderRadius: "16px",
+              backgroundColor: "rgba(63, 81, 181, 0.1)",
+              color: "primary.dark",
+              fontWeight: 500,
+              border: "none",
+              "& .MuiChip-icon": {
+                color: "primary.main",
+              },
+            }}
           />
         </Box>
         <Button
@@ -79,24 +108,44 @@ const DetailView = ({ open, onClose, destination }) => {
           startIcon={<CloseIcon />}
           color="inherit"
           size="small"
+          sx={{
+            borderRadius: "20px",
+            px: 2,
+            textTransform: "none",
+          }}
         >
           Close
         </Button>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={{ p: 3 }}>
         <Grid container spacing={3}>
           {/* Exchange Rate Information */}
-          <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-            <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
-              <Box display="flex" alignItems="center" mb={1}>
+          <Grid item xs={12} md={6}>
+            <Paper
+              elevation={1}
+              sx={{
+                p: 3,
+                height: "100%",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+                border: "1px solid rgba(0, 0, 0, 0.04)",
+              }}
+            >
+              <Box display="flex" alignItems="center" mb={2}>
                 <CurrencyExchangeIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Exchange Rate Information</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Exchange Rate Information
+                </Typography>
               </Box>
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: 3 }} />
 
-              <Box mb={2}>
-                <Typography variant="body2" color="textSecondary">
+              <Box mb={3}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontWeight: 500, mb: 1 }}
+                >
                   Current Exchange Rate
                 </Typography>
                 <Box display="flex" alignItems="center">
@@ -150,7 +199,12 @@ const DetailView = ({ open, onClose, destination }) => {
                   <Typography variant="body1" mb={1}>
                     Flight Details
                   </Typography>
-                  <Box bgcolor="background.paper" p={1} borderRadius={1} mb={2}>
+                  <Box
+                    bgcolor="background.paper"
+                    p={1}
+                    borderRadius={1}
+                    mb={2}
+                  >
                     <Grid container spacing={2}>
                       <Grid sx={{ gridColumn: "span 6" }}>
                         <Typography variant="body2" color="textSecondary">
@@ -202,7 +256,8 @@ const DetailView = ({ open, onClose, destination }) => {
                 </>
               ) : (
                 <Typography variant="body1">
-                  Flight fare information is not available for this destination.
+                  Flight fare information is not available for this
+                  destination.
                 </Typography>
               )}
 
