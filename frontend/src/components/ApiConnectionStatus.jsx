@@ -12,7 +12,6 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
 import ErrorIcon from "@mui/icons-material/Error";
-import SyncIcon from "@mui/icons-material/Sync";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloseIcon from "@mui/icons-material/Close";
 import chasquiApi from "../services/chasquiApi";
