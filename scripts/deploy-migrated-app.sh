@@ -53,7 +53,7 @@ npm run build
 
 # Deploy to production
 print_message "Ready to deploy to Vercel."
-read -p "Deploy to production? (y/n): " deploy_answer
+read -r -p "Deploy to production? (y/n): " deploy_answer
 if [[ $deploy_answer == "y" ]]; then
     print_message "Deploying to production..."
     vercel --prod
