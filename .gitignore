@@ -231,3 +231,18 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Node modules
+/node_modules
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
