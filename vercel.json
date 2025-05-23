@@ -9,10 +9,7 @@
     "MONGODB_DB_NAME": "chasquifx",
     "JWT_SECRET": "@jwt-secret",
     "SERPAPI_API_KEY": "@serpapi-api-key",
-    "SEARCHAPI_API_KEY": "@searchapi-api-key",
-    "EXCHANGE_API_KEY": "@exchange-api-key",
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_ANON_KEY": "@supabase-anon-key"
+    "SEARCHAPI_API_KEY": "@searchapi-api-key"
   },
   "headers": [
     {
