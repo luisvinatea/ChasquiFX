@@ -5,6 +5,18 @@ const logger = createLogger();
 
 export async function GET() {
   try {
+    // Check if we're in build time (no MongoDB URI available)
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json(
+        {
+          status: "not_configured",
+          message: "Database connection not configured during build",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 200 }
+      );
+    }
+
     const { db } = await connectToDatabase();
 
     // Get collections info

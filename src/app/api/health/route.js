@@ -3,6 +3,23 @@ import { connectToDatabase } from "../../lib/mongodb";
 
 export async function GET() {
   try {
+    // Check if we're in build time (no MongoDB URI available)
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json(
+        {
+          status: "ok",
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV || "production",
+          version: process.env.NEXT_PUBLIC_VERSION || "1.0.0",
+          database: {
+            status: "not_configured",
+            note: "Database connection not configured during build",
+          },
+        },
+        { status: 200 }
+      );
+    }
+
     // Test database connection
     const { db } = await connectToDatabase();
 

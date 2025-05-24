@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Chip,
@@ -32,13 +32,7 @@ const ApiConnectionStatus = ({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
 
-  useEffect(() => {
-    if (!initialStatus) {
-      checkApiConnection();
-    }
-  }, [initialStatus]);
-
-  const checkApiConnection = async () => {
+  const checkApiConnection = useCallback(async () => {
     setLoading(true);
     try {
       const apiStatus = await chasquiApi.checkConnection();
@@ -53,7 +47,13 @@ const ApiConnectionStatus = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    if (!initialStatus) {
+      checkApiConnection();
+    }
+  }, [initialStatus, checkApiConnection]);
 
   // Get status properties for compact mode
   const getStatusProps = () => {

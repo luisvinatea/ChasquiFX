@@ -5,9 +5,11 @@
 
 import axios from "axios";
 
-// API base URL
+// API base URL - Using Next.js environment variables
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://chasquifx-api.vercel.app";
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" && window.location.origin) ||
+  "https://chasquifx.vercel.app";
 
 /**
  * Sign in user with email and password

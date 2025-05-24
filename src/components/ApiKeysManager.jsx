@@ -150,7 +150,7 @@ const ApiKeysManager = ({ open, onClose, user }) => {
               paragraph
               sx={{ mt: 1 }}
             >
-              Don't have a SerpAPI key?{" "}
+              Don&apos;t have a SerpAPI key?{" "}
               <a
                 href="https://serpapi.com/register"
                 target="_blank"
