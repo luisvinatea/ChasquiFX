@@ -8,13 +8,13 @@ import axios from "axios";
 // Define the API base URL with Next.js API routes
 // In development, uses relative path
 // In production, uses absolute path to the domain
-const API_BASE_URL = '/api';
+const API_BASE_URL = "/api";
 
 // Helper function to get API keys from localStorage
 const getApiKeys = () => {
   try {
     // Use browser localStorage only in client-side code
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const keys = localStorage.getItem("chasquiFxApiKeys");
       return keys
         ? JSON.parse(keys)
@@ -39,7 +39,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Browser-only code for adding tokens
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Add authorization token if available
       const token = localStorage.getItem("supabaseToken");
       if (token) {
@@ -71,44 +71,48 @@ apiClient.interceptors.response.use(
   (error) => {
     // Format the error details
     const errorDetails = {
-      message: error.message || 'Unknown error occurred',
+      message: error.message || "Unknown error occurred",
       status: error.response?.status || 0,
       data: error.response?.data || null,
     };
 
     // Log the error
-    console.error('API Error:', errorDetails);
-    
+    console.error("API Error:", errorDetails);
+
     // Handle specific error codes - browser-side only
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       switch (errorDetails.status) {
         case 401:
           // Unauthorized - clear token and redirect to login
           localStorage.removeItem("supabaseToken");
           window.location.href = "/login";
           break;
-        
+
         case 403:
           // Forbidden - likely an API key issue
-          console.error('API Key Issue: Access forbidden', errorDetails);
+          console.error("API Key Issue: Access forbidden", errorDetails);
           // Could dispatch an event or update a global state
-          document.dispatchEvent(new CustomEvent('chasquifx:api-key-error'));
+          document.dispatchEvent(new CustomEvent("chasquifx:api-key-error"));
           break;
-        
+
         case 429:
           // Too many requests - API rate limit
-          console.error('API Rate Limit Exceeded', errorDetails);
-          document.dispatchEvent(new CustomEvent('chasquifx:api-limit-exceeded'));
+          console.error("API Rate Limit Exceeded", errorDetails);
+          document.dispatchEvent(
+            new CustomEvent("chasquifx:api-limit-exceeded")
+          );
           break;
-          
+
         default:
           // For all other errors, dispatch a general error event
-          document.dispatchEvent(new CustomEvent('chasquifx:api-error', { 
-            detail: errorDetails 
-          }));
+          document.dispatchEvent(
+            new CustomEvent("chasquifx:api-error", {
+              detail: errorDetails,
+            })
+          );
       }
     }
-    
+
     return Promise.reject(errorDetails);
   }
 );
@@ -123,7 +127,10 @@ export const systemService = {
    */
   checkApiStatus: async () => {
     try {
-      const response = await apiClient.get("/health", { timeout: 2000 });
+      const response = await apiClient.get("/health", {
+        timeout: 2000,
+        params: { _t: Date.now() }, // Cache-busting parameter
+      });
       return response.status === 200;
     } catch (error) {
       console.error("API connection error:", error);
@@ -137,7 +144,9 @@ export const systemService = {
    */
   getStatus: async () => {
     try {
-      const response = await apiClient.get("/health");
+      const response = await apiClient.get("/health", {
+        params: { _t: Date.now() }, // Cache-busting parameter
+      });
       return response.data;
     } catch (error) {
       console.error("API Status error:", error);
@@ -246,14 +255,14 @@ export const recommendationService = {
           date: new Date().toISOString(),
         },
       ];
-      
+
       return mockRecommendations;
     } catch (error) {
       console.error("Flight Recommendation Error:", error);
       throw error;
     }
   },
-  
+
   /**
    * Get user recommendation history
    * @param {String} userId - User ID
@@ -308,7 +317,7 @@ export const userService = {
       throw error;
     }
   },
-  
+
   /**
    * Get user's past searches
    * @param {String} userId - User ID

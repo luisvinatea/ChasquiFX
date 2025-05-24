@@ -67,7 +67,14 @@ export async function GET() {
         message: "Service unavailable",
         error: error.message,
       },
-      { status: 503 }
+      {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
     );
   }
 }

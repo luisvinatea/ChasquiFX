@@ -13,7 +13,14 @@ export async function GET() {
           message: "Database connection not configured during build",
           timestamp: new Date().toISOString(),
         },
-        { status: 200 }
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
       );
     }
 
@@ -58,7 +65,14 @@ export async function GET() {
         collections: collectionStats,
         timestamp: new Date().toISOString(),
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
     );
   } catch (error) {
     logger.error("Database connection error:", error);
@@ -70,7 +84,14 @@ export async function GET() {
         error: error.message,
         timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
     );
   }
 }

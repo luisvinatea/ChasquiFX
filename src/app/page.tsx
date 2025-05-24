@@ -190,7 +190,7 @@ export default function Home() {
       try {
         const statusResponse =
           (await chasquiApi.systemService.getStatus()) as { status: string };
-        setApiStatus(statusResponse.status === "healthy");
+        setApiStatus(statusResponse.status === "ok");
 
         // If we were previously offline but now online, show a notification
         if (!apiStatus) {
