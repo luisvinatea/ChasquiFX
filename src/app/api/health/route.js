@@ -16,7 +16,14 @@ export async function GET() {
             note: "Database connection not configured during build",
           },
         },
-        { status: 200 }
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
       );
     }
 
@@ -43,7 +50,14 @@ export async function GET() {
             Math.round((dbStats.dataSize / 1024 / 1024) * 100) / 100 + " MB",
         },
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
     );
   } catch (error) {
     console.error("Health check failed:", error);

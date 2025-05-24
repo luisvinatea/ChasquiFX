@@ -35,8 +35,10 @@ const ApiConnectionStatus = ({
   const checkApiConnection = useCallback(async () => {
     setLoading(true);
     try {
-      const apiStatus = await chasquiApi.checkConnection();
-      setStatus(apiStatus.status || "connected");
+      const apiStatus = await chasquiApi.systemService.getStatus();
+      setStatus(
+        apiStatus.status === "ok" ? "connected" : apiStatus.status || "error"
+      );
       setDetails(apiStatus);
       onStatusChange(apiStatus);
     } catch (error) {
