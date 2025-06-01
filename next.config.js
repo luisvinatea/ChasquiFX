@@ -1,5 +1,21 @@
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    // Enable experimental features that help with module resolution
+    esmExternals: true,
+  },
+  transpilePackages: [
+    "@mui/material",
+    "@mui/icons-material",
+    "@emotion/react",
+    "@emotion/styled",
+  ],
   env: {
     MONGODB_URI: process.env.MONGODB_URI,
     MONGODB_DB_NAME: process.env.MONGODB_DB_NAME,
@@ -12,6 +28,23 @@ const nextConfig = {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  },
+  webpack: (config, { isServer }) => {
+    // Add path alias resolution for webpack
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@": resolve(__dirname, "src"),
+    };
+
+    // Handle MUI and emotion packages properly
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+
+    return config;
   },
   async rewrites() {
     return [
