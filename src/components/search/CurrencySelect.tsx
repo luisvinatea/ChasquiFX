@@ -1,8 +1,29 @@
-import * as React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import * as React from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export function CurrencySelect({ value, onValueChange, placeholder }) {
-  const [currencies, setCurrencies] = React.useState([]);
+interface Currency {
+  code: string;
+  name: string;
+}
+
+interface CurrencySelectProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+}
+
+export function CurrencySelect({
+  value,
+  onValueChange,
+  placeholder,
+}: CurrencySelectProps) {
+  const [currencies, setCurrencies] = React.useState<Currency[]>([]);
 
   React.useEffect(() => {
     fetchCurrencies();
@@ -10,11 +31,11 @@ export function CurrencySelect({ value, onValueChange, placeholder }) {
 
   const fetchCurrencies = async () => {
     try {
-      const response = await fetch('/api/currencies');
+      const response = await fetch("/api/currencies");
       const data = await response.json();
       setCurrencies(data);
     } catch (error) {
-      console.error('Error fetching currencies:', error);
+      console.error("Error fetching currencies:", error);
     }
   };
 

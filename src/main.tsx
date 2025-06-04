@@ -1,21 +1,24 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom/client';
-import App from './App';
+import * as React from "react";
+import * as ReactDOM from "react-dom/client";
+import App from "./App";
 
-import './index.css';
+import "./index.css";
 
-const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-function updateDarkClass(e = null) {
+function updateDarkClass(e?: MediaQueryListEvent) {
   const isDark = e ? e.matches : darkQuery.matches;
-  document.documentElement.classList.toggle('dark', isDark);
+  document.documentElement.classList.toggle("dark", isDark);
 }
 
 updateDarkClass();
-darkQuery.addEventListener('change', updateDarkClass);
+darkQuery.addEventListener("change", updateDarkClass);
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Root element not found");
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
+  </React.StrictMode>
 );

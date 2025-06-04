@@ -1,9 +1,23 @@
-import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
+import * as React from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { format } from "date-fns";
+
+interface Search {
+  id: string;
+  origin: string;
+  destination: string;
+  departure_date: string;
+  origin_currency: string;
+  destination_currency: string;
+}
 
 export function RecentSearches() {
-  const [searches, setSearches] = React.useState([]);
+  const [searches, setSearches] = React.useState<Search[]>([]);
 
   React.useEffect(() => {
     fetchRecentSearches();
@@ -11,11 +25,11 @@ export function RecentSearches() {
 
   const fetchRecentSearches = async () => {
     try {
-      const response = await fetch('/api/flights/recent');
+      const response = await fetch("/api/flights/recent");
       const data = await response.json();
       setSearches(data);
     } catch (error) {
-      console.error('Error fetching recent searches:', error);
+      console.error("Error fetching recent searches:", error);
     }
   };
 
@@ -45,7 +59,7 @@ export function RecentSearches() {
                 {search.origin} → {search.destination}
               </div>
               <div className="text-sm text-muted-foreground">
-                {format(new Date(search.departure_date), 'MMM dd, yyyy')}
+                {format(new Date(search.departure_date), "MMM dd, yyyy")}
               </div>
               <div className="text-xs text-muted-foreground">
                 {search.origin_currency} → {search.destination_currency}

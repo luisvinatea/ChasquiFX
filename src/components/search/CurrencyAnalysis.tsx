@@ -17,6 +17,7 @@ interface CurrencyAnalysisData {
   forexAdvantage: number;
   origin: CurrencyInfo;
   destination: CurrencyInfo;
+  recommendation: "favorable" | "unfavorable";
 }
 
 interface CurrencyAnalysisProps {
