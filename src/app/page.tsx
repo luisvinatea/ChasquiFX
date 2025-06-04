@@ -102,11 +102,12 @@ export default function Home() {
     const checkSession = async () => {
       try {
         const sessionData = (await getSession()) as {
-          session: { user: User } | null;
+          data: { session: { user: User } | null };
+          error: null;
         };
-        if (sessionData.session) {
-          setUser(sessionData.session.user);
-          loadPastRecommendations(sessionData.session.user.id);
+        if (sessionData.data.session) {
+          setUser(sessionData.data.session.user);
+          loadPastRecommendations(sessionData.data.session.user.id);
         }
       } catch (error) {
         console.error("Session check error:", error);
