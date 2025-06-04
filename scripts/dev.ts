@@ -15,14 +15,14 @@ async function startDev() {
     shell: true,
   });
 
-  nextServer.stdout.on("data", (data) => {
+  nextServer.stdout?.on("data", (data) => {
     const output = data.toString();
     if (output.includes("Ready")) {
       console.log("✓ Next.js API server ready on port 3001");
     }
   });
 
-  nextServer.stderr.on("data", (data) => {
+  nextServer.stderr?.on("data", (data) => {
     console.error("Next.js API server error:", data.toString());
   });
 
