@@ -121,8 +121,10 @@ export default function Home() {
   const loadPastRecommendations = async (userId: string) => {
     try {
       setPastRecommendationsLoading(true);
-      const recommendations = await getUserRecommendations(userId);
-      setPastRecommendations(recommendations);
+      const result = await getUserRecommendations(userId);
+      if (result.data) {
+        setPastRecommendations(result.data);
+      }
     } catch (error) {
       console.error("Failed to load past recommendations:", error);
     } finally {
