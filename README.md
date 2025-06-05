@@ -1,233 +1,278 @@
 # ChasquiFX
 
-## About
+A modern hybrid travel recommendation application that integrates flight data with foreign exchange rates to provide smart destination recommendations based on favorable exchange rates and flight availability.
 
-ChasquiFX is a tool that integrates flight route data with foreign exchange data to provide destination recommendations based on favorable exchange rates and available flight routes.
+## 🏗️ Architecture
 
-## Recent Updates
+ChasquiFX uses a unique **hybrid Next.js + Vite architecture** that combines the best of both worlds:
 
-### May 20, 2025: Security Improvements & Vite Migration
+- **Frontend**: Vite-powered React SPA with React Router for client-side routing
+- **Backend API**: Next.js App Router API routes for server-side functionality
+- **Database**: MongoDB for data persistence and caching
+- **Development**: Unified development environment running both servers concurrently
 
-#### Security Improvements
-
-- Removed hardcoded JWT secrets from the codebase
-- Implemented proper environment variable handling with validation
-- Added documentation for securing environment variables
-- Enhanced deployment scripts to validate environment setup
-
-To apply security improvements:
-
-1. Copy `.env.example` to `.env` in the backend/api directory
-2. Set your JWT_SECRET and other required variables
-3. Run `npm run validate-env` to verify your setup
-
-See [Securing Environment Variables](docs/securing-environment-variables.md) for details.
-
-#### Frontend Migration to Vite
-
-- Migrated the frontend from Create React App to Vite
-- Improved build performance and developer experience
-- Updated environment variable handling for Vite compatibility
-
-To run the migrated frontend:
-
-1. Navigate to the frontend directory
-2. Run `npm install` followed by `npm run dev`
-
-See [React to Vite Migration](docs/react-to-vite-migration.md) for details.
-
-### May 20, 2025: CORS Configuration Fix
-
-Fixed CORS configuration to allow proper communication between the frontend and backend:
-
-- Updated `vercel.json` to use wildcard (\*) for Access-Control-Allow-Origin
-- Added proper CORS headers to all serverless function files
-- Created testing scripts to verify CORS configuration
-- Updated CORS configuration documentation
-
-To deploy the CORS fix:
-
-1. Run `./deploy-api-cors-fix.sh` from the project root
-2. After deployment completes, verify with `./test-cors-config.sh`
-
-For details, see [CORS Configuration Guide](backend/api/docs/cors-configuration-guide.md) and [CORS Update Documentation](backend/api/docs/cors-update-may-2025.md).
-
-## Deployment
-
-- Frontend: https://chasquifx-web.vercel.app
-- Backend API: https://chasquifx-api.vercel.app
-
-## Architecture
-
-ChasquiFX uses a hybrid architecture with clear separation of concerns:
-
-- **Node.js Backend**: Handles all API endpoints, authentication, and user-facing operations
-
-- **MongoDB**: Provides caching for forex, flights, and geo data
-
-This architecture represents a complete migration from the original Python API implementation to Node.js, with Python now serving as a specialized processing component rather than an API layer.
-
-## Features
-
-- Find destinations with favorable exchange rates
-- View flight routes and fare information (via SerpAPI or SearchAPI integration)
-- Compare destinations with interactive visualizations
-- Secure storage of API keys in user accounts
-- Database logging of recommendations and API usage
-- Cached forex and flight data to reduce API calls
-- Save favorite destinations
-- Modern React frontend for improved reliability and user experience
-- Robust API error handling with retry mechanisms
-- Standardized data file naming and organization
-- MongoDB-based caching for improved performance and reliability
-
-## User Interface
-
-**React Frontend**: A modern, responsive UI built with React and Material-UI
-
-- Enhanced performance and reliability
-- Better handling of API requests
-- User authentication with MongoDB
-- Responsive design for mobile and desktop
-- Cached API results for better performance
-
-## Data Processing
-
-ChasquiFX includes a data processing module that handles:
-
-- **Standardized file naming**: Automatic renaming of data files based on their content
-
-  - Flight data: `(departure_id)_(arrival_id)_(outbound_date)_(return_date).json`
-  - Forex data: `(q)_(created_at).json`
-
-Architecture
-
-ChasquiFX uses a hybrid architecture with the following components:
-
-1. **React Frontend**: Deployed on GitHub Pages
-
-   - User authentication with Supabase
-   - Material UI interface
-   - Modern responsive design
-
-2. **Node.js API Backend**: Deployed on Vercel
-
-   - Handles all API requests from the frontend
-   - Manages authentication and user sessions
-   - Provides RESTful endpoints with Express.js
-   - Optimizes asynchronous operations
-
-3. **Mongo DB Cluster**:
-   - NoSQL database for storing user data and API logs
-   - Authentication service
-   - Cache layer for API responses
-   - Storage for JSON documents
-
-## Setup and Deployment
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ and npm for frontend development
-- MongoDB account (free tier available)
-- SerpAPI account (free trial available)
-- SearchAPI account (free trial available)
+- Node.js 18+ and npm
+- MongoDB connection (local or cloud)
+- API keys for flight/forex data services
 
-### Setup
+### Installation & Development
 
-1. **Clone the repository**
+```bash
+# Clone the repository
+git clone <repository-url>
+cd chasquifx
 
+# Install dependencies
+npm install
+
+# Start development environment (both frontend and API)
+npm run dev
+```
+
+This will start:
+- **Frontend (Vite)**: http://localhost:3000 
+- **API (Next.js)**: http://localhost:3001/api
+
+### Build for Production
+
+```bash
+# Build both frontend and API
+npm run build:full
+
+# Or build individually
+npm run dev:frontend  # Start only Vite frontend
+npm run dev:api       # Start only Next.js API
+```
+
+## 📁 Project Structure
+
+```
+chasquifx/
+├── src/
+│   ├── app/                    # Next.js App Router (API routes)
+│   │   ├── api/               # API endpoints
+│   │   │   ├── currencies/    # Currency exchange APIs
+│   │   │   ├── flights/       # Flight search APIs
+│   │   │   ├── forex/         # Forex rate APIs
+│   │   │   └── health/        # Health check APIs
+│   │   ├── layout.tsx         # Next.js root layout
+│   │   └── page.tsx          # Next.js compatibility page
+│   ├── page-components/       # React page components
+│   │   ├── HomePage.tsx
+│   │   ├── SearchPage.tsx
+│   │   ├── ResultsPage.tsx
+│   │   └── AnalysisPage.tsx
+│   ├── components/            # Reusable React components
+│   │   ├── ui/               # UI components (shadcn/ui)
+│   │   ├── search/           # Search-related components
+│   │   ├── results/          # Results display components
+│   │   └── analysis/         # Analysis components
+│   ├── services/             # API client services
+│   │   ├── chasquiApi.js     # Main API client
+│   │   ├── chasquiApiNext.js # Next.js API utilities
+│   │   └── mongoDbClient.js  # MongoDB client
+│   ├── App.tsx               # React SPA entry point
+│   └── main.tsx              # Vite entry point
+├── scripts/
+│   └── dev.ts                # Development orchestration script
+├── public/                   # Static assets
+├── server/                   # Express server utilities
+└── docs/                     # Documentation
+```
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 18** - Modern React with hooks and concurrent features
+- **Vite 6** - Fast build tool and dev server
+- **React Router 7** - Client-side routing
+- **Material-UI (MUI) 7** - React component library
+- **Radix UI** - Unstyled, accessible UI primitives
+- **Tailwind CSS 3** - Utility-first CSS framework
+- **TypeScript 5** - Type safety and developer experience
+
+### Backend
+- **Next.js 14** - App Router for API routes
+- **Express 5** - Additional server utilities
+- **MongoDB 6** - NoSQL database with Kysely query builder
+- **Node.js 22** - Server runtime
+
+### Development Tools
+- **ESLint 9** - Code linting with flat config
+- **TypeScript** - Static type checking
+- **tsx** - TypeScript execution for scripts
+- **Vercel** - Deployment platform
+
+## 🌐 API Endpoints
+
+The Next.js API provides the following endpoints:
+
+- `GET /api/health` - Health check and status
+- `GET /api/db-status` - Database connection status
+- `GET /api/currencies` - Available currencies
+- `GET /api/currencies/[from]/[to]` - Exchange rate between currencies
+- `GET /api/forex` - Forex rate data
+- `GET /api/flights/search` - Flight search functionality
+- `GET /api/flights/recent` - Recent flight searches
+- `GET /api/docs` - API documentation
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# MongoDB Configuration
+MONGODB_URI=your_mongodb_connection_string
+MONGODB_DB_NAME=chasquifx
+
+# API Keys
+SERPAPI_KEY=your_serpapi_key
+SEARCHAPI_KEY=your_searchapi_key
+
+# Next.js Configuration
+NEXT_PUBLIC_API_URL=http://localhost:3001
+NODE_ENV=development
+```
+
+### Development Scripts
+
+The project includes several npm scripts:
+
+```json
+{
+  "dev": "tsx scripts/dev.ts",           // Start both frontend and API
+  "build": "next build",                 // Build Next.js API
+  "build:full": "vite build && next build", // Build both frontend and API
+  "start": "tsx scripts/dev.ts",         // Production start (same as dev)
+  "dev:frontend": "vite",                // Start only Vite frontend
+  "dev:api": "next dev --port 3001"      // Start only Next.js API
+}
+```
+
+## 🎯 Features
+
+### Core Functionality
+- **Smart Recommendations**: Combines forex rates with flight availability
+- **Real-time Data**: Live flight and currency exchange rate fetching
+- **Interactive Analysis**: Visual comparison of destinations and rates
+- **User Profiles**: Secure user accounts with recommendation history
+- **API Key Management**: Secure storage of third-party API keys
+- **Caching System**: MongoDB-based caching for improved performance
+
+### User Interface
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Modern UI**: Material-UI components with Tailwind styling
+- **Dark/Light Mode**: Theme switching support
+- **Accessibility**: ARIA compliant with keyboard navigation
+- **Progressive Web App**: PWA capabilities for mobile installation
+
+### Data Management
+- **MongoDB Integration**: NoSQL database for flexible data storage
+- **Real-time Updates**: Live data fetching with fallback caching
+- **User History**: Persistent storage of searches and preferences
+- **Analytics**: Usage tracking and performance monitoring
+
+## 🚀 Deployment
+
+### Vercel Deployment (Recommended)
+
+1. **Install Vercel CLI**:
    ```bash
-   git clone https://github.com/your-username/chasquifx.git
-   cd chasquifx
+   npm install -g vercel
    ```
 
-2. **Node.js backend setup**
-
+2. **Deploy**:
    ```bash
-   cd backend/node
-   npm install
-   cp .env.template .env
+   vercel --prod
    ```
 
-3. **Frontend setup**
+3. **Configure Environment Variables** in Vercel dashboard
 
+### Manual Deployment
+
+1. **Build the application**:
    ```bash
-   cd frontend
-   npm install
-
-   # Create environment variables file
-   cp .env.template .env.local
+   npm run build:full
    ```
 
-4. **MongoDB setup**
+2. **Deploy the `dist/` folder** (frontend) and the `.next/` folder (API) to your hosting provider
 
-   - Create a new project in [MongoDB](https://www.mongodb.com/)
-   - Use the js script in `backend/api/src/db/operations.js` to create the collections and indexes
-   - Copy the MongoDB connection string and keys to your environment files
+## 🔍 Development Workflow
 
-### Deployment
+### Starting Development
 
-1. **Backend deployment to Vercel**
+```bash
+# Start both servers
+npm run dev
 
-   Connect your GitHub repository to Vercel and enable automatic deployments from the backend subdirectory as the vercel project root.
+# Or start individually for debugging
+npm run dev:frontend  # Frontend only (port 3000)
+npm run dev:api       # API only (port 3001)
+```
 
-   For detailed instructions, see [Vercel Deployment Guide](backend/api/docs/vercel-deployment-guide.md).
+### Code Quality
 
-2. **Frontend deployment to GitHub Pages**
+The project includes comprehensive linting and type checking:
 
-   Use the included GitHub Actions workflow by configuring the necessary secrets in your repository.
+```bash
+# Type checking (automatic in VS Code)
+npx tsc --noEmit
 
+# Linting (with ESLint 9 flat config)
+npx eslint src/
+```
+
+### Database Setup
+
+1. **MongoDB Atlas** (recommended):
+   - Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+   - Get your connection string
+   - Add it to your `.env` file
+
+2. **Local MongoDB**:
    ```bash
-   # Workflow is triggered automatically on push to the main branch
-   # You can also trigger it manually from the Actions tab
+   # Install MongoDB locally
+   brew install mongodb/brew/mongodb-community  # macOS
+   sudo apt install mongodb                     # Ubuntu
+   
+   # Start MongoDB
+   mongod
    ```
 
-   For detailed instructions, see [Frontend Deployment Guide](docs/frontend-deployment-guide.md).
+## 🤝 Contributing
 
-## API Key Setup
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and ensure tests pass
+4. Commit with descriptive messages
+5. Push to your fork and submit a pull request
 
-ChasquiFX uses SerpAPI for retrieving real-time data:
+### Code Style
 
-### SerpAPI and SearchAPI for Google Finance and Google Flights data
+- Use TypeScript for all new code
+- Follow the existing ESLint configuration
+- Write descriptive commit messages
+- Add tests for new features
 
-1. Sign up for a [SerpAPI account](https://serpapi.com/users/sign_up) / [SearchAPI account](https://searchapi.io/signup)
-2. Get your API keys from your dashboards
-3. Set up your API keys:
-   - If you want to use the application without creating an account, enter your SerpAPI/SearchAPI key in the API Keys section
-   - If you create a ChasquiFX account, you can securely store your API keys in your user profile
+## 📄 License
 
-## Data Management
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-ChasquiFX now uses a sophisticated data management system:
+## 🙏 Acknowledgments
 
-1. **Real-time Data**: When a user requests recommendations, ChasquiFX fetches real-time forex and flight data using SerpAPI and/or SearchAPI. This ensures that users always receive the most up-to-date information.
+- [Next.js](https://nextjs.org/) - React framework for the API
+- [Vite](https://vitejs.dev/) - Build tool for the frontend
+- [React](https://reactjs.org/) - UI library
+- [Material-UI](https://mui.com/) - React component library
+- [MongoDB](https://www.mongodb.com/) - Database
+- [Vercel](https://vercel.com/) - Deployment platform
 
-   - Forex data is fetched based on the user's selected currency
-   - Flight data is fetched based on the user's selected departure and arrival locations
+---
 
-2. **Database Cache**: Results are cached in the MongoDB database to:
-
-   - Reduce API calls (and costs)
-   - Improve response times
-   - Provide fallback data when API services are unavailable
-
-3. **User History**: All recommendations are logged in the user's profile for future reference
-
-4. **Analytics**: API usage is logged to enable future improvements and optimizations
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgements
-
-- [Node.js](https://nodejs.org/) for the backend runtime
-- [React](https://reactjs.org/) for the frontend framework
-- [Material-UI](https://mui.com/) for the UI components
-- [MongoDB](https://www.mongodb.com/) for database and authentication
-- [SerpAPI](https://serpapi.com/) for Google Finance and Google Flights data
-- [SearchAPI](https://searchapi.io/) for Google Finance and Google Flights data
+**ChasquiFX** - Smart travel recommendations powered by real-time data and modern web technologies.
