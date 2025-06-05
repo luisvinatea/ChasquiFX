@@ -10,6 +10,8 @@ const nextConfig = {
     // Enable experimental features that help with module resolution
     esmExternals: true,
   },
+  // Configure to use App Router only (ignore src/pages directory)
+  pageExtensions: ["tsx", "ts", "jsx", "js"],
   transpilePackages: [
     "@mui/material",
     "@mui/icons-material",

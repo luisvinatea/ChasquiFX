@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
-import { SearchPage } from './pages/SearchPage';
-import { ResultsPage } from './pages/ResultsPage';
-import { AnalysisPage } from './pages/AnalysisPage';
+import * as React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HomePage } from "./page-components/HomePage";
+import { SearchPage } from "./page-components/SearchPage";
+import { ResultsPage } from "./page-components/ResultsPage";
+import { AnalysisPage } from "./page-components/AnalysisPage";
 
 function App() {
   return (
