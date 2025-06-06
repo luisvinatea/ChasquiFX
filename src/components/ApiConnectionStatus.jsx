@@ -55,8 +55,7 @@ const ApiConnectionStatus = ({
     if (!initialStatus) {
       checkApiConnection();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialStatus]);
+  }, [initialStatus, checkApiConnection]);
 
   // Get status properties for compact mode
   const getStatusProps = () => {
