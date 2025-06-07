@@ -8,7 +8,7 @@ import { SearchSummary } from "@/components/results/SearchSummary";
 import { SortingControls } from "@/components/results/SortingControls";
 import { ArrowLeft } from "lucide-react";
 
-export default function ResultsPage() {
+function ResultsPageContent() {
   const searchParams = useSearchParams();
   const [flights, setFlights] = React.useState([]);
   const [searchData, setSearchData] = React.useState({});
@@ -100,5 +100,13 @@ export default function ResultsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResultsPage() {
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <ResultsPageContent />
+    </React.Suspense>
   );
 }
