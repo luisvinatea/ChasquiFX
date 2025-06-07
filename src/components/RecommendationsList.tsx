@@ -136,14 +136,14 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({
 
   return (
     <Box className="recommendations-list">
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
         {recommendations.map((recommendation) => (
-          <Box 
+          <Box
             key={recommendation.id || recommendation.destination}
-            sx={{ 
-              flexBasis: { xs: '100%', sm: '46%', md: '46%' },
+            sx={{
+              flexBasis: { xs: "100%", sm: "46%", md: "46%" },
               flexGrow: 0,
-              flexShrink: 0
+              flexShrink: 0,
             }}
           >
             <Card

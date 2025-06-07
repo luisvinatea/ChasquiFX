@@ -1,9 +1,11 @@
+"use client";
+
 import * as React from "react";
 import { CurrencyComparison } from "@/components/analysis/CurrencyComparison";
 import { ForexTrends } from "@/components/analysis/ForexTrends";
 import { TravelRecommendations } from "@/components/analysis/TravelRecommendations";
 
-export function AnalysisPage() {
+export default function AnalysisPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">

@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { format } from 'date-fns';
+import * as React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
 
 export function SearchSummary({ searchData, resultCount }) {
   return (
@@ -11,11 +11,13 @@ export function SearchSummary({ searchData, resultCount }) {
             {searchData.origin} → {searchData.destination}
           </span>
           <span>
-            {format(new Date(searchData.departureDate), 'MMM dd, yyyy')}
-            {searchData.returnDate && ` - ${format(new Date(searchData.returnDate), 'MMM dd, yyyy')}`}
+            {format(new Date(searchData.departureDate), "MMM dd, yyyy")}
+            {searchData.returnDate &&
+              ` - ${format(new Date(searchData.returnDate), "MMM dd, yyyy")}`}
           </span>
           <span>
-            {searchData.passengers} passenger{searchData.passengers !== '1' ? 's' : ''}
+            {searchData.passengers} passenger
+            {searchData.passengers !== "1" ? "s" : ""}
           </span>
           <span>
             {searchData.originCurrency} → {searchData.destinationCurrency}

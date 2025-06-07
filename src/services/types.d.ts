@@ -5,8 +5,16 @@
 // System service types
 interface SystemService {
   checkApiStatus: () => Promise<boolean>;
-  getStatus: () => Promise<{ status: string; message?: string; [key: string]: any }>;
-  getDatabaseStatus: () => Promise<{ status: string; message?: string; [key: string]: any }>;
+  getStatus: () => Promise<{
+    status: string;
+    message?: string;
+    [key: string]: any;
+  }>;
+  getDatabaseStatus: () => Promise<{
+    status: string;
+    message?: string;
+    [key: string]: any;
+  }>;
 }
 
 // Forex service types
@@ -16,8 +24,8 @@ interface ForexService {
     timestamp: number;
   }>;
   convertCurrency: (
-    amount: number, 
-    fromCurrency: string, 
+    amount: number,
+    fromCurrency: string,
     toCurrency: string
   ) => Promise<{
     amount: number;
@@ -31,7 +39,7 @@ interface ForexService {
 // Recommendation service types
 interface RecommendationService {
   getRecommendations: (
-    origin: string, 
+    origin: string,
     params?: {
       budget?: number;
       preferredCurrency?: string;
@@ -41,10 +49,7 @@ interface RecommendationService {
     }
   ) => Promise<any[]>;
   getUserHistory: (limit?: number, offset?: number) => Promise<any[]>;
-  saveRecommendation: (
-    recommendation: any,
-    notes?: string
-  ) => Promise<any>;
+  saveRecommendation: (recommendation: any, notes?: string) => Promise<any>;
 }
 
 // Flight service types
@@ -108,13 +113,13 @@ interface SessionResponse {
   session: Session | null;
 }
 
-declare module './supabaseClient' {
+declare module "./supabaseClient" {
   export function getSession(): Promise<SessionResponse>;
   export function signOutUser(): Promise<{ error: null }>;
   export function getUserRecommendations(userId: string): Promise<any[]>;
 }
 
-declare module './chasquiApi' {
+declare module "./chasquiApi" {
   const chasquiApi: ChasquiApi;
   export default chasquiApi;
 }

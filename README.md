@@ -34,7 +34,8 @@ npm run dev
 ```
 
 This will start:
-- **Frontend (Vite)**: http://localhost:3000 
+
+- **Frontend (Vite)**: http://localhost:3000
 - **API (Next.js)**: http://localhost:3001/api
 
 ### Build for Production
@@ -87,6 +88,7 @@ chasquifx/
 ## 🛠️ Technology Stack
 
 ### Frontend
+
 - **React 18** - Modern React with hooks and concurrent features
 - **Vite 6** - Fast build tool and dev server
 - **React Router 7** - Client-side routing
@@ -96,12 +98,14 @@ chasquifx/
 - **TypeScript 5** - Type safety and developer experience
 
 ### Backend
+
 - **Next.js 14** - App Router for API routes
 - **Express 5** - Additional server utilities
 - **MongoDB 6** - NoSQL database with Kysely query builder
 - **Node.js 22** - Server runtime
 
 ### Development Tools
+
 - **ESLint 9** - Code linting with flat config
 - **TypeScript** - Static type checking
 - **tsx** - TypeScript execution for scripts
@@ -146,18 +150,19 @@ The project includes several npm scripts:
 
 ```json
 {
-  "dev": "tsx scripts/dev.ts",           // Start both frontend and API
-  "build": "next build",                 // Build Next.js API
+  "dev": "tsx scripts/dev.ts", // Start both frontend and API
+  "build": "next build", // Build Next.js API
   "build:full": "vite build && next build", // Build both frontend and API
-  "start": "tsx scripts/dev.ts",         // Production start (same as dev)
-  "dev:frontend": "vite",                // Start only Vite frontend
-  "dev:api": "next dev --port 3001"      // Start only Next.js API
+  "start": "tsx scripts/dev.ts", // Production start (same as dev)
+  "dev:frontend": "vite", // Start only Vite frontend
+  "dev:api": "next dev --port 3001" // Start only Next.js API
 }
 ```
 
 ## 🎯 Features
 
 ### Core Functionality
+
 - **Smart Recommendations**: Combines forex rates with flight availability
 - **Real-time Data**: Live flight and currency exchange rate fetching
 - **Interactive Analysis**: Visual comparison of destinations and rates
@@ -166,6 +171,7 @@ The project includes several npm scripts:
 - **Caching System**: MongoDB-based caching for improved performance
 
 ### User Interface
+
 - **Responsive Design**: Works on desktop, tablet, and mobile
 - **Modern UI**: Material-UI components with Tailwind styling
 - **Dark/Light Mode**: Theme switching support
@@ -173,6 +179,7 @@ The project includes several npm scripts:
 - **Progressive Web App**: PWA capabilities for mobile installation
 
 ### Data Management
+
 - **MongoDB Integration**: NoSQL database for flexible data storage
 - **Real-time Updates**: Live data fetching with fallback caching
 - **User History**: Persistent storage of searches and preferences
@@ -183,11 +190,13 @@ The project includes several npm scripts:
 ### Vercel Deployment (Recommended)
 
 1. **Install Vercel CLI**:
+
    ```bash
    npm install -g vercel
    ```
 
 2. **Deploy**:
+
    ```bash
    vercel --prod
    ```
@@ -197,6 +206,7 @@ The project includes several npm scripts:
 ### Manual Deployment
 
 1. **Build the application**:
+
    ```bash
    npm run build:full
    ```
@@ -231,16 +241,18 @@ npx eslint src/
 ### Database Setup
 
 1. **MongoDB Atlas** (recommended):
+
    - Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
    - Get your connection string
    - Add it to your `.env` file
 
 2. **Local MongoDB**:
+
    ```bash
    # Install MongoDB locally
    brew install mongodb/brew/mongodb-community  # macOS
    sudo apt install mongodb                     # Ubuntu
-   
+
    # Start MongoDB
    mongod
    ```

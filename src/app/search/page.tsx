@@ -1,17 +1,17 @@
+"use client";
+
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
 import { SearchForm } from "@/components/search/SearchForm";
 import { CurrencyAnalysis } from "@/components/search/CurrencyAnalysis";
 import { RecentSearches } from "@/components/search/RecentSearches";
 
-export function SearchPage() {
-  const navigate = useNavigate();
+export default function SearchPage() {
   const [selectedCurrencies, setSelectedCurrencies] = React.useState({
     origin: "",
     destination: "",
   });
 
-  const handleSearch = async (searchData) => {
+  const handleSearch = async (searchData: any) => {
     console.log("Search submitted:", searchData);
 
     try {
@@ -25,7 +25,10 @@ export function SearchPage() {
 
       if (response.ok) {
         const results = await response.json();
-        navigate("/results", { state: { flights: results, searchData } });
+        // Use Next.js navigation instead of React Router
+        window.location.href = `/results?data=${encodeURIComponent(
+          JSON.stringify({ flights: results, searchData })
+        )}`;
       } else {
         console.error("Search failed");
       }
@@ -34,7 +37,7 @@ export function SearchPage() {
     }
   };
 
-  const handleCurrencyChange = (origin, destination) => {
+  const handleCurrencyChange = (origin: string, destination: string) => {
     setSelectedCurrencies({ origin, destination });
   };
 

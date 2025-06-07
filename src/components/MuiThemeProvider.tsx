@@ -1,50 +1,50 @@
-'use client';
+"use client";
 
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { CssBaseline } from "@mui/material";
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#3f51b5', // Indigo
-      light: '#757de8',
-      dark: '#002984',
-      contrastText: '#fff',
+      main: "#3f51b5", // Indigo
+      light: "#757de8",
+      dark: "#002984",
+      contrastText: "#fff",
     },
     secondary: {
-      main: '#f50057', // Pink
-      light: '#ff5983',
-      dark: '#bb002f',
-      contrastText: '#fff',
+      main: "#f50057", // Pink
+      light: "#ff5983",
+      dark: "#bb002f",
+      contrastText: "#fff",
     },
     background: {
-      default: '#f8f9fa',
-      paper: '#ffffff',
+      default: "#f8f9fa",
+      paper: "#ffffff",
     },
     success: {
-      main: '#4caf50',
+      main: "#4caf50",
     },
     info: {
-      main: '#2196f3',
+      main: "#2196f3",
     },
     warning: {
-      main: '#ff9800',
+      main: "#ff9800",
     },
     error: {
-      main: '#f44336',
+      main: "#f44336",
     },
   },
   typography: {
     fontFamily: [
-      'Inter',
-      '-apple-system',
-      'BlinkMacSystemFont',
+      "Inter",
+      "-apple-system",
+      "BlinkMacSystemFont",
       '"Segoe UI"',
-      'Roboto',
+      "Roboto",
       '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
+      "Arial",
+      "sans-serif",
+    ].join(","),
     h1: {
       fontWeight: 600,
     },
@@ -64,7 +64,7 @@ const theme = createTheme({
       fontWeight: 600,
     },
     button: {
-      textTransform: 'none', // Avoid all-caps in buttons
+      textTransform: "none", // Avoid all-caps in buttons
       fontWeight: 500,
     },
   },
@@ -75,9 +75,9 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+          boxShadow: "none",
+          "&:hover": {
+            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
           },
         },
       },
@@ -86,14 +86,14 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+          boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.05)",
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.08)',
+          boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.08)",
         },
       },
     },

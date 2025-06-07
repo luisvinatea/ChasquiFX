@@ -1,21 +1,32 @@
-import * as React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CurrencySelect } from './CurrencySelect';
-import { Search } from 'lucide-react';
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CurrencySelect } from "./CurrencySelect";
+import { Search } from "lucide-react";
 
 export function SearchForm({ onSearch, onCurrencyChange }) {
   const [formData, setFormData] = React.useState({
-    origin: '',
-    destination: '',
-    departureDate: '',
-    returnDate: '',
-    passengers: '1',
-    originCurrency: '',
-    destinationCurrency: ''
+    origin: "",
+    destination: "",
+    departureDate: "",
+    returnDate: "",
+    passengers: "1",
+    originCurrency: "",
+    destinationCurrency: "",
   });
 
   const handleSubmit = (e) => {
@@ -26,15 +37,18 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
   const handleChange = (field, value) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
-    
-    if (field === 'originCurrency' || field === 'destinationCurrency') {
+
+    if (field === "originCurrency" || field === "destinationCurrency") {
       onCurrencyChange(newData.originCurrency, newData.destinationCurrency);
     }
   };
 
-  const isFormValid = formData.origin && formData.destination && 
-                     formData.departureDate && formData.originCurrency && 
-                     formData.destinationCurrency;
+  const isFormValid =
+    formData.origin &&
+    formData.destination &&
+    formData.departureDate &&
+    formData.originCurrency &&
+    formData.destinationCurrency;
 
   return (
     <Card>
@@ -50,7 +64,7 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
                 id="origin"
                 placeholder="Origin city or airport"
                 value={formData.origin}
-                onChange={(e) => handleChange('origin', e.target.value)}
+                onChange={(e) => handleChange("origin", e.target.value)}
               />
             </div>
             <div>
@@ -59,7 +73,7 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
                 id="destination"
                 placeholder="Destination city or airport"
                 value={formData.destination}
-                onChange={(e) => handleChange('destination', e.target.value)}
+                onChange={(e) => handleChange("destination", e.target.value)}
               />
             </div>
           </div>
@@ -71,7 +85,7 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
                 id="departureDate"
                 type="date"
                 value={formData.departureDate}
-                onChange={(e) => handleChange('departureDate', e.target.value)}
+                onChange={(e) => handleChange("departureDate", e.target.value)}
               />
             </div>
             <div>
@@ -80,12 +94,15 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
                 id="returnDate"
                 type="date"
                 value={formData.returnDate}
-                onChange={(e) => handleChange('returnDate', e.target.value)}
+                onChange={(e) => handleChange("returnDate", e.target.value)}
               />
             </div>
             <div>
               <Label htmlFor="passengers">Passengers</Label>
-              <Select value={formData.passengers} onValueChange={(value) => handleChange('passengers', value)}>
+              <Select
+                value={formData.passengers}
+                onValueChange={(value) => handleChange("passengers", value)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -104,7 +121,9 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
               <Label>Your Currency</Label>
               <CurrencySelect
                 value={formData.originCurrency}
-                onValueChange={(value) => handleChange('originCurrency', value)}
+                onValueChange={(value) =>
+                  handleChange("originCurrency", value)
+                }
                 placeholder="Select your currency"
               />
             </div>
@@ -112,7 +131,9 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
               <Label>Destination Currency</Label>
               <CurrencySelect
                 value={formData.destinationCurrency}
-                onValueChange={(value) => handleChange('destinationCurrency', value)}
+                onValueChange={(value) =>
+                  handleChange("destinationCurrency", value)
+                }
                 placeholder="Select destination currency"
               />
             </div>
