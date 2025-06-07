@@ -24,7 +24,7 @@ export function ApiTestComponent() {
   const testHealthEndpoint = async () => {
     setStatus((prev) => ({ ...prev, health: "loading" }));
     try {
-      const response = await fetch("http://localhost:3001/api/health");
+      const response = await fetch("/api/health");
       const data = await response.json();
       setStatus((prev) => ({
         ...prev,
@@ -40,7 +40,7 @@ export function ApiTestComponent() {
   const testCurrenciesEndpoint = async () => {
     setStatus((prev) => ({ ...prev, currencies: "loading" }));
     try {
-      const response = await fetch("http://localhost:3001/api/currencies");
+      const response = await fetch("/api/currencies");
       const data = await response.json();
       setStatus((prev) => ({
         ...prev,
