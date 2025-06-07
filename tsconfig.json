@@ -5,8 +5,9 @@
     "jsx": "preserve",
     "strict": false,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,7 +16,6 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
-    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     },
@@ -27,6 +27,11 @@
     ],
     "strictNullChecks": true
   },
-  "include": ["src/**/*", "scripts/**/*", ".next/types/**/*.ts"],
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    ".next/types/**/*.ts",
+    "vite.config.js"
+  ],
   "exclude": ["node_modules", ".next", "dist"]
 }
