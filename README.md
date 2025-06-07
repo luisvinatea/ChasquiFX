@@ -4,7 +4,7 @@ A modern hybrid travel recommendation application that integrates flight data wi
 
 ## 🏗️ Architecture
 
-ChasquiFX uses a unique **hybrid Next.js + Vite architecture** that combines the best of both worlds:
+ChasquiFX uses a unique **hybrid Next.js + Vite architecture**:
 
 - **Frontend**: Vite-powered React SPA with React Router for client-side routing
 - **Backend API**: Next.js App Router API routes for server-side functionality
