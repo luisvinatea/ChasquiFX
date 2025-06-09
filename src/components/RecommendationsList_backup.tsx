@@ -13,16 +13,8 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import Grid from "@mui/material/Gri                  {showDate && recommendation.date && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mt: 1 }}
-                    >
-                      Searched on:{" "}
-                      {formatDateTime(recommendation.date)}
-                    </Typography>
-                  )}avoriteIcon from "@mui/icons-material/Favorite";
+import Grid from "@mui/material/Grid";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -264,7 +256,8 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({
                       sx={{ display: "block", mt: 1 }}
                     >
                       Searched on:{" "}
-                      {recommendation.date && !isNaN(new Date(recommendation.date).getTime()) 
+                      {recommendation.date &&
+                      !isNaN(new Date(recommendation.date).getTime())
                         ? formatDateTime(recommendation.date)
                         : "Invalid date"}
                     </Typography>
