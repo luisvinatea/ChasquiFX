@@ -28,7 +28,7 @@ export async function GET() {
           departure_date: "2025-06-15",
           origin_currency: "USD",
           destination_currency: "GBP",
-          created_at: new Date(Date.now() - 86400000), // 1 day ago
+          created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
         },
         {
           id: "search_2",
@@ -37,7 +37,7 @@ export async function GET() {
           departure_date: "2025-07-20",
           origin_currency: "USD",
           destination_currency: "JPY",
-          created_at: new Date(Date.now() - 172800000), // 2 days ago
+          created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
         },
         {
           id: "search_3",
@@ -46,14 +46,34 @@ export async function GET() {
           departure_date: "2025-08-10",
           origin_currency: "USD",
           destination_currency: "EUR",
-          created_at: new Date(Date.now() - 259200000), // 3 days ago
+          created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
         },
       ];
 
       return NextResponse.json(mockSearches, { status: 200 });
     }
 
-    return NextResponse.json(recentSearches, { status: 200 });
+    // Convert MongoDB dates to ISO strings for safe transport
+    const sanitizedSearches = recentSearches.map((search) => ({
+      ...search,
+      id: search._id ? search._id.toString() : search.id,
+      created_at:
+        search.created_at instanceof Date
+          ? search.created_at.toISOString()
+          : search.created_at,
+      departure_date:
+        typeof search.departure_date === "string"
+          ? search.departure_date
+          : search.departure_date instanceof Date
+          ? search.departure_date.toISOString().split("T")[0]
+          : search.departure_date,
+      return_date:
+        search.return_date instanceof Date
+          ? search.return_date.toISOString().split("T")[0]
+          : search.return_date,
+    }));
+
+    return NextResponse.json(sanitizedSearches, { status: 200 });
   } catch (error) {
     console.error("Recent searches API error:", error);
     return NextResponse.json(

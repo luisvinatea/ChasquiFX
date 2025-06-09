@@ -28,24 +28,33 @@ export function createLogger() {
 
   return {
     error: (...args) => {
-      const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+      const date = new Date().toISOString().replace("T", " ").substring(0, 19);
       console.error(`${date} error :`, ...args);
     },
     warn: (...args) => {
       if (logLevel >= LOG_LEVELS.warn) {
-        const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+        const date = new Date()
+          .toISOString()
+          .replace("T", " ")
+          .substring(0, 19);
         console.warn(`${date} warn  :`, ...args);
       }
     },
     info: (...args) => {
       if (logLevel >= LOG_LEVELS.info) {
-        const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+        const date = new Date()
+          .toISOString()
+          .replace("T", " ")
+          .substring(0, 19);
         console.info(`${date} info  :`, ...args);
       }
     },
     debug: (...args) => {
       if (logLevel >= LOG_LEVELS.debug) {
-        const date = new Date().toISOString().replace("T", " ").substr(0, 19);
+        const date = new Date()
+          .toISOString()
+          .replace("T", " ")
+          .substring(0, 19);
         console.debug(`${date} debug :`, ...args);
       }
     },

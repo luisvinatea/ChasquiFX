@@ -27,8 +27,18 @@ const Sidebar = ({
 }) => {
   // Default dates - 3 months from now and a week later
   const today = dayjs();
-  const defaultOutbound = today.add(90, "day");
-  const defaultReturn = defaultOutbound.add(7, "day");
+
+  // Ensure dates are valid before using them
+  let defaultOutbound, defaultReturn;
+  try {
+    defaultOutbound = today.add(90, "day");
+    defaultReturn = defaultOutbound.add(7, "day");
+  } catch (error) {
+    console.warn("Error creating default dates:", error);
+    // Fallback to current date if there's an issue
+    defaultOutbound = dayjs();
+    defaultReturn = dayjs().add(1, "day");
+  }
 
   // State management
   const [outboundDate, setOutboundDate] = useState(defaultOutbound);
@@ -37,7 +47,14 @@ const Sidebar = ({
   const [directOnly, setDirectOnly] = useState(false);
   const [useRealtimeData, setUseRealtimeData] = useState(true);
   const [includeFares, setIncludeFares] = useState(true);
-  const [lastRefresh, setLastRefresh] = useState(dayjs());
+  const [lastRefresh, setLastRefresh] = useState(() => {
+    try {
+      return dayjs();
+    } catch (error) {
+      console.warn("Error creating lastRefresh date:", error);
+      return null;
+    }
+  });
 
   // Airport selection handler
   const handleAirportSelection = (airport) => {
@@ -62,8 +79,26 @@ const Sidebar = ({
       directOnly,
       includeFares,
       useRealtimeData,
-      outboundDate: outboundDate.format("YYYY-MM-DD"),
-      returnDate: returnDate.format("YYYY-MM-DD"),
+      outboundDate: (() => {
+        try {
+          return outboundDate
+            ? outboundDate.format("YYYY-MM-DD")
+            : dayjs().format("YYYY-MM-DD");
+        } catch (error) {
+          console.warn("Error formatting outbound date:", error);
+          return dayjs().format("YYYY-MM-DD");
+        }
+      })(),
+      returnDate: (() => {
+        try {
+          return returnDate
+            ? returnDate.format("YYYY-MM-DD")
+            : dayjs().add(1, "day").format("YYYY-MM-DD");
+        } catch (error) {
+          console.warn("Error formatting return date:", error);
+          return dayjs().add(1, "day").format("YYYY-MM-DD");
+        }
+      })(),
     });
   };
 
@@ -71,7 +106,11 @@ const Sidebar = ({
   const handleRefresh = () => {
     if (typeof refreshData === "function") {
       refreshData();
-      setLastRefresh(dayjs());
+      try {
+        setLastRefresh(dayjs());
+      } catch (error) {
+        console.warn("Error setting refresh time:", error);
+      }
     } else {
       console.warn("refreshData function is not properly initialized");
       // Provide user feedback
@@ -142,7 +181,15 @@ const Sidebar = ({
         mb={3}
       >
         <Typography variant="caption" color="text.secondary">
-          Last updated: {lastRefresh.format("HH:mm:ss")}
+          Last updated:{" "}
+          {(() => {
+            try {
+              return lastRefresh ? lastRefresh.format("HH:mm:ss") : "Never";
+            } catch (error) {
+              console.warn("Error formatting lastRefresh time:", error);
+              return "Invalid time";
+            }
+          })()}
         </Typography>
         <Button
           size="small"
@@ -299,7 +346,13 @@ const Sidebar = ({
         <DatePicker
           label="Outbound Date"
           value={outboundDate}
-          onChange={(newValue) => setOutboundDate(newValue)}
+          onChange={(newValue) => {
+            try {
+              setOutboundDate(newValue);
+            } catch (error) {
+              console.warn("Error setting outbound date:", error);
+            }
+          }}
           minDate={today}
           format="YYYY-MM-DD"
           slotProps={{
@@ -321,7 +374,13 @@ const Sidebar = ({
         <DatePicker
           label="Return Date"
           value={returnDate}
-          onChange={(newValue) => setReturnDate(newValue)}
+          onChange={(newValue) => {
+            try {
+              setReturnDate(newValue);
+            } catch (error) {
+              console.warn("Error setting return date:", error);
+            }
+          }}
           minDate={outboundDate}
           format="YYYY-MM-DD"
           slotProps={{

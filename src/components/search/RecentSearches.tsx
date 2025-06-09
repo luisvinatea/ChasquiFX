@@ -5,7 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { format } from "date-fns";
+import {
+  formatDateFns,
+  sanitizeDateFields,
+  debugDateIssues,
+} from "@/lib/dateUtils";
 
 interface Search {
   id: string;
@@ -27,9 +31,23 @@ export function RecentSearches() {
     try {
       const response = await fetch("/api/flights/recent");
       const data = await response.json();
-      setSearches(data);
+      // Debug any date issues in the response
+      debugDateIssues(data, "RecentSearches API response");
+      // Sanitize the data to fix any invalid date values
+      const sanitizedData = sanitizeDateFields(data);
+      debugDateIssues(sanitizedData, "RecentSearches sanitized data");
+      setSearches(sanitizedData);
     } catch (error) {
       console.error("Error fetching recent searches:", error);
+    }
+  };
+
+  const formatSafeDate = (dateString: string) => {
+    try {
+      return formatDateFns(dateString, "MMM dd, yyyy", "Date not available");
+    } catch (error) {
+      console.warn("Error formatting date:", dateString, error);
+      return "Date not available";
     }
   };
 
@@ -59,7 +77,7 @@ export function RecentSearches() {
                 {search.origin} → {search.destination}
               </div>
               <div className="text-sm text-muted-foreground">
-                {format(new Date(search.departure_date), "MMM dd, yyyy")}
+                {formatSafeDate(search.departure_date)}
               </div>
               <div className="text-xs text-muted-foreground">
                 {search.origin_currency} → {search.destination_currency}
