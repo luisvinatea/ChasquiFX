@@ -8,7 +8,8 @@ ChasquiFX uses a unique **hybrid Next.js + Vite architecture**:
 
 - **Frontend**: Vite-powered React SPA with React Router for client-side routing
 - **Backend API**: Next.js App Router API routes for server-side functionality
-- **Database**: MongoDB for data persistence and caching
+- **Database**: MongoDB for data persistence and user management
+- **Authentication**: JWT-based user authentication with secure API key storage
 - **Development**: Unified development environment running both servers concurrently
 
 ## 🚀 Quick Start
@@ -28,6 +29,10 @@ cd chasquifx
 
 # Install dependencies
 npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your MongoDB URI and API keys
 
 # Start development environment (both frontend and API)
 npm run dev
@@ -104,12 +109,42 @@ chasquifx/
 - **MongoDB 6** - NoSQL database with Kysely query builder
 - **Node.js 22** - Server runtime
 
+### Authentication & Security
+
+- **JWT (jsonwebtoken)** - Stateless authentication tokens
+- **bcryptjs** - Password hashing and verification
+- **AES-256-CTR** - API key encryption
+- **MongoDB** - User accounts and secure data storage
+- **Role-based access** - User permissions and route protection
+
 ### Development Tools
 
 - **ESLint 9** - Code linting with flat config
 - **TypeScript** - Static type checking
 - **tsx** - TypeScript execution for scripts
 - **Vercel** - Deployment platform
+
+## 🔐 Authentication System
+
+ChasquiFX includes a comprehensive user authentication system:
+
+### Features
+
+- **User Registration & Login** - Secure account creation and authentication
+- **JWT-based Sessions** - Stateless, secure token-based authentication
+- **API Key Management** - Encrypted storage of user API keys (SerpAPI, Amadeus, etc.)
+- **User Profiles** - Manage account settings and preferences
+- **Search History** - Track and manage user search history
+- **Route Protection** - Secure API endpoints and user data
+
+### Quick Setup
+
+1. Set environment variables for JWT and encryption keys
+2. Configure MongoDB connection
+3. Users can register/login through the UI
+4. API keys are stored securely per user account
+
+For detailed authentication documentation, see [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md).
 
 ## 🌐 API Endpoints
 

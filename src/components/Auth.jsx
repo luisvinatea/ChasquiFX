@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { signInUser } from "../services/mongoDbClient";
+import { signInUser, signUpUser } from "../services/mongoDbClient";
 
 /**
  * Authentication component for login and signup
@@ -21,6 +21,7 @@ function AuthComponent({ onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -29,6 +30,10 @@ function AuthComponent({ onAuthSuccess }) {
     setActiveTab(newValue);
     setError("");
     setSuccess("");
+    // Clear form fields when switching tabs
+    setEmail("");
+    setPassword("");
+    setName("");
   };
 
   const handleSubmit = async (e) => {
@@ -40,14 +45,22 @@ function AuthComponent({ onAuthSuccess }) {
     try {
       if (activeTab === 0) {
         // Login
-        const data = await signInUser(email, password);
-        onAuthSuccess(data.user);
-        setSuccess("Successfully logged in!");
+        const result = await signInUser(email, password);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setSuccess("Successfully logged in!");
+          onAuthSuccess(result.user);
+        }
       } else {
         // Sign up
-        setSuccess(
-          "Signup successful! Please check your email for verification."
-        );
+        const result = await signUpUser(email, password, name);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setSuccess("Account created successfully! You are now logged in.");
+          onAuthSuccess(result.user);
+        }
       }
     } catch (error) {
       setError(error.message || "An error occurred during authentication");
@@ -92,6 +105,17 @@ function AuthComponent({ onAuthSuccess }) {
       )}
 
       <Box component="form" onSubmit={handleSubmit}>
+        {activeTab === 1 && (
+          <TextField
+            label="Name (Optional)"
+            type="text"
+            fullWidth
+            margin="normal"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your full name"
+          />
+        )}
         <TextField
           label="Email"
           type="email"
@@ -109,6 +133,11 @@ function AuthComponent({ onAuthSuccess }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          helperText={
+            activeTab === 1
+              ? "Password must be at least 8 characters with upper and lowercase letters and numbers"
+              : ""
+          }
         />
         <Button
           type="submit"
