@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { SearchForm } from "@/components/search/SearchForm";
 import { CurrencyAnalysis } from "@/components/search/CurrencyAnalysis";
 import { RecentSearches } from "@/components/search/RecentSearches";
+import Header from "@/components/Header";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function SearchPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [selectedCurrencies, setSelectedCurrencies] = React.useState({
     origin: "",
     destination: "",

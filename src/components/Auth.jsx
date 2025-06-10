@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { signInUser, signUpUser } from "../services/mongoDbClient";
+import { useAuth } from "../contexts/AuthContext";
 
 /**
  * Authentication component for login and signup
@@ -18,18 +18,19 @@ import { signInUser, signUpUser } from "../services/mongoDbClient";
  * @param {Function} props.onAuthSuccess - Callback function when authentication is successful
  */
 function AuthComponent({ onAuthSuccess }) {
+  const { login, signup, error, isLoading, clearError } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
   const [success, setSuccess] = useState("");
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-    setError("");
+    setLocalError("");
     setSuccess("");
+    clearError();
     // Clear form fields when switching tabs
     setEmail("");
     setPassword("");
@@ -38,34 +39,48 @@ function AuthComponent({ onAuthSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setLocalError("");
     setSuccess("");
+    clearError();
+
+    // Basic validation
+    if (!email || !password) {
+      setLocalError("Please fill in all required fields");
+      return;
+    }
+
+    if (password.length < 8) {
+      setLocalError("Password must be at least 8 characters long");
+      return;
+    }
 
     try {
+      let result;
       if (activeTab === 0) {
         // Login
-        const result = await signInUser(email, password);
-        if (result.error) {
-          setError(result.error);
-        } else {
-          setSuccess("Successfully logged in!");
+        result = await login(email, password);
+      } else {
+        // Sign up
+        result = await signup(email, password, name);
+      }
+
+      if (result.success) {
+        setSuccess(
+          activeTab === 0
+            ? "Successfully logged in!"
+            : "Account created successfully! You are now logged in."
+        );
+        // Call onAuthSuccess callback
+        if (onAuthSuccess) {
           onAuthSuccess(result.user);
         }
       } else {
-        // Sign up
-        const result = await signUpUser(email, password, name);
-        if (result.error) {
-          setError(result.error);
-        } else {
-          setSuccess("Account created successfully! You are now logged in.");
-          onAuthSuccess(result.user);
-        }
+        setLocalError(result.error || "Authentication failed");
       }
     } catch (error) {
-      setError(error.message || "An error occurred during authentication");
-    } finally {
-      setLoading(false);
+      setLocalError(
+        error.message || "An error occurred during authentication"
+      );
     }
   };
 
@@ -93,9 +108,9 @@ function AuthComponent({ onAuthSuccess }) {
         <Tab label="Sign Up" />
       </Tabs>
 
-      {error && (
+      {(error || localError) && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          {error || localError}
         </Alert>
       )}
       {success && (
@@ -144,9 +159,9 @@ function AuthComponent({ onAuthSuccess }) {
           variant="contained"
           fullWidth
           sx={{ mt: 3 }}
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? (
+          {isLoading ? (
             <CircularProgress size={24} />
           ) : activeTab === 0 ? (
             "Login"

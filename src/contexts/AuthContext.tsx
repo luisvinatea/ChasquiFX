@@ -8,6 +8,7 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  ReactNode,
 } from "react";
 import {
   signInUser,
@@ -18,8 +19,51 @@ import {
   isAuthenticated,
 } from "../services/mongoDbClient";
 
+// Types
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  createdAt?: string;
+  lastLogin?: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface AuthContextType {
+  // State
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+
+  // Actions
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string; user?: User }>;
+  signup: (
+    email: string,
+    password: string,
+    name?: string
+  ) => Promise<{ success: boolean; error?: string; user?: User }>;
+  logout: () => Promise<{ success: boolean }>;
+  clearError: () => void;
+  refreshUser: () => Promise<{
+    success: boolean;
+    error?: string;
+    user?: User;
+  }>;
+}
+
 // Initial state
-const initialState = {
+const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -34,10 +78,18 @@ const AUTH_ACTIONS = {
   LOGOUT: "LOGOUT",
   CLEAR_ERROR: "CLEAR_ERROR",
   SET_LOADING: "SET_LOADING",
-};
+} as const;
+
+type AuthAction =
+  | { type: "AUTH_START" }
+  | { type: "AUTH_SUCCESS"; payload: { user: User } }
+  | { type: "AUTH_ERROR"; payload: { error: string } }
+  | { type: "LOGOUT" }
+  | { type: "CLEAR_ERROR" }
+  | { type: "SET_LOADING"; payload: { isLoading: boolean } };
 
 // Reducer function
-function authReducer(state, action) {
+function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case AUTH_ACTIONS.AUTH_START:
       return {
@@ -91,10 +143,10 @@ function authReducer(state, action) {
 }
 
 // Create context
-const AuthContext = createContext(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 // Auth provider component
-export function AuthProvider({ children }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Initialize authentication state on mount
@@ -138,7 +190,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string) => {
     try {
       dispatch({ type: AUTH_ACTIONS.AUTH_START });
 
@@ -159,7 +211,7 @@ export function AuthProvider({ children }) {
 
       return { success: true, user: result.user };
     } catch (error) {
-      const errorMessage = error.message || "Login failed";
+      const errorMessage = (error as Error).message || "Login failed";
       dispatch({
         type: AUTH_ACTIONS.AUTH_ERROR,
         payload: { error: errorMessage },
@@ -168,11 +220,11 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signup = async (email, password, name) => {
+  const signup = async (email: string, password: string, name?: string) => {
     try {
       dispatch({ type: AUTH_ACTIONS.AUTH_START });
 
-      const result = await signUpUser(email, password, name);
+      const result = await signUpUser(email, password, name || "");
 
       if (result.error) {
         dispatch({
@@ -189,7 +241,7 @@ export function AuthProvider({ children }) {
 
       return { success: true, user: result.user };
     } catch (error) {
-      const errorMessage = error.message || "Signup failed";
+      const errorMessage = (error as Error).message || "Signup failed";
       dispatch({
         type: AUTH_ACTIONS.AUTH_ERROR,
         payload: { error: errorMessage },
@@ -231,12 +283,12 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
-      return { success: false, error: error.message };
+      return { success: false, error: (error as Error).message };
     }
   };
 
   // Context value
-  const value = {
+  const value: AuthContextType = {
     // State
     user: state.user,
     isAuthenticated: state.isAuthenticated,
@@ -255,7 +307,7 @@ export function AuthProvider({ children }) {
 }
 
 // Custom hook to use auth context
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
 
   if (!context) {
@@ -266,8 +318,8 @@ export function useAuth() {
 }
 
 // HOC to protect components that require authentication
-export function withAuth(Component) {
-  return function AuthenticatedComponent(props) {
+export function withAuth<P extends object>(Component: React.ComponentType<P>) {
+  return function AuthenticatedComponent(props: P) {
     const { isAuthenticated, isLoading } = useAuth();
 
     if (isLoading) {
