@@ -9,7 +9,7 @@ import axios from "axios";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (typeof window !== "undefined" && window.location.origin) ||
-  "https://chasquifx.vercel.app";
+  "https://chasquifx-web.vercel.app";
 
 /**
  * Sign in user with email and password

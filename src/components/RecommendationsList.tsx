@@ -13,7 +13,6 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";

@@ -34,8 +34,20 @@ export function SearchForm({ onSearch, onCurrencyChange }) {
     onSearch(formData);
   };
 
-  const handleChange = (field, value) => {
-    const newData = { ...formData, [field]: value };
+  interface FormData {
+    origin: string;
+    destination: string;
+    departureDate: string;
+    returnDate: string;
+    passengers: string;
+    originCurrency: string;
+    destinationCurrency: string;
+  }
+
+  type FormField = keyof FormData;
+
+  const handleChange = (field: FormField, value: string): void => {
+    const newData: FormData = { ...formData, [field]: value };
     setFormData(newData);
 
     if (field === "originCurrency" || field === "destinationCurrency") {

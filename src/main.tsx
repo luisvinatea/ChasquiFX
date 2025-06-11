@@ -2,7 +2,7 @@ import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import App from "./App";
 
-import "./index.css";
+import "./global.css"; // Use the consolidated CSS file
 
 // Global error handler for uncaught date-related errors
 window.addEventListener("error", (event) => {

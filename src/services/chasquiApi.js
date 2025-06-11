@@ -216,10 +216,10 @@ export const forexService = {
 export const recommendationService = {
   /**
    * Get travel recommendations
-   * @param {String} departureAirport - Departure airport code
+   * @param {String} _departureAirport - Departure airport code
    * @returns {Promise<Array>} - Recommendations
    */
-  getRecommendations: async (departureAirport) => {
+  getRecommendations: async (_departureAirport) => {
     try {
       // In the migration phase, we'll use mock data
       // In the future, this will connect to the actual API endpoint
@@ -265,10 +265,10 @@ export const recommendationService = {
 
   /**
    * Get user recommendation history
-   * @param {String} userId - User ID
+   * @param {String} _userId - User ID
    * @returns {Promise<Array>} - User recommendation history
    */
-  getUserHistory: async (userId) => {
+  getUserHistory: async (_userId) => {
     try {
       // In the migration phase, we'll return empty results
       return [];
@@ -281,10 +281,10 @@ export const recommendationService = {
   /**
    * Save recommendation to user history
    * @param {Object} recommendation - Recommendation data
-   * @param {String} notes - Optional user notes
+   * @param {String} _notes - Optional user notes
    * @returns {Promise<Object>} - Status
    */
-  saveRecommendation: async (recommendation, notes = null) => {
+  saveRecommendation: async (recommendation, _notes = null) => {
     try {
       // In migration phase, just log the save action
       console.log("Saving recommendation:", recommendation);
@@ -304,10 +304,10 @@ export const userService = {
    * Save user search
    * @param {String} userId - User ID
    * @param {String} departureAirport - Departure airport code
-   * @param {Array} recommendations - Recommendations results
+   * @param {Array} _recommendations - Recommendations results
    * @returns {Promise<Object>} - Status
    */
-  saveSearch: async (userId, departureAirport, recommendations) => {
+  saveSearch: async (userId, departureAirport, _recommendations) => {
     try {
       // In the migration phase, we'll just log the search
       console.log(`Saved search for user ${userId} from ${departureAirport}`);
@@ -320,10 +320,10 @@ export const userService = {
 
   /**
    * Get user's past searches
-   * @param {String} userId - User ID
+   * @param {String} _userId - User ID
    * @returns {Promise<Array>} - Past searches
    */
-  getPastSearches: async (userId) => {
+  getPastSearches: async (_userId) => {
     try {
       // In the migration phase, return mock data
       return [];

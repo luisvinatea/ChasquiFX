@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+  /* CSS Variables for theming */
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
@@ -30,6 +31,8 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
+  /* Dark theme variables */
   .dark {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
@@ -56,13 +59,22 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-}
-@layer base {
+
+  /* Base element styles */
   * {
     border-color: hsl(var(--border));
   }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+}
+
+@layer components {
+  /* Add your custom component styles here */
+}
+
+@layer utilities {
+  /* Add your custom utility classes here */
 }

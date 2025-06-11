@@ -15,7 +15,6 @@ import {
   signUpUser,
   signOutUser,
   verifyToken,
-  getCurrentUser,
   isAuthenticated,
 } from "../services/mongoDbClient";
 

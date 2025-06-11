@@ -1,0 +1,11 @@
+/* Main CSS file that imports all other stylesheets */
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Import your custom CSS files */
+@import "./index.css";
+@import "./styles.css";
+@import "./styles-simple.css";
+
+/* Additional global styles can go here */

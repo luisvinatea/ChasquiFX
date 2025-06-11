@@ -2,8 +2,6 @@
 // This file provides stub implementations for legacy Supabase functions
 // TODO: Migrate all usage to MongoDB client
 
-import { mongoDbClient } from "./mongoDbClient.js";
-
 // Mock session structure for compatibility
 const mockSession = {
   user: {
@@ -31,7 +29,7 @@ export async function signOutUser() {
   return { error: null };
 }
 
-export async function getUserRecommendations(userId) {
+export async function getUserRecommendations(_userId) {
   // Stub implementation - should be replaced with MongoDB queries
   console.warn(
     "getUserRecommendations() is deprecated. Please migrate to MongoDB queries."

@@ -98,7 +98,7 @@ export function CurrencyAnalysis({
     );
   }
 
-  const getAdvantageIcon = (advantage) => {
+  const getAdvantageIcon = (advantage: number): React.ReactElement => {
     if (advantage > 5)
       return <TrendingUp className="h-4 w-4 text-green-500" />;
     if (advantage < -5)
