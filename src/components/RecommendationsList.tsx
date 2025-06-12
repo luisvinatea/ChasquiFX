@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, FC } from "react";
 import {
   Card,
   CardContent,
@@ -45,7 +45,7 @@ interface RecommendationsListProps {
   showDate?: boolean;
 }
 
-const RecommendationsList: React.FC<RecommendationsListProps> = ({
+const RecommendationsList: FC<RecommendationsListProps> = ({
   recommendations,
   loading = false,
   favorites = [],
@@ -184,7 +184,7 @@ const RecommendationsList: React.FC<RecommendationsListProps> = ({
                         ? "Remove from favorites"
                         : "Add to favorites"
                     }
-                    arrow
+                    arrow={true}
                   >
                     <IconButton
                       size="small"

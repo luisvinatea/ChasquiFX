@@ -1,4 +1,4 @@
-import React from "react";
+import { FC } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -24,11 +24,7 @@ interface ProfileDialogProps {
   user: User | null;
 }
 
-const ProfileDialog: React.FC<ProfileDialogProps> = ({
-  open,
-  onClose,
-  user,
-}) => {
+const ProfileDialog: FC<ProfileDialogProps> = ({ open, onClose, user }) => {
   if (!user) return null;
 
   return (

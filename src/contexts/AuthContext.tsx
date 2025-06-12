@@ -3,11 +3,12 @@
  * Manages global authentication state across the React application
  */
 
-import React, {
+import {
   createContext,
   useContext,
   useReducer,
   useEffect,
+  ComponentType,
   ReactNode,
 } from "react";
 import {
@@ -317,7 +318,7 @@ export function useAuth(): AuthContextType {
 }
 
 // HOC to protect components that require authentication
-export function withAuth<P extends object>(Component: React.ComponentType<P>) {
+export function withAuth<P extends object>(Component: ComponentType<P>) {
   return function AuthenticatedComponent(props: P) {
     const { isAuthenticated, isLoading } = useAuth();
 
